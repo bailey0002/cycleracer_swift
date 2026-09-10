@@ -18,8 +18,11 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   Mac keyboard, iOS touch (SwiftUI `SpatialEventGesture`, see gotcha below).
 - Look system: role-based palettes (road / city / rings / hazards), variant pickers in the HUD,
   `SPEEDER_VARIANT=<name>` presets for capture sweeps.
-- Next planned work: a third world, a Tron light-cycle arena. See `SpeederProto/docs/NEXT-THREAD-PROMPT.md`
-  and `SpeederProto/docs/lightcycle-research.md`.
+- Third world **The Grid** (built 10 Sep 2026): a Tron light-cycle arena. `Scene/GameMode.swift`
+  splits corridor vs arena; `Theme.theGrid.mode == .arena`; everything arena-only lives in
+  `Sources/Arena/` (`ArenaWorld`, `LightCycle`, `TrailSystem`, `TrailRenderer`, `ArenaController`,
+  `ArenaAI`). The README's "The Grid" section documents the mechanics and capture hooks.
+- GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)
 
@@ -49,6 +52,16 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Fog colour close to scene luminance is invisible; haze must be brighter than what it replaces.
 - Multi-file `swiftc` probes need the top-level file named `main.swift`.
 - Blender 5.0 (`/Applications/Blender.app`) converts GLB to USDZ; RealityKit cannot load GLB.
+- Arena: `LowLevelMesh.Part.indexOffset` is in bytes. Vertex colour and uv reach a `CustomMaterial`
+  surface shader via `geometry().color()` / `uv0()`; per-frame material values go through
+  `custom.value` and must be re-assigned to the model each frame (materials are values).
+- Arena: the camera-mounted fill spot (`Theme.useFillSpot`) makes a white blob on the glossy grid
+  floor; keep it off for The Grid. Trails self-intersecting tangentially are deflected by the edge
+  meter, so a "crash" demo must hit a wall square on (the `crash` script uses snap turns).
+- Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view; the chase camera cannot
+  show elevated trails or trail cuts. Capture times with decimals are allowed (`frame-1.5.png`).
+- The MCP iOS simulator panel crashed in this session; `xcrun simctl io <udid> screenshot` works
+  and `SIMCTL_CHILD_<VAR>` passes env vars to `simctl launch`.
 
 ## Working style the user wants
 

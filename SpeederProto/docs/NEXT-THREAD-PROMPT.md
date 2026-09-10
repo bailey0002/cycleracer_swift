@@ -1,4 +1,10 @@
-# Kickoff prompt for the next thread: "Grid" light-cycle world
+# Kickoff prompt used for the "Grid" light-cycle world (done 10 Sep 2026)
+
+This prompt was run; the result is documented in `../README.md` (section "The Grid").
+Suggested next steps: measure fps on the iPhone 12 over a long run, tune handling on the
+Backbone (snap cooldown, turn rate, jump timing), add a second opponent, zones.
+
+---
 
 Paste the block below as the first message of a new Claude Code thread opened in
 `/Users/markbailey/Desktop/GS - GamenCtr/GS - Racer`.

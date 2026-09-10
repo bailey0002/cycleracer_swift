@@ -139,10 +139,91 @@ atmosphere and grade. The HUD's *world* picker rebuilds the scene for the select
 - Gotcha: `PhysicallyBasedMaterial.EmissiveColor(color:texture:)` *adds* the colour to the texture; pass `.black` when you want the texture alone.
 - Gotcha: the iOS simulator returns NaN when the post pass reads the depth buffer (and logs RealityKit shader limit errors); the post pass probes for this and falls back to a screen-space fog estimate. A physical iPhone behaves like macOS (depth fog works there).
 
-## Next: third world (light-cycle arena)
+## The Grid (light-cycle arena, third world)
 
-Research and the kickoff prompt for the next thread are in `docs/lightcycle-research.md` and
-`docs/NEXT-THREAD-PROMPT.md`. Workspace-level notes for Claude are in `../CLAUDE.md`.
+The third world is a different game, not a theme: `Scene/GameMode.swift` splits the app into
+the scrolling **corridor** (Neon City, Sunset Canyon) and the free-movement **arena** (The Grid).
+`Theme.theGrid.mode == .arena`, and the HUD `world` picker switches between them by rebuilding
+the scene (`SPEEDER_VARIANT=grid`, `grid-snap`, `grid-gap` at launch). Everything under
+`Sources/Arena/` is arena-only; the corridor code is untouched.
+
+Research behind the design is in `docs/lightcycle-research.md`; the kickoff prompt that was used
+is `docs/NEXT-THREAD-PROMPT.md`.
+
+### What is in the arena
+
+- **Arena** (`ArenaWorld`): a 220 m square with a glossy near-black floor (grid lines in the
+  emissive map, IBL from a generated cyan-horizon environment for the reflection), four tall
+  luminous panel walls with a rail and a base line, corner pylons, a far ring of dark data
+  towers that recede into fog, four static **lime hazard walls** in the field, and two pickup
+  props. ~180 entities.
+- **Cycle** (`LightCycle`): kinematic and deterministic (speed, heading, position). Cruise 36 m/s,
+  brake 15, boost 60 (uses the energy meter), plus a grinding surge. Visual lean, pitch and a
+  damped visual heading sit on top; the logic never sees them.
+- **Steering** (HUD `steering` picker): *analog* velocity steering with lean, or *snap 90*:
+  flicking the stick past half travel makes an instant 90-degree corner (0.16 s cooldown). The
+  snap also drives the AI. Both are captured in `Captures/grid/drive` and `Captures/grid/snap`.
+- **Trails** (`TrailSystem`): the logical trail is a list of wall segments sampled every 1.2 m
+  (about 26 % of the vehicle length) at the tail emitter, with a forced sample at each snap
+  corner so corners are square. Segments live in a spatial hash (10 m cells) with stable
+  global indices, so decay only moves a `firstAlive` cursor. Collision is a swept line from
+  the previous nose to the current nose against the segments in the cells it touches, with a
+  vertical band test; the newest few own segments are ignored. The same system answers
+  "nearest wall" (grinding, edge) and "how far is it open in this direction" (AI).
+- **Trail renderer** (`TrailRenderer`): one `LowLevelMesh` per 256-segment chunk, three parts
+  per chunk (opaque core wall, translucent halo, floor reflection strip) and one provisional
+  head segment that tracks the bike between samples. A custom surface shader
+  (`trailSurface` in `Shaders.metal`) reads arc length from `uv0` and the material's custom
+  parameter to draw the white-to-colour fade behind the bike, the fade from the oldest end and
+  the crash pulse, so sealed chunks are never rewritten. Never one entity per segment.
+- **Colour roles**: player trail cyan (white at the head), opponent trail orange, hazards lime
+  (the same lime as the corridor obstacles), pickups violet-white.
+- **Crash** (`ArenaController`): a hit is an event: white flash, camera kick, derez particle
+  burst plus fourteen flung shards and a short light, a bright pulse travelling back along the
+  trail, then a slow-motion orbit around the wreck for ~3 s and a restart with a READY beat.
+  Hitting the boundary, a hazard, your own trail or the opponent's are all reported on the HUD.
+- **Grinding**: riding parallel (within ~25 degrees) and close to any wall builds a speed surge
+  (up to +20 m/s) and fills the **energy** meter that boost spends. Sparks and a flickering
+  arc between bike and wall escalate with proximity.
+- **Edge meter**: Armagetron-style rubber. Near-contact drains it; a shallow-angle hit with edge
+  left deflects the bike along the wall (sparks, speed loss, a big drain) instead of killing it;
+  it recharges slowly when clear. Empty edge, or a square hit, derezzes.
+- **Jump** (stick up / climb axis): 12.5 m/s launch, apex 3.3 m, clears a 2.2 m trail or a 3 m
+  hazard wall with correct timing. Rule chosen: **elevated trail** (the wall follows the arc,
+  and a bike underneath only collides if the vertical bands overlap). The *trail gap* rule
+  (no wall while airborne) is kept as a HUD option; both are captured in
+  `Captures/grid/jumpback-over` and `jumpgap-over`.
+- **Decay**: trails are finite (HUD `trail`: short 220 m, long 420 m, endless) and fade from
+  the oldest end; dead chunks are released.
+- **Pickups**: *Phase* (A / F to use: pass through one wall within 5 s, the bike flickers) and
+  *Pulse* (erases the newest 60 m of your own trail with a pulse running back along it).
+- **Opponent** (`ArenaAI`): every 0.16 s (0.08 s when boxed in) it probes candidate headings
+  through the spatial hash with three parallel rays each, prefers straight, leans toward the
+  player, adds a little noise, and boosts on open ground. It uses snap turns in snap mode.
+  A derezzed opponent respawns after 4 s at the most open spot far from the player.
+
+### Controls in the arena
+
+| Input | Steer | Jump | Brake | Boost | Use pickup | Settings |
+|---|---|---|---|---|---|---|
+| Gamepad | left stick / d-pad (flick in snap mode) | stick up | stick down | R2 / R1 | A | Menu |
+| Mac keyboard | ← → / A D | ↑ / W | ↓ / S | shift / space | F / return | – |
+| iOS touch | left / right half | touch top | – | two fingers | – | top-right corner |
+
+### Capture hooks (arena)
+
+`SPEEDER_DEMO=1` runs a scripted drive chosen by `SPEEDER_DEMO_SCRIPT` (`drive`, `snap`,
+`crash`, `grind`, `jump`, `jumpover`, `jumpback`, `pulse`, `phase`, `uturn`), plus
+`SPEEDER_ARENA_START=x,z,heading`, `SPEEDER_ARENA_AI=0`, `SPEEDER_ARENA_GIVE=pulse|phase`,
+`SPEEDER_ARENA_TRAIL=0|1|2` and `SPEEDER_ARENA_CAMERA=overview` (a fixed high camera that shows
+the trail layout). Each folder under `Captures/grid/` was produced this way; the log lines print
+position, height, grind, edge and energy so mechanics can be checked numerically as well.
+
+### Performance
+
+Debug build, Mac 2560x1440: 50-60 fps with two trails plus the post pass. iPhone 16e simulator:
+60 fps with ~180 entities. The iPhone 12 needs measuring with the HUD fps counter on a long run;
+the trail meshes are cheap (one draw per chunk part) and the main cost is still the post pass.
 
 ## Next steps (brief milestones 7–8)
 
