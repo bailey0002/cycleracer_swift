@@ -1,0 +1,564 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		02D3D56823114D66FCF57FEF /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
+		08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
+		0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
+		114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
+		147812546190B4325B27A09E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
+		2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
+		27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
+		2A8A93F04FE7BBA45595F345 /* TrackProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EC8E7CD387377F03E68669 /* TrackProgram.swift */; };
+		362F3B793F68131A8AC56D1C /* WorldScroller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196B1573C8FB9CC7F731E150 /* WorldScroller.swift */; };
+		38F466D3DC77436528A13440 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
+		49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
+		4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
+		4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */; };
+		4C82EB5F2D71407DA09681A7 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
+		4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */; };
+		59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
+		5B3A358007EC4F94020517ED /* TrackProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EC8E7CD387377F03E68669 /* TrackProgram.swift */; };
+		5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */; };
+		60068708FF0A24190CD48367 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
+		621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
+		6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
+		6A80F9F3360AD1340BF798D3 /* Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830774F78514CA1A5F4B7434 /* Input.swift */; };
+		6AF2A544D10486D2193FCC54 /* WorldScroller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196B1573C8FB9CC7F731E150 /* WorldScroller.swift */; };
+		7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */; };
+		8037292F5CC5D1D550286AE3 /* Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830774F78514CA1A5F4B7434 /* Input.swift */; };
+		843CCA4CA54FC1DDD43FABC9 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
+		874F606EA09A1D02E81137AB /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
+		92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
+		9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
+		9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
+		A975139BC959AB5AC5F0212B /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
+		ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
+		B671EFFBFEDC2FCD6CE6E5B7 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
+		BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
+		D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
+		D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
+		DC41CBFF327A56F45112A39A /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
+		ED7A03D5F51FEA26BECEA23A /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
+		EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
+		F4CA0144019743170E987786 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
+		F7F866353C2595C4A553AFFA /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
+		FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialFactory.swift; sourceTree = "<group>"; };
+		196B1573C8FB9CC7F731E150 /* WorldScroller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldScroller.swift; sourceTree = "<group>"; };
+		224CF6515E65592F712F0902 /* FXSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FXSettings.swift; sourceTree = "<group>"; };
+		29EC8E7CD387377F03E68669 /* TrackProgram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProgram.swift; sourceTree = "<group>"; };
+		44E74DD4583F19C94BE32E39 /* CameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRig.swift; sourceTree = "<group>"; };
+		59796A2FF75D69C574FE80A0 /* PostFX.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = PostFX.metal; sourceTree = "<group>"; };
+		5E0762ACC75D4CC67B23E329 /* GameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameController.swift; sourceTree = "<group>"; };
+		830774F78514CA1A5F4B7434 /* Input.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Input.swift; sourceTree = "<group>"; };
+		85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Speeder.usdz; sourceTree = "<group>"; };
+		868ACE88113A37309BDE3C7D /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
+		95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessor.swift; sourceTree = "<group>"; };
+		96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralTextures.swift; sourceTree = "<group>"; };
+		9D1146D252113EB8417E5731 /* SpeederApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederApp.swift; sourceTree = "<group>"; };
+		AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
+		B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameCapture.swift; sourceTree = "<group>"; };
+		BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meshes.swift; sourceTree = "<group>"; };
+		C9878B4DE09B4382EE413D42 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederController.swift; sourceTree = "<group>"; };
+		DA03C8CBB3AECCC551185AD4 /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
+		E59AAB31C250E0E039642DF5 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "SpeederProto-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SpeederProto-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC6DBC66827CF202624BE7B3 /* Weapons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weapons.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		14456DB4C36B752427D5A0E6 /* Rendering */ = {
+			isa = PBXGroup;
+			children = (
+				B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */,
+				0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */,
+				BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */,
+				59796A2FF75D69C574FE80A0 /* PostFX.metal */,
+				95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */,
+				96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */,
+				E59AAB31C250E0E039642DF5 /* Shaders.metal */,
+			);
+			path = Rendering;
+			sourceTree = "<group>";
+		};
+		1844EE35F9CAB3E4DD50EF2B /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */,
+				868ACE88113A37309BDE3C7D /* HUDView.swift */,
+				830774F78514CA1A5F4B7434 /* Input.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		1D81532A7ED34F18CB861870 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */,
+				FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3EC52E6DA14A3B093018CA9C /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				8D77DD23F54D80E39174AFD9 /* App */,
+				14456DB4C36B752427D5A0E6 /* Rendering */,
+				58FAD8C39C416204195ADA96 /* Scene */,
+				4F90627EE602D4C7D813EC94 /* Utilities */,
+				1844EE35F9CAB3E4DD50EF2B /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		4F90627EE602D4C7D813EC94 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				224CF6515E65592F712F0902 /* FXSettings.swift */,
+				DA03C8CBB3AECCC551185AD4 /* Platform.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		58FAD8C39C416204195ADA96 /* Scene */ = {
+			isa = PBXGroup;
+			children = (
+				44E74DD4583F19C94BE32E39 /* CameraRig.swift */,
+				5E0762ACC75D4CC67B23E329 /* GameController.swift */,
+				CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */,
+				C9878B4DE09B4382EE413D42 /* Theme.swift */,
+				29EC8E7CD387377F03E68669 /* TrackProgram.swift */,
+				FC6DBC66827CF202624BE7B3 /* Weapons.swift */,
+				196B1573C8FB9CC7F731E150 /* WorldScroller.swift */,
+			);
+			path = Scene;
+			sourceTree = "<group>";
+		};
+		60DE0E2CE1A5F121C9BB663F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		8D77DD23F54D80E39174AFD9 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				9D1146D252113EB8417E5731 /* SpeederApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		F9A296BAAE55A443A90FB35C = {
+			isa = PBXGroup;
+			children = (
+				60DE0E2CE1A5F121C9BB663F /* Resources */,
+				3EC52E6DA14A3B093018CA9C /* Sources */,
+				1D81532A7ED34F18CB861870 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		65EA62C835504348EF2BD156 /* SpeederProto-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 159B61577161B0C65659C78C /* Build configuration list for PBXNativeTarget "SpeederProto-iOS" */;
+			buildPhases = (
+				DBDBC7C426FCC48255285BE3 /* Sources */,
+				CD406E10F0A5BFE2AAB8FAB7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "SpeederProto-iOS";
+			packageProductDependencies = (
+			);
+			productName = "SpeederProto-iOS";
+			productReference = F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C86F460BDBF42AC26B02E533 /* SpeederProto-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0760AE5AD72B2E250AFD20F3 /* Build configuration list for PBXNativeTarget "SpeederProto-macOS" */;
+			buildPhases = (
+				DD4C70A58992D4EBB0E3690C /* Sources */,
+				21EE821E2CA57563F9EB1F15 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "SpeederProto-macOS";
+			packageProductDependencies = (
+			);
+			productName = "SpeederProto-macOS";
+			productReference = FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		37DAD9E77CF0F3F1602E4393 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					65EA62C835504348EF2BD156 = {
+						DevelopmentTeam = HNBN55RN29;
+						ProvisioningStyle = Automatic;
+					};
+					C86F460BDBF42AC26B02E533 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 1765B00D04D2B25CB191E323 /* Build configuration list for PBXProject "SpeederProto" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F9A296BAAE55A443A90FB35C;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1D81532A7ED34F18CB861870 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				65EA62C835504348EF2BD156 /* SpeederProto-iOS */,
+				C86F460BDBF42AC26B02E533 /* SpeederProto-macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		21EE821E2CA57563F9EB1F15 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CD406E10F0A5BFE2AAB8FAB7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		DBDBC7C426FCC48255285BE3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */,
+				60068708FF0A24190CD48367 /* FXSettings.swift in Sources */,
+				49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */,
+				08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */,
+				A975139BC959AB5AC5F0212B /* GameView.swift in Sources */,
+				874F606EA09A1D02E81137AB /* HUDView.swift in Sources */,
+				6A80F9F3360AD1340BF798D3 /* Input.swift in Sources */,
+				B671EFFBFEDC2FCD6CE6E5B7 /* MaterialFactory.swift in Sources */,
+				4C82EB5F2D71407DA09681A7 /* Meshes.swift in Sources */,
+				ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */,
+				D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */,
+				4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */,
+				6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */,
+				BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */,
+				F4CA0144019743170E987786 /* SpeederApp.swift in Sources */,
+				621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */,
+				4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */,
+				5B3A358007EC4F94020517ED /* TrackProgram.swift in Sources */,
+				9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */,
+				362F3B793F68131A8AC56D1C /* WorldScroller.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DD4C70A58992D4EBB0E3690C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */,
+				D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */,
+				2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */,
+				EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */,
+				DC41CBFF327A56F45112A39A /* GameView.swift in Sources */,
+				F7F866353C2595C4A553AFFA /* HUDView.swift in Sources */,
+				8037292F5CC5D1D550286AE3 /* Input.swift in Sources */,
+				843CCA4CA54FC1DDD43FABC9 /* MaterialFactory.swift in Sources */,
+				0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */,
+				02D3D56823114D66FCF57FEF /* Platform.swift in Sources */,
+				114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */,
+				5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */,
+				27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */,
+				38F466D3DC77436528A13440 /* Shaders.metal in Sources */,
+				92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */,
+				9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */,
+				147812546190B4325B27A09E /* Theme.swift in Sources */,
+				2A8A93F04FE7BBA45595F345 /* TrackProgram.swift in Sources */,
+				ED7A03D5F51FEA26BECEA23A /* Weapons.swift in Sources */,
+				6AF2A544D10486D2193FCC54 /* WorldScroller.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		4E1E2D5D5415D62C36ACDAA1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		68A143E707D53DB0CF5FCD66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = HNBN55RN29;
+				INFOPLIST_FILE = "Info-iOS.plist";
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.markbailey.speeder.ios;
+				PRODUCT_NAME = SpeederProto;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		74998F7E8EA1F27F6FD36BA0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = "Info-macOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.markbailey.speeder.mac;
+				PRODUCT_NAME = SpeederProto;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		88A21B304C939F98ACF0CAD6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		8D71E98DF90CC540437AA09F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = HNBN55RN29;
+				INFOPLIST_FILE = "Info-iOS.plist";
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.markbailey.speeder.ios;
+				PRODUCT_NAME = SpeederProto;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F95A4A10E3CE7E926586F1DB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = "Info-macOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.markbailey.speeder.mac;
+				PRODUCT_NAME = SpeederProto;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0760AE5AD72B2E250AFD20F3 /* Build configuration list for PBXNativeTarget "SpeederProto-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F95A4A10E3CE7E926586F1DB /* Debug */,
+				74998F7E8EA1F27F6FD36BA0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		159B61577161B0C65659C78C /* Build configuration list for PBXNativeTarget "SpeederProto-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D71E98DF90CC540437AA09F /* Debug */,
+				68A143E707D53DB0CF5FCD66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1765B00D04D2B25CB191E323 /* Build configuration list for PBXProject "SpeederProto" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				88A21B304C939F98ACF0CAD6 /* Debug */,
+				4E1E2D5D5415D62C36ACDAA1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 37DAD9E77CF0F3F1602E4393 /* Project object */;
+}

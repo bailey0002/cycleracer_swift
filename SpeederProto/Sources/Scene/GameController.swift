@@ -1,0 +1,474 @@
+import Foundation
+import Combine
+import RealityKit
+import simd
+import SwiftUI
+
+/// Owns the ARView, builds the scene and runs the per-frame update (brief §33).
+@MainActor
+final class GameController: ObservableObject {
+    let arView: GameARView
+    let post = PostProcessor()
+
+    @Published var settings = FXSettings() {
+        didSet {
+            if settings.environment != oldValue.environment, world != nil {
+                var s = settings
+                (Theme(rawValue: s.environment) ?? .neonCity).adjust(&s)
+                settings = s
+                Task { await rebuildScene() }
+                return
+            }
+            applySettings()
+        }
+    }
+    @Published var stats = FrameStats()
+    @Published var loadError: String? = nil
+    #if os(macOS)
+    @Published var panelVisible = true
+    #else
+    @Published var panelVisible = ProcessInfo.processInfo.environment["SPEEDER_PANEL"] == "1"
+    #endif
+
+    private var materials: SceneMaterials?
+    private let worldAnchor = AnchorEntity(world: .zero)
+    private var world: WorldScroller?
+    private var speeder: SpeederController?
+    private var cameraRig: CameraRig?
+    private let sun = DirectionalLight()
+    private let fill = SpotLight()
+    private var theme: Theme = .neonCity
+    private var rebuilding = false
+    private let rim = DirectionalLight()
+    private let speedParticles = Entity()
+    private var updateSub: Cancellable?
+
+    private var time: Float = 0
+    private var speed: Float = 0
+    private var maxSpeed: Float = 110
+    private var fpsSmoothed: Double = 60
+    private var statsAccumulator: Float = 0
+    private var entityCount = 0
+    // gameplay
+    private var distance: Float = 0
+    private var hits = 0
+    private var flash: Float = 0
+    private var invulnerable: Float = 0
+    private var shakeBurst: Float = 0
+    private let sparks = Entity()
+    private let gamepad = GamepadInput()
+    private var weapons: WeaponSystem?
+    private var kills = 0
+    private var sparkTimer: Float = 0
+    /// SPEEDER_DEMO=1 scripts steering/boost; SPEEDER_CAPTURE_DIR=<dir> saves frames at fixed times.
+    private let demoMode = ProcessInfo.processInfo.environment["SPEEDER_DEMO"] == "1"
+    private let captureDir = ProcessInfo.processInfo.environment["SPEEDER_CAPTURE_DIR"]
+    private var captureTimes: [Float] = (ProcessInfo.processInfo.environment["SPEEDER_CAPTURE_TIMES"] ?? "4,7,10").split(separator: ",").compactMap { Float($0) }
+    /// SPEEDER_SWEEP=1: capture a frame per disabled technique for A/B comparison.
+    private let sweepMode = ProcessInfo.processInfo.environment["SPEEDER_SWEEP"] == "1"
+    private var sweepSteps: [(Float, String, (inout FXSettings) -> Void)] = [
+        (4.0, "all", { _ in }),
+        (5.5, "source", { $0.postFX = false }),
+        (7.0, "nofog", { $0.postFX = true; $0.fog = false }),
+        (8.5, "nobloom", { $0.fog = true; $0.bloom = false }),
+        (10.0, "nostreaks", { $0.bloom = true; $0.streaks = false }),
+        (11.5, "nograde", { $0.streaks = true; $0.colorGrade = false }),
+        (13.0, "nolights", { $0.colorGrade = true; $0.realLights = false }),
+        (14.5, "noreflect", { $0.realLights = true; $0.reflections = false }),
+    ]
+
+    init() {
+        #if os(macOS)
+        arView = GameARView(frame: NSRect(x: 0, y: 0, width: 1280, height: 720))
+        #else
+        arView = GameARView()
+        #endif
+        configureView()
+        applyVariantPreset()
+        Task { await build() }
+    }
+
+    /// SPEEDER_VARIANT=<name> applies a look preset at launch (used by the comparison sweep).
+    private func applyVariantPreset() {
+        guard let name = ProcessInfo.processInfo.environment["SPEEDER_VARIANT"] else { return }
+        var s = settings
+        switch name {
+        case "dense-city":     s.secondRow = true; s.storefronts = true; s.windowsBright = true
+        case "sparse-city":    s.secondRow = false; s.storefronts = false
+        case "no-second-row":  s.secondRow = false
+        case "windows-bright": s.windowsBright = true
+        case "thin-fog":       s.fogLevel = 0
+        case "thick-fog":      s.fogLevel = 2
+        case "bloom-low":      s.bloomLevel = 0
+        case "bloom-high":     s.bloomLevel = 2
+        case "tunnel-dense":   s.tunnelDense = true
+        case "obstacles-holo": s.obstacleSkin = 1
+        case "obstacles-wire": s.obstacleSkin = 2
+        case "obstacles-trim": s.obstacleSkin = 3
+        case "no-reflections": s.reflections = false
+        case "no-streaks":     s.streaks = false
+        case "rings-red":      s.ringColor = 2
+        case "rings-mixed":    s.ringColor = 0
+        case "palette-mixed":  s.palette = 0
+        case "palette-amber":  s.palette = 2
+        case "hazard-magenta": s.hazardColor = 0
+        case "hazard-orange":  s.hazardColor = 2
+        case "canyon":         s.environment = Theme.sunsetCanyon.rawValue; Theme.sunsetCanyon.adjust(&s)
+        case "baseline":       break
+        default: break
+        }
+        settings = s
+    }
+
+    private func configureView() {
+        arView.environment.background = .color(.rgb(0.01, 0.01, 0.02))
+        #if os(iOS)
+        arView.renderOptions.insert(.disableDepthOfField)
+        arView.renderOptions.insert(.disableCameraGrain)
+        arView.renderOptions.insert(.disableFaceMesh)
+        arView.renderOptions.insert(.disablePersonOcclusion)
+        arView.renderOptions.insert(.disableGroundingShadows)
+        #endif
+        let post = self.post
+        arView.renderCallbacks.prepareWithDevice = { device in post.prepare(device: device) }
+        arView.renderCallbacks.postProcess = { ctx in post.process(ctx) }
+    }
+
+    /// Tear down and rebuild the world for the selected theme.
+    private func rebuildScene() async {
+        guard !rebuilding else { return }
+        rebuilding = true
+        world = nil; speeder = nil; cameraRig = nil; weapons = nil
+        for child in worldAnchor.children.map({ $0 }) { child.removeFromParent() }
+        entityCount = 0
+        post.captureRequest = nil
+        await build()
+        rebuilding = false
+    }
+
+    private func build() async {
+        do {
+            theme = Theme(rawValue: settings.environment) ?? .neonCity
+            post.theme = theme
+            let device = MTLCreateSystemDefaultDevice()
+            let materials = try SceneMaterials(device: device, theme: theme)
+            self.materials = materials
+
+            arView.environment.lighting.resource = materials.environment
+            arView.environment.lighting.intensityExponent = theme.iblExponent
+            arView.environment.background = .skybox(materials.environment)
+
+            let world = WorldScroller(materials: materials, settings: settings)
+            worldAnchor.addChild(world.root)
+            self.world = world
+
+            let speeder = try await SpeederController.load(materials: materials)
+            worldAnchor.addChild(speeder.root)
+            self.speeder = speeder
+
+            let rig = CameraRig()
+            worldAnchor.addChild(rig.root)
+            self.cameraRig = rig
+
+            // key light per theme: cool moonlight for the city, low warm sun ahead for the canyon
+            sun.light.color = .rgb(theme.sunColor)
+            sun.light.intensity = theme.sunIntensity
+            sun.shadow = DirectionalLightComponent.Shadow(maximumDistance: theme.shadowDistance, depthBias: 2.5)
+            sun.look(at: [0, 0, -6], from: theme.sunFrom, relativeTo: nil)
+            worldAnchor.addChild(sun)
+
+            // rim + camera fill only matter at night; the canyon sun does the work by day
+            rim.removeFromParent(); fill.removeFromParent()
+            if theme.useFillSpot {
+                rim.light.color = .rgb(0.45, 0.85, 1.0)
+                rim.light.intensity = 900
+                rim.look(at: [0, 1, 0], from: [-4, 5, -12], relativeTo: nil)
+                worldAnchor.addChild(rim)
+                fill.light.color = .rgb(1.0, 0.92, 0.85)
+                fill.light.intensity = 9000
+                fill.light.innerAngleInDegrees = 30
+                fill.light.outerAngleInDegrees = 50
+                fill.light.attenuationRadius = 16
+                fill.position = [0, 0.6, 0.5]
+                rig.root.addChild(fill)
+            }
+
+            speedParticles.removeFromParent()
+            buildSpeedParticles()
+            rig.root.addChild(speedParticles)
+            sparks.removeFromParent()
+            buildSparks()
+            worldAnchor.addChild(sparks)
+            let weapons = WeaponSystem(materials: materials)
+            worldAnchor.addChild(weapons.root)
+            self.weapons = weapons
+
+            arView.scene.addAnchor(worldAnchor)
+            applySettings()
+            updateSub = arView.scene.subscribe(to: SceneEvents.Update.self) { [weak self] ev in
+                self?.update(dt: Float(ev.deltaTime))
+            }
+        } catch {
+            loadError = "\(error)"
+            print("Scene build failed: \(error)")
+        }
+    }
+
+    /// Fine bright motes streaming past the camera. Their speed follows vehicle speed.
+    private func buildSpeedParticles() {
+        var e = ParticleEmitterComponent()
+        e.emitterShape = .box
+        e.emitterShapeSize = [24, 10, 6]
+        e.birthLocation = .volume
+        e.emissionDirection = [0, 0, 1]
+        e.speed = 40
+        e.speedVariation = 10
+        e.mainEmitter.birthRate = 220
+        e.mainEmitter.lifeSpan = 0.45
+        e.mainEmitter.lifeSpanVariation = 0.15
+        e.mainEmitter.size = theme.speedParticleSize
+        e.mainEmitter.sizeVariation = 0.02
+        e.mainEmitter.stretchFactor = theme == .neonCity ? 7 : 3
+        e.mainEmitter.blendMode = theme == .neonCity ? .additive : .alpha
+        e.mainEmitter.opacityCurve = .quickFadeInOut
+        let (c0, c1) = theme.speedParticleColor
+        e.mainEmitter.color = .evolving(start: .single(.rgb(SIMD3(c0.x, c0.y, c0.z), c0.w)), end: .single(.rgb(SIMD3(c1.x, c1.y, c1.z), c1.w)))
+        speedParticles.components.set(e)
+        speedParticles.position = [0, -0.5, -16]
+    }
+
+    /// One-shot spark burst used for collisions and barrier scraping.
+    private func buildSparks() {
+        var e = ParticleEmitterComponent()
+        e.emitterShape = .sphere
+        e.emitterShapeSize = [0.3, 0.3, 0.3]
+        e.birthLocation = .volume
+        e.emissionDirection = [0, 1, 1]
+        e.speed = 9
+        e.speedVariation = 5
+        e.mainEmitter.birthRate = 900
+        e.mainEmitter.lifeSpan = 0.5
+        e.mainEmitter.lifeSpanVariation = 0.2
+        e.mainEmitter.size = 0.06
+        e.mainEmitter.sizeVariation = 0.03
+        e.mainEmitter.stretchFactor = 4
+        e.mainEmitter.acceleration = [0, -12, 8]
+        e.mainEmitter.spreadingAngle = 1.2
+        e.mainEmitter.blendMode = .additive
+        e.mainEmitter.opacityCurve = .linearFadeOut
+        e.mainEmitter.color = .evolving(start: .single(.rgb(1.0, 0.85, 0.5, 1.0)), end: .single(.rgb(1.0, 0.3, 0.1, 0.0)))
+        e.isEmitting = false
+        sparks.components.set(e)
+    }
+
+    private func emitSparks(at p: SIMD3<Float>, duration: Float) {
+        sparks.position = p
+        if var e = sparks.components[ParticleEmitterComponent.self] {
+            e.isEmitting = true
+            sparks.components.set(e)
+        }
+        sparkTimer = max(sparkTimer, duration)
+    }
+
+    private func applySettings() {
+        post.settings = settings
+        print("settings applied: fog=\(settings.fogLevel) bloom=\(settings.bloomLevel) skin=\(settings.obstacleSkin) secondRow=\(settings.secondRow) storefronts=\(settings.storefronts) windowsBright=\(settings.windowsBright) world=\(world != nil)")
+        world?.apply(settings)
+        speeder?.setLights(settings.realLights)
+        speeder?.setParticles(settings.particles)
+        sun.isEnabled = settings.realLights
+        rim.isEnabled = settings.realLights
+        fill.isEnabled = settings.realLights
+        speedParticles.isEnabled = settings.particles
+        weapons?.setEnabled(settings.obstacles)
+    }
+
+    // MARK: - Frame update
+
+    private func update(dt rawDt: Float) {
+        guard let world, let speeder, let cameraRig else { return }
+        let dt: Float = demoMode ? 1.0 / 60.0 : min(max(rawDt, 1.0 / 240.0), 1.0 / 20.0)
+        time += dt
+        let input = arView.input
+        gamepad.poll(into: input)
+        if demoMode {
+            let bias = Float(ProcessInfo.processInfo.environment["SPEEDER_DEMO_BIAS"] ?? "0") ?? 0
+            input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
+            input.pointerClimb = max(-1, min(1, sin(time * 0.6 + 1.0) * 0.9))
+            input.fire = Int(time * 2) % 3 == 0
+            input.pointerBoost = time > 6.5 && time < 11
+        }
+        if input.panelToggleRequested {
+            input.panelToggleRequested = false
+            panelVisible.toggle()
+        }
+        if input.screenshotRequested {
+            input.screenshotRequested = false
+            saveScreenshot(to: FrameCapture.defaultURL())
+        }
+        if let captureDir {
+            if sweepMode {
+                if let step = sweepSteps.first, time >= step.0 {
+                    sweepSteps.removeFirst()
+                    let url = URL(fileURLWithPath: captureDir).appendingPathComponent("\(step.1).png")
+                    if step.1 == "source" {
+                        post.captureSourceRequest = { image in
+                            if let image { FrameCapture.writePNG(image, to: url); print("saved \(url.path)") }
+                        }
+                    } else {
+                        saveScreenshot(to: url)
+                    }
+                    var s = settings; step.2(&s); settings = s
+                }
+            } else if let next = captureTimes.first, time >= next {
+                captureTimes.removeFirst()
+                saveScreenshot(to: URL(fileURLWithPath: captureDir).appendingPathComponent("frame-\(Int(next)).png"))
+            }
+        }
+
+        // throttle: cruise speed adjusted with up/down, boost multiplies
+        if input.speedUp { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
+        if input.speedDown { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
+        let target = settings.roadMotion ? settings.cruiseSpeed * (input.boosting ? 1.8 : 1.0) : 0
+        speed = damp(speed, target, target > speed ? 1.6 : 2.0, dt)
+        let speedNorm = clamp01(speed / maxSpeed)
+
+        let travel = speed * dt
+        world.advance(travel, playerX: speeder.x, time: time)
+        distance += travel
+        speeder.tube = world.tubeConstraint
+        speeder.update(dt: dt, time: time, steerInput: input.steering, climbInput: input.climb, speedNorm: speedNorm, roadShift: world.lastShift * world.tugFactor / 0.6)
+
+        // barrier scraping: bleed speed, sparks, shake
+        if speeder.scraping && speed > 5 {
+            speed *= 1 - 0.7 * dt
+            shakeBurst = max(shakeBurst, 0.25)
+            let sparkPos: SIMD3<Float> = speeder.tube == nil
+                ? [speeder.root.position.x + (speeder.x > 0 ? 1.0 : -1.0), 0.6, 0.5]
+                : speeder.root.position + simd_normalize(SIMD3<Float>(speeder.x, speeder.altitude - RoadSegment.tubeCenterY, 0)) * 1.1
+            emitSparks(at: sparkPos, duration: 0.1)
+            if Int(time * 10) % 3 == 0 { gamepad.rumble(intensity: 0.3, sharpness: 0.8) }
+        }
+        // obstacle collisions (AABB in world space; speeder half extents 0.95 x 1.6)
+        invulnerable = max(0, invulnerable - dt)
+        if settings.obstacles && invulnerable <= 0 {
+            for (o, p) in world.nearbyObstacles() {
+                if abs(p.x - speeder.x) < o.halfWidth + 0.95 && abs(p.z) < o.halfLength + 1.6
+                    && abs(p.y + o.centerY - speeder.altitude) < o.halfHeight + speeder.halfHeight {
+                    o.active = false
+                    o.entity.isEnabled = false
+                    hits += 1
+                    invulnerable = 1.0
+                    flash = 1.0
+                    shakeBurst = 1.0
+                    speed *= 0.6
+                    speeder.recoil(direction: speeder.x >= p.x ? 1 : -1)
+                    emitSparks(at: [p.x, p.y + o.centerY, p.z], duration: 0.18)
+                    weapons?.explode(at: [p.x, p.y + o.centerY, p.z])
+                    gamepad.rumble(intensity: 1.0, sharpness: 0.4)
+                    break
+                }
+            }
+        }
+        // weapons
+        if let weapons {
+            if input.firing && settings.obstacles {
+                if weapons.fire(from: speeder.root.position, orientation: speeder.root.orientation) {
+                    shakeBurst = max(shakeBurst, 0.08)
+                }
+            }
+            let targets = world.nearbyObstacles(segments: 4)
+            weapons.update(dt: dt) { tip in
+                for (o, p) in targets where o.active {
+                    let c = SIMD3<Float>(p.x, p.y + o.centerY, p.z)
+                    if abs(tip.x - c.x) < o.halfWidth + 0.3 && abs(tip.y - c.y) < o.halfHeight + 0.3 && abs(tip.z - c.z) < o.halfLength + 1.2 {
+                        if o.destructible {
+                            o.active = false
+                            o.entity.isEnabled = false
+                            weapons.explode(at: c)
+                            kills += 1
+                            shakeBurst = max(shakeBurst, 0.2)
+                            gamepad.rumble(intensity: 0.5, sharpness: 0.9)
+                        } else {
+                            emitSparks(at: tip, duration: 0.08)
+                        }
+                        return true
+                    }
+                }
+                return false
+            }
+        }
+        flash = max(0, flash - dt * 3.5)
+        shakeBurst = max(0, shakeBurst - dt * 2.5)
+        sparkTimer -= dt
+        if sparkTimer <= 0, var e = sparks.components[ParticleEmitterComponent.self], e.isEmitting {
+            e.isEmitting = false
+            sparks.components.set(e)
+        }
+        post.flash = flash
+        if flash > 0 && stats.flash != flash { stats.flash = flash }
+
+        let curveAhead = world.offset(atWorldZ: -14) - world.playerOffset
+        cameraRig.update(dt: dt, time: time, speederX: speeder.x, speederY: speeder.altitude, bank: speeder.bank, speedNorm: speedNorm,
+                         shake: settings.cameraShake, curveAhead: curveAhead, extraShake: shakeBurst, inTube: speeder.tube != nil)
+
+        // speed particles follow the vehicle speed
+        if settings.particles, var e = speedParticles.components[ParticleEmitterComponent.self] {
+            e.speed = 20 + speed * 0.9
+            e.mainEmitter.birthRate = 80 + speedNorm * 360
+            speedParticles.components.set(e)
+        }
+
+        // post-process uniforms
+        post.speedNorm = speedNorm
+        if let vp = arView.project([cameraRig.position.x, cameraRig.position.y, -900]) {
+            let size = arView.bounds.size
+            if size.width > 0 && size.height > 0 {
+                post.vanishing = [Float(vp.x / size.width), Float(vp.y / size.height)]
+            }
+        }
+
+        // stats (cheap, quarter-second cadence)
+        fpsSmoothed = fpsSmoothed * 0.9 + (1.0 / Double(max(rawDt, 1e-4))) * 0.1
+        statsAccumulator += dt
+        if statsAccumulator > 0.25 {
+            statsAccumulator = 0
+            if demoMode && Int(time * 4) % 8 == 0 { print(String(format: "t=%.1f fps=%.0f speed=%.0f m/s entities=%d", time, fpsSmoothed, speed, entityCount)) }
+            if entityCount == 0 { entityCount = count(worldAnchor) }
+            stats = FrameStats(fps: fpsSmoothed, frameMs: Double(rawDt) * 1000, speed: speed,
+                               entities: entityCount, lights: settings.realLights ? 5 : 0,
+                               sourceFormat: post.sourceFormat, distance: distance, hits: hits,
+                               section: world.currentBlock.name, flash: flash, decision: world.lastDecision,
+                               kills: kills, altitude: speeder.altitude, controller: gamepad.connectedName)
+        }
+    }
+
+    #if os(iOS)
+    /// Touch steering from SwiftUI: leftmost active touch steers/climbs, two fingers boost.
+    func handleTouches(_ events: SpatialEventCollection, in size: CGSize) {
+        let active = events.filter { $0.phase == .active }
+        let input = arView.input
+        guard let first = active.min(by: { $0.location.x < $1.location.x }), size.width > 0, size.height > 0 else {
+            input.pointerSteer = nil
+            input.pointerClimb = nil
+            input.pointerBoost = false
+            return
+        }
+        let nx = Float(first.location.x / size.width) - 0.5
+        let ny = 0.5 - Float(first.location.y / size.height)
+        input.pointerSteer = max(-1, min(1, nx * 2.6))
+        input.pointerClimb = max(-1, min(1, ny * 2.6))
+        input.pointerBoost = active.count >= 2
+    }
+    #endif
+
+    func saveScreenshot(to url: URL) {
+        post.captureRequest = { image in
+            guard let image else { print("screenshot failed"); return }
+            let ok = FrameCapture.writePNG(image, to: url)
+            print("screenshot \(ok ? "saved" : "FAILED"): \(url.path)")
+        }
+    }
+
+    private func count(_ e: Entity) -> Int { 1 + e.children.reduce(0) { $0 + count($1) } }
+}

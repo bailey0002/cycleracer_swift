@@ -1,0 +1,7 @@
+# Xcode build products and derived data
+SpeederProto/build/
+SpeederProto/build-ios/
+SpeederProto/build-device/
+**/xcuserdata/
+**/*.xcuserstate
+.DS_Store
