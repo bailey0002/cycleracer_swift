@@ -33,6 +33,9 @@ final class GameController: ObservableObject {
     private var materials: SceneMaterials?
     private let worldAnchor = AnchorEntity(world: .zero)
     private var world: WorldScroller?
+    private var arena: ArenaController?
+    /// Edge detection for the arena's snap turns, jump and pickup action.
+    private var arenaPrev = (steer: Float(0), climb: Float(0), fire: false)
     private var speeder: SpeederController?
     private var cameraRig: CameraRig?
     private let sun = DirectionalLight()
@@ -66,6 +69,8 @@ final class GameController: ObservableObject {
     private var captureTimes: [Float] = (ProcessInfo.processInfo.environment["SPEEDER_CAPTURE_TIMES"] ?? "4,7,10").split(separator: ",").compactMap { Float($0) }
     /// SPEEDER_SWEEP=1: capture a frame per disabled technique for A/B comparison.
     private let sweepMode = ProcessInfo.processInfo.environment["SPEEDER_SWEEP"] == "1"
+    /// SPEEDER_ARENA_CAMERA=overview: fixed high view for layout captures.
+    private let overviewCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "overview"
     private var sweepSteps: [(Float, String, (inout FXSettings) -> Void)] = [
         (4.0, "all", { _ in }),
         (5.5, "source", { $0.postFX = false }),
@@ -114,9 +119,15 @@ final class GameController: ObservableObject {
         case "hazard-magenta": s.hazardColor = 0
         case "hazard-orange":  s.hazardColor = 2
         case "canyon":         s.environment = Theme.sunsetCanyon.rawValue; Theme.sunsetCanyon.adjust(&s)
+        case "grid":           s.environment = Theme.theGrid.rawValue; Theme.theGrid.adjust(&s)
+        case "grid-snap":      s.environment = Theme.theGrid.rawValue; Theme.theGrid.adjust(&s); s.steeringMode = 1
+        case "grid-gap":       s.environment = Theme.theGrid.rawValue; Theme.theGrid.adjust(&s); s.jumpRule = 1
         case "baseline":       break
         default: break
         }
+        // arena capture hooks
+        if ProcessInfo.processInfo.environment["SPEEDER_ARENA_AI"] == "0" { s.opponent = false }
+        if let t = ProcessInfo.processInfo.environment["SPEEDER_ARENA_TRAIL"], let v = Int(t) { s.trailLength = v }
         settings = s
     }
 
@@ -138,7 +149,7 @@ final class GameController: ObservableObject {
     private func rebuildScene() async {
         guard !rebuilding else { return }
         rebuilding = true
-        world = nil; speeder = nil; cameraRig = nil; weapons = nil
+        world = nil; arena = nil; speeder = nil; cameraRig = nil; weapons = nil
         for child in worldAnchor.children.map({ $0 }) { child.removeFromParent() }
         entityCount = 0
         post.captureRequest = nil
@@ -158,13 +169,23 @@ final class GameController: ObservableObject {
             arView.environment.lighting.intensityExponent = theme.iblExponent
             arView.environment.background = .skybox(materials.environment)
 
-            let world = WorldScroller(materials: materials, settings: settings)
-            worldAnchor.addChild(world.root)
-            self.world = world
-
             let speeder = try await SpeederController.load(materials: materials)
             worldAnchor.addChild(speeder.root)
             self.speeder = speeder
+
+            if theme.mode == .arena {
+                let arena = ArenaController(materials: materials, settings: settings, vehicle: speeder)
+                arena.demo = demoMode
+                arena.rumble = { [weak self] i, s in self?.gamepad.rumble(intensity: i, sharpness: s) }
+                worldAnchor.addChild(arena.root)
+                self.arena = arena
+                let rival = try await SpeederController.load(materials: materials)
+                arena.attachOpponent(rival)
+            } else {
+                let world = WorldScroller(materials: materials, settings: settings)
+                worldAnchor.addChild(world.root)
+                self.world = world
+            }
 
             let rig = CameraRig()
             worldAnchor.addChild(rig.root)
@@ -199,9 +220,11 @@ final class GameController: ObservableObject {
             sparks.removeFromParent()
             buildSparks()
             worldAnchor.addChild(sparks)
-            let weapons = WeaponSystem(materials: materials)
-            worldAnchor.addChild(weapons.root)
-            self.weapons = weapons
+            if theme.mode == .corridor {
+                let weapons = WeaponSystem(materials: materials)
+                worldAnchor.addChild(weapons.root)
+                self.weapons = weapons
+            }
 
             arView.scene.addAnchor(worldAnchor)
             applySettings()
@@ -274,6 +297,7 @@ final class GameController: ObservableObject {
         post.settings = settings
         print("settings applied: fog=\(settings.fogLevel) bloom=\(settings.bloomLevel) skin=\(settings.obstacleSkin) secondRow=\(settings.secondRow) storefronts=\(settings.storefronts) windowsBright=\(settings.windowsBright) world=\(world != nil)")
         world?.apply(settings)
+        arena?.apply(settings)
         speeder?.setLights(settings.realLights)
         speeder?.setParticles(settings.particles)
         sun.isEnabled = settings.realLights
@@ -286,11 +310,16 @@ final class GameController: ObservableObject {
     // MARK: - Frame update
 
     private func update(dt rawDt: Float) {
-        guard let world, let speeder, let cameraRig else { return }
+        guard let speeder, let cameraRig else { return }
         let dt: Float = demoMode ? 1.0 / 60.0 : min(max(rawDt, 1.0 / 240.0), 1.0 / 20.0)
         time += dt
         let input = arView.input
         gamepad.poll(into: input)
+        if let arena {
+            updateArena(arena, dt: dt, rawDt: rawDt, input: input, cameraRig: cameraRig)
+            return
+        }
+        guard let world else { return }
         if demoMode {
             let bias = Float(ProcessInfo.processInfo.environment["SPEEDER_DEMO_BIAS"] ?? "0") ?? 0
             input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
@@ -298,33 +327,8 @@ final class GameController: ObservableObject {
             input.fire = Int(time * 2) % 3 == 0
             input.pointerBoost = time > 6.5 && time < 11
         }
-        if input.panelToggleRequested {
-            input.panelToggleRequested = false
-            panelVisible.toggle()
-        }
-        if input.screenshotRequested {
-            input.screenshotRequested = false
-            saveScreenshot(to: FrameCapture.defaultURL())
-        }
-        if let captureDir {
-            if sweepMode {
-                if let step = sweepSteps.first, time >= step.0 {
-                    sweepSteps.removeFirst()
-                    let url = URL(fileURLWithPath: captureDir).appendingPathComponent("\(step.1).png")
-                    if step.1 == "source" {
-                        post.captureSourceRequest = { image in
-                            if let image { FrameCapture.writePNG(image, to: url); print("saved \(url.path)") }
-                        }
-                    } else {
-                        saveScreenshot(to: url)
-                    }
-                    var s = settings; step.2(&s); settings = s
-                }
-            } else if let next = captureTimes.first, time >= next {
-                captureTimes.removeFirst()
-                saveScreenshot(to: URL(fileURLWithPath: captureDir).appendingPathComponent("frame-\(Int(next)).png"))
-            }
-        }
+        handleCommonInput(input)
+        handleCaptures()
 
         // throttle: cruise speed adjusted with up/down, boost multiplies
         if input.speedUp { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
@@ -471,4 +475,158 @@ final class GameController: ObservableObject {
     }
 
     private func count(_ e: Entity) -> Int { 1 + e.children.reduce(0) { $0 + count($1) } }
+
+    private func handleCommonInput(_ input: InputState) {
+        if input.panelToggleRequested {
+            input.panelToggleRequested = false
+            panelVisible.toggle()
+        }
+        if input.screenshotRequested {
+            input.screenshotRequested = false
+            saveScreenshot(to: FrameCapture.defaultURL())
+        }
+    }
+
+    private func handleCaptures() {
+        if let captureDir {
+            if sweepMode {
+                if let step = sweepSteps.first, time >= step.0 {
+                    sweepSteps.removeFirst()
+                    let url = URL(fileURLWithPath: captureDir).appendingPathComponent("\(step.1).png")
+                    if step.1 == "source" {
+                        post.captureSourceRequest = { image in
+                            if let image { FrameCapture.writePNG(image, to: url); print("saved \(url.path)") }
+                        }
+                    } else {
+                        saveScreenshot(to: url)
+                    }
+                    var s = settings; step.2(&s); settings = s
+                }
+            } else if let next = captureTimes.first, time >= next {
+                captureTimes.removeFirst()
+                let name = next == next.rounded() ? "frame-\(Int(next))" : String(format: "frame-%.1f", next)
+                saveScreenshot(to: URL(fileURLWithPath: captureDir).appendingPathComponent("\(name).png"))
+            }
+        }
+    }
+
+    // MARK: - The Grid
+
+    /// Arena frame: map input to cycle commands (with edge detection), run the arena,
+    /// drive the spring camera, post uniforms and stats.
+    private func updateArena(_ arena: ArenaController, dt: Float, rawDt: Float, input: InputState, cameraRig: CameraRig) {
+        var cmd = CycleInput()
+        var aiCmd: CycleInput? = nil
+        if demoMode {
+            cmd = arenaDemoInput(arena: arena)
+        } else {
+            let steer = input.steering
+            let climb = input.climb
+            cmd.steer = steer
+            cmd.snapLeft = steer < -0.5 && arenaPrev.steer >= -0.5
+            cmd.snapRight = steer > 0.5 && arenaPrev.steer <= 0.5
+            cmd.boost = input.boosting
+            cmd.brake = climb < -0.5
+            cmd.jump = climb > 0.5 && arenaPrev.climb <= 0.5
+            cmd.action = input.firing && !arenaPrev.fire
+            arenaPrev = (steer, climb, input.firing)
+        }
+        handleCommonInput(input)
+        handleCaptures()
+        if demoMode, let script = ProcessInfo.processInfo.environment["SPEEDER_DEMO_SCRIPT"], script == "noai" { aiCmd = CycleInput() }
+        arena.update(dt: dt, time: time, input: cmd, aiInput: aiCmd)
+
+        let player = arena.player
+        let speedNorm = arena.speedNorm
+        speed = player.speed
+        shakeBurst = max(shakeBurst, arena.shake)
+        flash = arena.flash
+        post.flash = flash
+        if flash > 0 && stats.flash != flash { stats.flash = flash }
+        shakeBurst = max(0, shakeBurst - dt * 2.5)
+        cameraRig.followArena(dt: dt, time: time, position: player.position + [0, 1.05, 0], forward: player.forward, lean: player.lean,
+                              speedNorm: speedNorm, shake: settings.cameraShake, extraShake: shakeBurst, orbit: arena.cameraOrbit,
+                              overview: overviewCamera)
+        if settings.particles, var e = speedParticles.components[ParticleEmitterComponent.self] {
+            e.speed = 20 + player.speed * 0.9
+            e.mainEmitter.birthRate = 40 + speedNorm * 300
+            speedParticles.components.set(e)
+        }
+        post.speedNorm = speedNorm * 0.8
+        // vanishing point for the streaks: where the cycle is heading, far ahead
+        if let vp = arView.project(player.position + player.forward * 400 + [0, 1.0, 0]) {
+            let size = arView.bounds.size
+            if size.width > 0 && size.height > 0 {
+                post.vanishing = [Float(max(0.1, min(0.9, vp.x / size.width))), Float(max(0.1, min(0.9, vp.y / size.height)))]
+            }
+        }
+        distance += player.speed * dt
+        fpsSmoothed = fpsSmoothed * 0.9 + (1.0 / Double(max(rawDt, 1e-4))) * 0.1
+        statsAccumulator += dt
+        if statsAccumulator > 0.25 {
+            statsAccumulator = 0
+            if demoMode && Int(time * 4) % 2 == 0 {
+                print(String(format: "t=%.2f fps=%.0f speed=%.0f m/s pos=(%.1f,%.1f) y=%.2f grind=%.2f edge=%.2f energy=%.2f segs=%d state=%@", time, fpsSmoothed, player.speed, player.position.x, player.position.z, player.position.y, arena.grind, arena.edge, arena.energy, arena.trailSegmentCount, arena.stateText))
+            }
+            if entityCount == 0 { entityCount = count(worldAnchor) }
+            var st = FrameStats(fps: fpsSmoothed, frameMs: Double(rawDt) * 1000, speed: player.speed,
+                                entities: entityCount, lights: settings.realLights ? 5 : 0,
+                                sourceFormat: post.sourceFormat, distance: distance, hits: arena.losses,
+                                section: "the grid", flash: flash, decision: nil,
+                                kills: arena.wins, altitude: player.position.y, controller: gamepad.connectedName)
+            st.energy = arena.energy; st.edge = arena.edge; st.grind = arena.grind
+            st.state = arena.phaseActive ? "PHASE ACTIVE" : arena.stateText
+            st.pickup = arena.heldPickup?.rawValue
+            st.wins = arena.wins; st.losses = arena.losses; st.trailSegments = arena.trailSegmentCount
+            stats = st
+        }
+    }
+
+    /// Scripted arena drives for captures. SPEEDER_DEMO_SCRIPT selects one; times are
+    /// seconds since the round started running.
+    private func arenaDemoInput(arena: ArenaController) -> CycleInput {
+        var c = CycleInput()
+        let t = arena.runSeconds
+        let script = ProcessInfo.processInfo.environment["SPEEDER_DEMO_SCRIPT"] ?? "drive"
+        func snapAt(_ times: [(Float, Bool)]) {
+            for (when, right) in times where t >= when && arenaPrev.steer < when {
+                if right { c.snapRight = true } else { c.snapLeft = true }
+            }
+            arenaPrev.steer = t
+        }
+        switch script {
+        case "snap":
+            snapAt([(2.0, true), (3.2, true), (4.2, false), (5.0, false), (6.4, true), (7.6, true), (9.0, false), (10.5, true), (12.0, true)])
+            c.boost = t > 8.5 && t < 11
+        case "crash":
+            // (snap mode) a closed box: the fourth leg meets the first wall square on
+            snapAt([(2.0, true), (2.6, true), (3.2, true), (3.8, true)])
+        case "grind":
+            // start beside the western hazard wall (SPEEDER_ARENA_START=-44,22,0) and hug it
+            c.steer = 0
+        case "jumpback":
+            // jump, then a U-turn so the camera sees the jumped section of trail from the side
+            c.jump = t > 1.55 && t < 1.65
+            c.steer = t > 2.4 && t < 4.0 ? 1 : 0
+        case "pulse", "phase":
+            // U-turn, then use the held pickup (SPEEDER_ARENA_GIVE) when facing the own trail
+            c.steer = t > 2.4 && t < 4.0 ? 1 : 0
+            c.action = t > 4.4 && t < 4.5
+        case "uturn":
+            c.steer = t > 2.4 && t < 4.0 ? 1 : 0
+        case "jump":
+            c.jump = t > 1.55 && t < 1.65
+            c.steer = 0
+        case "jumpover":
+            c.jump = t > 0.72 && t < 0.8
+        case "wall":
+            c.steer = 0
+            c.boost = t > 1
+        default:
+            c.steer = t < 1.5 ? 0 : (t < 4.0 ? 0.6 : (t < 6.5 ? -0.75 : (t < 8 ? 0 : 0.5 * sin(t * 1.3))))
+            c.boost = t > 6.5 && t < 9.5
+            c.brake = t > 11 && t < 12
+        }
+        return c
+    }
 }

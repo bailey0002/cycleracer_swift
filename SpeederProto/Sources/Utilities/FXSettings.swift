@@ -31,6 +31,12 @@ struct FXSettings: Equatable {
     var streaks     = true
     var colorGrade  = true
     var cruiseSpeed: Float = 45  // m/s
+    // The Grid (arena mode)
+    var steeringMode = 0        // 0 analog velocity steering, 1 ninety-degree snap turns
+    var jumpRule     = 0        // 0 elevated trail follows the jump, 1 the trail gaps while airborne
+    var trailLength  = 1        // 0 short (220 m), 1 long (420 m), 2 endless
+    var opponent     = true     // AI light cycle
+    var grinding     = true     // proximity speed surge + energy
 }
 
 struct FrameStats {
@@ -48,4 +54,13 @@ struct FrameStats {
     var kills: Int = 0
     var altitude: Float = 0
     var controller: String? = nil
+    // arena
+    var energy: Float = 0
+    var edge: Float = 1
+    var grind: Float = 0
+    var state: String = ""
+    var pickup: String? = nil
+    var wins = 0
+    var losses = 0
+    var trailSegments = 0
 }

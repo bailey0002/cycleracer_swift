@@ -177,4 +177,40 @@ final class SpeederController {
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
         engineLight.light.intensity = 14000 + speedNorm * 18000
     }
+
+    // MARK: - Arena
+
+    /// Place the vehicle directly from a light cycle's state (position is the ground
+    /// contact point, y = height above the deck).
+    func poseArena(position: SIMD3<Float>, heading: Float, lean: Float, pitch: Float, time: Float, speedNorm: Float, airborne: Bool) {
+        let hover = sin(time * 4.5) * 0.04 + sin(time * 2.3) * 0.02
+        let vibration = sin(time * 23) * 0.012 * speedNorm
+        root.position = position + [0, restHeight + hover + vibration, 0]
+        bank = lean
+        root.orientation = simd_quatf(angle: heading, axis: [0, 1, 0])
+                         * simd_quatf(angle: pitch, axis: [1, 0, 0])
+                         * simd_quatf(angle: lean, axis: [0, 0, 1])
+        underGlow?.orientation = root.orientation.inverse
+        underGlow?.position = root.orientation.inverse.act([0, -(restHeight + hover + vibration + position.y) + 0.04, 0.2])
+        underGlow?.isEnabled = !airborne
+        let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5
+        for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
+        engineLight.light.intensity = 14000 + speedNorm * 18000
+    }
+
+    /// Recolour the engine halos and lights (opponent cycles).
+    func tint(_ color: SIMD3<Float>, materials: SceneMaterials) {
+        for (i, g) in glows.enumerated() {
+            if var model = g.model { model.materials = [materials.glow(color, opacity: i == 1 ? 0.28 : 0.8)]; g.model = model }
+        }
+        engineLight.light.color = .rgb(color)
+        underLight.light.color = .rgb(color)
+        if let pool = underGlow, var model = pool.model { model.materials = [materials.glow(color, opacity: 0.22)]; pool.model = model }
+        if let t = trail, var e = t.components[ParticleEmitterComponent.self] {
+            e.mainEmitter.color = .evolving(start: .single(.rgb(color, 0.9)), end: .single(.rgb(color * 0.6, 0.0)))
+            t.components.set(e)
+        }
+    }
+
+    func setVisible(_ on: Bool) { holder.isEnabled = on; for g in glows { g.isEnabled = on }; underGlow?.isEnabled = on; trail?.isEnabled = on }
 }

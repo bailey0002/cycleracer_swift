@@ -21,6 +21,10 @@ final class SceneMaterials {
     let glyphSigns: [UnlitMaterial]
     let hologramSigns: [any Material]
     let environment: EnvironmentResource
+    /// Arena-only materials (nil for the corridor worlds).
+    private(set) var gridFloor: PhysicallyBasedMaterial? = nil
+    private(set) var gridWall: PhysicallyBasedMaterial? = nil
+    let library: MTLLibrary?
 
     private let glowTexture: TextureResource
     private let streakTexture: TextureResource
@@ -31,6 +35,8 @@ final class SceneMaterials {
     init(device: MTLDevice?, theme: Theme = .neonCity) throws {
         self.theme = theme
         let day = theme == .sunsetCanyon
+        let lib = device?.makeDefaultLibrary()
+        library = lib
         // --- textures
         let roadAlbedo = try Self.texture(day ? ProceduralTextures.roadAlbedoDay() : ProceduralTextures.roadAlbedo(), .color)
         let (nImg, rImg) = ProceduralTextures.roadNormalAndRoughness()
@@ -38,7 +44,31 @@ final class SceneMaterials {
         let roadRough = try Self.texture(day ? ProceduralTextures.flatRoughness(0.78) : rImg, .raw)
         glowTexture = try Self.texture(ProceduralTextures.glowSprite(), .color)
         streakTexture = try Self.texture(ProceduralTextures.reflectionStreak(), .color)
-        environment = try EnvironmentResource(equirectangular: day ? ProceduralTextures.environmentSunset() : ProceduralTextures.environment(), withName: day ? "sunset" : "night")
+        switch theme {
+        case .sunsetCanyon: environment = try EnvironmentResource(equirectangular: ProceduralTextures.environmentSunset(), withName: "sunset")
+        case .neonCity: environment = try EnvironmentResource(equirectangular: ProceduralTextures.environment(), withName: "night")
+        case .theGrid: environment = try EnvironmentResource(equirectangular: ProceduralTextures.environmentGrid(), withName: "grid")
+        }
+        if theme == .theGrid {
+            // floor: dark, glossy (IBL reflection sells it), grid lines in the emissive map
+            let (fb, fe) = ProceduralTextures.gridFloor()
+            var gm = PhysicallyBasedMaterial()
+            gm.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(fb, .color)))
+            gm.emissiveColor = .init(color: .black, texture: Self.repeating(try Self.texture(fe, .color)))
+            gm.emissiveIntensity = 2.2
+            gm.roughness = .init(floatLiteral: 0.2)
+            gm.metallic = .init(floatLiteral: 0.0)
+            gm.specular = .init(floatLiteral: 1.0)
+            gridFloor = gm
+            let (wb, we) = ProceduralTextures.gridWall()
+            var wm = PhysicallyBasedMaterial()
+            wm.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(wb, .color)))
+            wm.emissiveColor = .init(color: .black, texture: Self.repeating(try Self.texture(we, .color)))
+            wm.emissiveIntensity = 2.6
+            wm.roughness = .init(floatLiteral: 0.35)
+            wm.metallic = .init(floatLiteral: 0.2)
+            gridWall = wm
+        }
 
         // --- road: dark, low roughness in puddles, normal map for ripple highlights
         var rm = PhysicallyBasedMaterial()
@@ -71,9 +101,12 @@ final class SceneMaterials {
         }
         tunnelWall = tm
 
-        // --- building facades (3 curated variants)
+        // --- building facades (3 curated variants); the arena needs none of the city art
         var fs: [PhysicallyBasedMaterial] = []
-        if day {
+        if theme == .theGrid {
+            facades = [bm, bm, bm]
+            skyline = bm
+        } else if day {
             for seed in [401, 402, 403] {
                 var m = PhysicallyBasedMaterial()
                 m.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(ProceduralTextures.rockFacade(seed: seed), .color)))
@@ -121,9 +154,8 @@ final class SceneMaterials {
         // --- signs
         var signMats: [UnlitMaterial] = []
         var holo: [any Material] = []
-        var library: MTLLibrary? = nil
-        if let device { library = device.makeDefaultLibrary() }
-        for (i, text) in ProceduralTextures.signTexts.enumerated() {
+        let library = lib
+        for (i, text) in (theme == .theGrid ? [] : ProceduralTextures.signTexts).enumerated() {
             let color = Neon.all[i % Neon.all.count]
             let accent = Neon.all[(i * 5 + 2) % Neon.all.count]
             let tex = try Self.texture(ProceduralTextures.billboard(text: text, color: color, accent: accent, seed: i), .color)
@@ -136,7 +168,7 @@ final class SceneMaterials {
         hologramSigns = holo
 
         var glyphs: [UnlitMaterial] = []
-        for i in 0..<6 {
+        for i in 0..<(theme == .theGrid ? 0 : 6) {
             let tex = try Self.texture(ProceduralTextures.glyphStrip(color: Neon.all[(i * 7) % Neon.all.count], seed: 900 + i), .color)
             var m = UnlitMaterial()
             m.color = .init(tint: .white, texture: .init(tex))

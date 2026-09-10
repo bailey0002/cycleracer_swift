@@ -473,4 +473,81 @@ enum ProceduralTextures {
             return SIMD4<Float>(c.x, c.y, c.z, 1)
         }
     }
+
+    // MARK: - The Grid (arena)
+
+    /// Arena floor tile: near-black base with a cyan grid in the emissive map. One tile covers
+    /// 4 x 4 cells; the material repeats it, so the major line lands every tile edge.
+    static func gridFloor(size: Int = 512) -> (base: CGImage, emissive: CGImage) {
+        let cells = 4
+        let base = makeImage(width: size, height: size) { x, y in
+            let u = Float(x) / Float(size), v = Float(y) / Float(size)
+            let n = fbm(u * 6, v * 6, octaves: 3, seed: 71, wrap: 6)
+            let c: Float = 0.012 + n * 0.014
+            return SIMD4<Float>(c * 0.8, c * 0.95, c * 1.25, 1)
+        }
+        let emissive = makeImage(width: size, height: size) { x, y in
+            let fx = Float(x) + 0.5, fy = Float(y) + 0.5
+            let cell = Float(size) / Float(cells)
+            func lineMask(_ p: Float, width: Float) -> Float {
+                let d = abs(p - (p / cell).rounded() * cell)
+                return clamp01(1 - d / width)
+            }
+            let minor = max(lineMask(fx, width: 1.6), lineMask(fy, width: 1.6))
+            // tile edge is the major line (thicker, brighter)
+            let dxEdge = min(fx, Float(size) - fx), dyEdge = min(fy, Float(size) - fy)
+            let major = clamp01(1 - min(dxEdge, dyEdge) / 3.2)
+            let l = max(minor * 0.55, major)
+            let col = SIMD3<Float>(0.18, 0.85, 1.0) * l
+            return SIMD4<Float>(col.x, col.y, col.z, 1)
+        }
+        return (base, emissive)
+    }
+
+    /// Tall luminous wall panel: dark slab with a bright vertical panel and a top rail in the emissive map.
+    static func gridWall(width: Int = 256, height: Int = 512) -> (base: CGImage, emissive: CGImage) {
+        let base = makeImage(width: width, height: height) { x, y in
+            let u = Float(x) / Float(width)
+            let panel = abs(u - 0.5) < 0.36 ? Float(0.035) : Float(0.018)
+            return SIMD4<Float>(panel * 0.8, panel * 1.0, panel * 1.3, 1)
+        }
+        let emissive = makeImage(width: width, height: height) { x, y in
+            let u = Float(x) / Float(width), v = Float(y) / Float(height)
+            let inner = abs(u - 0.5) < 0.36
+            let frame = abs(abs(u - 0.5) - 0.36) < 0.012
+            var l: Float = 0
+            if inner {
+                // panel glows from the bottom, fading upward, with faint horizontal data bands
+                let bands = 0.85 + 0.15 * sin(v * 90)
+                l = (0.20 + 0.55 * pow(1 - v, 1.8)) * bands
+            }
+            if frame { l = 1.0 }
+            if v < 0.03 { l = 1.0 }       // top rail (v = 0 is the top of the image)
+            let col = SIMD3<Float>(0.22, 0.80, 1.0) * l
+            return SIMD4<Float>(col.x, col.y, col.z, 1)
+        }
+        return (base, emissive)
+    }
+
+    /// Environment for the arena: black zenith, a cold blue horizon band and a faint
+    /// reflected grid glow below it, so the floor picks up a cyan reflection.
+    static func environmentGrid(width: Int = 1024, height: Int = 512) -> CGImage {
+        makeImage(width: width, height: height) { x, y in
+            let u = Float(x) / Float(width)
+            let v = Float(y) / Float(height)
+            let elev = (0.5 - v) * Float.pi
+            var c = SIMD3<Float>(0.002, 0.003, 0.006)
+            if elev >= 0 {
+                let t = pow(clamp01(1 - elev / (Float.pi / 2)), 4.0)
+                c += SIMD3<Float>(0.02, 0.05, 0.10) * t
+            } else {
+                c = SIMD3<Float>(0.004, 0.008, 0.014)
+            }
+            let band = exp(-pow((elev - 0.01) / 0.03, 2)) * 0.7 + exp(-pow((elev - 0.02) / 0.12, 2)) * 0.18
+            let pulse = 0.85 + 0.15 * sin(u * Float.pi * 2 * 6)
+            c += SIMD3<Float>(0.15, 0.75, 1.0) * band * pulse
+            if elev < 0 { c += SIMD3<Float>(0.12, 0.6, 0.9) * exp(-pow((elev + 0.03) / 0.06, 2)) * 0.15 }
+            return SIMD4<Float>(c.x, c.y, c.z, 1)
+        }
+    }
 }

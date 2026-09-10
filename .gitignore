@@ -5,3 +5,4 @@ SpeederProto/build-device/
 **/xcuserdata/
 **/*.xcuserstate
 .DS_Store
+SpeederProto/Captures/**/log.txt

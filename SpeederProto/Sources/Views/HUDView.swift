@@ -50,17 +50,40 @@ struct HUDView: View {
         .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
     }
 
+    private var isArena: Bool { (Theme(rawValue: controller.settings.environment) ?? .neonCity).mode == .arena }
+
     private var raceBlock: some View {
         let s = controller.stats
         return VStack(alignment: .leading, spacing: 2) {
-            Text(String(format: "%6.0f m", s.distance)).font(.system(size: 20, weight: .bold, design: .monospaced))
-            Text("hits \(s.hits)   kills \(s.kills)   alt \(String(format: "%.1f", s.altitude)) m")
-            if let c = s.controller { Text("pad: \(c)").foregroundStyle(.green) }
-            Text(s.section.uppercased()).foregroundStyle(.cyan)
-            if let d = s.decision { Text("route: \(d)").foregroundStyle(.pink) }
+            if isArena {
+                Text(String(format: "%4.0f km/h", s.speed * 3.6)).font(.system(size: 20, weight: .bold, design: .monospaced))
+                meter("energy", s.energy, .cyan)
+                meter("edge", s.edge, s.edge < 0.3 ? .red : .orange)
+                meter("grind", s.grind, .yellow)
+                Text("derezzed \(s.losses)   opponent derezzed \(s.wins)   walls \(s.trailSegments)")
+                if let p = s.pickup { Text("pickup: \(p)  (A / F to use)").foregroundStyle(.purple) }
+                if let c = s.controller { Text("pad: \(c)").foregroundStyle(.green) }
+                if !s.state.isEmpty { Text(s.state).foregroundStyle(s.state.hasPrefix("DEREZZED") ? .red : .cyan).bold() }
+            } else {
+                Text(String(format: "%6.0f m", s.distance)).font(.system(size: 20, weight: .bold, design: .monospaced))
+                Text("hits \(s.hits)   kills \(s.kills)   alt \(String(format: "%.1f", s.altitude)) m")
+                if let c = s.controller { Text("pad: \(c)").foregroundStyle(.green) }
+                Text(s.section.uppercased()).foregroundStyle(.cyan)
+                if let d = s.decision { Text("route: \(d)").foregroundStyle(.pink) }
+            }
         }
         .padding(8)
         .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    private func meter(_ label: String, _ value: Float, _ color: Color) -> some View {
+        HStack(spacing: 6) {
+            Text(label).frame(width: 44, alignment: .leading)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.15)).frame(width: 110, height: 6)
+                RoundedRectangle(cornerRadius: 2).fill(color).frame(width: CGFloat(max(0, min(1, value))) * 110, height: 6)
+            }
+        }
     }
 
     private var gear: some View {
@@ -84,7 +107,16 @@ struct HUDView: View {
             VStack(alignment: .leading, spacing: 4) {
             Divider().overlay(.white.opacity(0.3))
             Text("ENVIRONMENT").bold().foregroundStyle(.cyan)
-            picker("world", \.environment, ["neon city", "sunset canyon"])
+            picker("world", \.environment, ["neon city", "canyon", "the grid"])
+            if isArena {
+                Divider().overlay(.white.opacity(0.3))
+                Text("THE GRID").bold().foregroundStyle(.cyan)
+                picker("steering", \.steeringMode, ["analog", "snap 90"])
+                picker("jump", \.jumpRule, ["elevated trail", "trail gap"])
+                picker("trail", \.trailLength, ["short", "long", "endless"])
+                toggle("opponent", \.opponent)
+                toggle("grinding", \.grinding)
+            }
             Divider().overlay(.white.opacity(0.3))
             Text("VISUAL TOGGLES").bold()
             toggle("road motion", \.roadMotion)
@@ -156,10 +188,20 @@ struct HUDView: View {
     }
 
     private var hint: some View {
-        #if os(macOS)
-        Text("pad: L-stick steer/climb, R2 boost, A fire  •  keys: arrows/WASD steer+climb, [ ] cruise, shift boost, F fire, P screenshot")
-        #else
-        Text("pad: L-stick steer/climb, R2 boost, A fire, Menu = settings  •  touch: position steers/climbs, two fingers boost, tap top-right corner = settings")
-        #endif
+        Group {
+            if isArena {
+                #if os(macOS)
+                Text("grid: L-stick / arrows steer (snap mode: flick), up = jump, down = brake, R2 / shift boost (uses energy), A / F = use pickup")
+                #else
+                Text("grid: stick steers (snap mode: flick), up = jump, down = brake, R2 boost (uses energy), A = pickup, Menu = settings  •  touch: left/right steer, top jump, two fingers boost")
+                #endif
+            } else {
+                #if os(macOS)
+                Text("pad: L-stick steer/climb, R2 boost, A fire  •  keys: arrows/WASD steer+climb, [ ] cruise, shift boost, F fire, P screenshot")
+                #else
+                Text("pad: L-stick steer/climb, R2 boost, A fire, Menu = settings  •  touch: position steers/climbs, two fingers boost, tap top-right corner = settings")
+                #endif
+            }
+        }
     }
 }
