@@ -52,6 +52,9 @@ final class ArenaController {
     private(set) var wins = 0
     private(set) var losses = 0
     private(set) var heldPickup: Pickup? = nil
+    /// What the player did this frame (cleared every update), for the HUD and haptics.
+    struct Events { var snapped = false; var jumped = false; var landed = false; var pickupTaken = false; var pickupUsed: Pickup? = nil }
+    private(set) var events = Events()
     private var phaseTimer: Float = 0
     var rumble: ((Float, Float) -> Void)? = nil
     /// Held by a mission briefing: nothing moves, the countdown waits.
@@ -277,6 +280,7 @@ final class ArenaController {
     func update(dt rawDt: Float, time: Float, input: CycleInput, aiInput: CycleInput? = nil) {
         self.time = time
         var dt = rawDt
+        events = Events()
         if paused { world.animate(time: time); pose(); return }
         flash = max(0, flash - dt * 3.0)
         shake = max(0, shake - dt * 2.5)
@@ -364,7 +368,14 @@ final class ArenaController {
     private func stepCycle(_ c: LightCycle, input: CycleInput, dt: Float, bonus: Float) {
         let k = c.id - 1
         let pivot = c.position
+        let wasAir = c.airborne
         let corner = c.step(dt: dt, input: input, snapMode: snapMode, speedBonus: bonus, ground: ground)
+        if c === player {
+            // every action answers on the same frame: shake, haptic, HUD
+            if corner { events.snapped = true; shake = max(shake, 0.12); rumble?(0.35, 1.0) }
+            if c.airborne && !wasAir { events.jumped = true; shake = max(shake, 0.08); rumble?(0.45, 0.7) }
+            if !c.airborne && wasAir { events.landed = true; shake = max(shake, 0.15); rumble?(0.5, 0.4) }
+        }
         // jump rule: elevated trail follows the bike; gap rule breaks the strand while airborne
         let gapRule = settings.jumpRule == 1
         if c.airborne && !wasAirborne[k] && gapRule { trails.breakStrand(owner: c.id) }
@@ -373,7 +384,6 @@ final class ArenaController {
             // extend the old line to the pivot, then hold emission until the tail has passed it
             trails.emit(owner: c.id, position: [pivot.x, pivot.y, pivot.z], height: c.trailHeight, floor: ground(SIMD2(pivot.x, pivot.z), c.position.y), force: true)
             emitBlock[k] = pivot
-            shake = max(shake, 0.12)
         }
         if let block = emitBlock[k] {
             if simd_dot(SIMD2<Float>(c.tail.x - block.x, c.tail.z - block.z), c.forward2) > 0 { emitBlock[k] = nil }
@@ -552,15 +562,20 @@ final class ArenaController {
                 pickups[i].entity.isEnabled = false
                 pickups[i].timer = 9
                 flash = max(flash, 0.15)
+                events.pickupTaken = true
                 rumble?(0.4, 0.8)
             }
         }
         if action, let held = heldPickup {
             heldPickup = nil
+            events.pickupUsed = held
+            rumble?(0.5, 0.8)
             switch held {
             case .phase:
                 phaseTimer = 5.0
+                flash = max(flash, 0.15)
             case .pulse:
+                flash = max(flash, 0.2)
                 let s = trails.trails[player.id].headS
                 trails.cutNewest(owner: player.id, length: 60)
                 renderers[player.id].invalidate(from: trails.trails[player.id].firstAlive)

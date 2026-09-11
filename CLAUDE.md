@@ -27,8 +27,11 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   delivery, search (beacon rings), escape (pursuer + boost meter) and duel (The Grid) kinds, HUD
   cards, persistent credits, and the briefing avatar (`Scene/AvatarActor.swift`, Avaturn test
   character; Character Creator 5 exports go through the same Blender step).
-- Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md` (research agents on comparable games,
-  then a polish pass on transitions, motion, actions, controls and HUD).
+- Polish pass done 11 Sep 2026 (`SpeederProto/docs/polish-log.md`): eased conduit clamp and fork
+  divergence, portal frames at section mouths, enclosure fog, one camera rig with a boost kick,
+  same-frame action acks (`ActionAck` -> HUD pips and stamps), curtain over rebuilds, HUD style
+  unification. Research merged in `SpeederProto/docs/research-comparables.md` (ranked shortlist;
+  nothing from it implemented yet).
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)
@@ -76,6 +79,20 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   entities that are repositioned after being added to the scene: they never draw, with no error,
   while a box on the same entity draws. Give such quads a tiny tilt (0.01-0.03 rad) or use geometry
   with volume (`Meshes.tube` band). Cost a long bisect on the search beacons (11 Sep 2026).
+- Captures: the app never quits by itself and scene time starts ~8 s of wall-clock after launch
+  (procedural textures + avatar load), so use `SpeederProto/Captures/polish/capture.sh <dir>
+  <seconds> ENV=VAL ...` (20-24 s for frames up to t=9). Rebuilding the app while a capture is
+  running kills that run (the binary is replaced): build into another `-derivedDataPath` and swap.
+  `SPEEDER_CAMERA=overview` gives a high corridor camera for layout checks (fork, portals).
+- Simulator HUD screenshots without the MCP panel: `xcrun simctl install/launch` with
+  `SIMCTL_CHILD_SPEEDER_*` env vars, sleep ~16 s, `xcrun simctl io <udid> screenshot`.
+- Fork geometry: the branch roads slide 7 m (fork) + 3 m (first branch segment) sideways, the V
+  divider is 3 m half-width at its far end, the fork segment's building rows are scaled 1.7x
+  outward, and the divider is a lane limit (`WorldScroller.wedgeLimit`) past the nose. Anything
+  built into the fork segment near x = 0 or x = +-11.5 will be driven through.
+- Section transitions are blends, not switches: `tubeBlend`, `enclosure`, `forkBlend` in
+  `WorldScroller`; the vehicle mixes two clamp results. Scene rebuilds go through
+  `GameController.requestRebuild()` (curtain first), never `rebuildScene()` directly.
 - Mission captures: `SPEEDER_MISSION=<n>`, `SPEEDER_RESET_PROGRESS=1`, `SPEEDER_HOLD_BRIEFING=1`,
   `SPEEDER_DEMO_BOOST=0`; the HUD is SwiftUI so only simulator screenshots show the cards.
 - Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view, `side` a side elevation; the chase camera cannot

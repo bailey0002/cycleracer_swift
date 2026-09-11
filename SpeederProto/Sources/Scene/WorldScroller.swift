@@ -46,6 +46,9 @@ final class RoadSegment {
     let forkGroup = Entity()
     let tubeGroup = Entity()
     let obstacleGroup = Entity()
+    let portalGroup = Entity()        // section mouths (entry / exit frames per style)
+    private var entryPortals: [SegmentStyle: Entity] = [:]
+    private var exitPortals: [SegmentStyle: Entity] = [:]
     private var strobes: [Entity] = []
     private let storefrontGroup = Entity()
     private let secondRowGroup = Entity()
@@ -94,7 +97,7 @@ final class RoadSegment {
         buildingGroup.addChild(secondRowGroup)
         buildingGroup.addChild(altRowGroup)
         [surface, wideSurface, laneGroup, roadsideGroup, buildingGroup, signGroup, reflectionGroup,
-         tunnelGroup, elevatedGroup, forkGroup, tubeGroup, obstacleGroup].forEach { root.addChild($0) }
+         tunnelGroup, elevatedGroup, forkGroup, tubeGroup, obstacleGroup, portalGroup].forEach { root.addChild($0) }
         var rng = SeededRNG(seed: UInt64(1000 + index * 7919))
         buildLanes()
         buildBarriers()
@@ -105,7 +108,16 @@ final class RoadSegment {
         buildElevated(&rng)
         buildFork()
         buildTube()
+        buildPortals()
         buildObstaclePool()
+    }
+
+    /// Enable the entry frame when the segment before has a different style and the exit frame
+    /// when the one after does, so every section change has a designed mouth.
+    func setNeighbours(prev: SegmentStyle?, next: SegmentStyle?) {
+        let s = block.style
+        for (style, e) in entryPortals { e.isEnabled = s == style && prev != nil && prev != style }
+        for (style, e) in exitPortals { e.isEnabled = s == style && next != nil && next != style }
     }
 
     private var mid: Float { -length / 2 }
@@ -129,6 +141,8 @@ final class RoadSegment {
         laneGroup.isEnabled = s.neon && style != .fork && style != .tube
         roadsideGroup.isEnabled = city
         buildingGroup.isEnabled = s.buildings && (city || style == .fork)
+        // the fork's road is twice as wide and its branches slide outward, so its building rows stand further back
+        buildingGroup.scale.x = style == .fork ? 1.7 : 1
         signGroup.isEnabled = s.signs && (city || style == .fork) && materials.theme == .neonCity
         reflectionGroup.isEnabled = s.reflections && city
         tunnelGroup.isEnabled = style == .tunnel
@@ -627,7 +641,7 @@ final class RoadSegment {
             }
         }
         // V-shaped divider: two angled walls from a narrow nose at z = -9 to +-6 m at the far end
-        let halfSpread: Float = 6
+        let halfSpread = Self.forkHalfSpread
         let wallLen: Float = 31
         let angle = atan2(halfSpread, wallLen)
         for side in [-1, 1] as [Float] {
@@ -647,8 +661,8 @@ final class RoadSegment {
             pivot.addChild(low)
             forkGroup.addChild(pivot)
         }
-        let core = ModelEntity(mesh: .generateBox(width: 8, height: 20, depth: 16), materials: [materials.facades[0]])
-        core.position = [0, 10, -33]
+        let core = ModelEntity(mesh: .generateBox(width: 2 * halfSpread - 1.2, height: 20, depth: 15), materials: [materials.facades[0]])
+        core.position = [0, 10, -32.5]
         forkGroup.addChild(core)
         let nose = ModelEntity(mesh: .generateBox(width: 1.2, height: 6, depth: 2), materials: [materials.barrier])
         nose.position = [0, 3, -9]
@@ -680,6 +694,11 @@ final class RoadSegment {
             }
         }
     }
+
+    /// Half width of the divider at the fork's far end and of the wedge core: narrow, so the branch
+    /// roads (which slide `forkDiverge` m by the far end) keep their outer lanes clear of it.
+    static let forkHalfSpread: Float = 3
+    static let forkDiverge: Float = 7
 
     // MARK: Tube conduit
 
@@ -718,6 +737,115 @@ final class RoadSegment {
         let guide = ModelEntity(mesh: .generateBox(size: [0.12, 0.05, length + 2]), materials: [materials.neon(Neon.cyan, intensity: 2.5)])
         guide.position = [0, 0.05, mid]
         tubeGroup.addChild(guide)
+    }
+
+    // MARK: Portals (section lead-ins)
+
+    /// One entry and one exit frame per enclosed style, centred on the segment edge so the
+    /// same geometry serves both ends (the exit is the entry turned around).
+    private func buildPortals() {
+        for style in [SegmentStyle.tube, .tunnel, .elevated] {
+            let entry = Entity(), exit = Entity()
+            buildPortal(style, into: entry)
+            buildPortal(style, into: exit)
+            exit.position.z = -length
+            exit.orientation = simd_quatf(angle: .pi, axis: [0, 1, 0])
+            entry.isEnabled = false; exit.isEnabled = false
+            portalGroup.addChild(entry); portalGroup.addChild(exit)
+            entryPortals[style] = entry; exitPortals[style] = exit
+        }
+    }
+
+    private func buildPortal(_ style: SegmentStyle, into host: Entity) {
+        let ringColor = Neon.cyan
+        switch style {
+        case .tube:
+            // collar around the pipe mouth, a lit rim, and a flange wall so the pipe has thickness
+            let R = Self.tubeRadius, cy = Self.tubeCenterY
+            if let collar = try? Meshes.tube(radius: R + 0.55, length: 2.8, uRepeat: 12, vRepeat: 1) {
+                let c = ModelEntity(mesh: collar, materials: [materials.tubeWall])
+                c.position = [0, cy, 1.4]
+                host.addChild(c)
+            }
+            if let rim = try? Meshes.tube(radius: R + 0.22, length: 0.5, uRepeat: 1, vRepeat: 1) {
+                let r = ModelEntity(mesh: rim, materials: [materials.neon(ringColor, intensity: 3.2)])
+                r.position = [0, cy, 0.25]
+                host.addChild(r)
+                ringNeon.append((r, 3.2))
+            }
+            if let flange = try? Meshes.ring(inner: R + 0.5, outer: R + 3.0) {
+                let f = ModelEntity(mesh: flange, materials: [materials.tunnelWall])
+                f.position = [0, cy, 0]
+                f.orientation = simd_quatf(angle: 0.02, axis: [1, 0, 0])
+                host.addChild(f)
+            }
+            let hood = ModelEntity(mesh: .generateBox(size: [2 * R + 6, 2.6, 3.2]), materials: [materials.tunnelWall])
+            hood.position = [0, cy + R + 1.6, 0]
+            host.addChild(hood)
+            for side in [-1, 1] as [Float] {
+                let pillar = ModelEntity(mesh: .generateBox(size: [2.4, cy + R + 0.4, 3.2]), materials: [materials.tunnelWall])
+                pillar.position = [side * (R + 2.4), (cy + R + 0.4) / 2, 0]
+                host.addChild(pillar)
+                let post = ModelEntity(mesh: .generateBox(size: [0.16, cy + R, 0.18]), materials: [materials.neon(ringColor, intensity: 2.6)])
+                post.position = [side * (R + 1.1), (cy + R) / 2, 1.5]
+                host.addChild(post)
+                ringNeon.append((post, 2.6))
+            }
+            let refl = ModelEntity(mesh: .generatePlane(width: 14, depth: 8), materials: [materials.reflection(ringColor, opacity: 0.25)])
+            refl.position = [0, 0.03, 4]
+            host.addChild(refl)
+            ringReflections.append((refl, 0.25))
+        case .tunnel:
+            // heavy arch frame with a lit inner edge and a pool of its light on the road outside
+            for side in [-1, 1] as [Float] {
+                let pillar = ModelEntity(mesh: .generateBox(size: [2.2, 13.5, 2.6]), materials: [materials.tunnelWall])
+                pillar.position = [side * 11.3, 6.75, 0]
+                host.addChild(pillar)
+                let bar = ModelEntity(mesh: .generateBox(size: [0.2, 11.2, 0.3]), materials: [materials.neon(ringColor, intensity: 3.5)])
+                bar.position = [side * 10.1, 5.6, 1.3]
+                host.addChild(bar)
+                ringNeon.append((bar, 3.5))
+            }
+            let lintel = ModelEntity(mesh: .generateBox(size: [24.8, 3.0, 2.6]), materials: [materials.tunnelWall])
+            lintel.position = [0, 13.0, 0]
+            host.addChild(lintel)
+            let top = ModelEntity(mesh: .generateBox(size: [20.4, 0.2, 0.3]), materials: [materials.neon(ringColor, intensity: 3.5)])
+            top.position = [0, 11.3, 1.3]
+            host.addChild(top)
+            ringNeon.append((top, 3.5))
+            let crown = ModelEntity(mesh: .generateBox(size: [24.8, 0.14, 0.14]), materials: [materials.neon(SIMD3(0.5, 0.6, 1.0), intensity: 2.0)])
+            crown.position = [0, 14.6, 1.3]
+            host.addChild(crown)
+            let refl = ModelEntity(mesh: .generatePlane(width: 17, depth: 9), materials: [materials.reflection(ringColor, opacity: 0.25)])
+            refl.position = [0, 0.03, 4.5]
+            host.addChild(refl)
+            ringReflections.append((refl, 0.25))
+        case .elevated:
+            // gate arch at the deck edge, the same family as the skyway's light arches
+            let m = materials.neon(ringColor, intensity: 3.5)
+            for side in [-1, 1] as [Float] {
+                let post = ModelEntity(mesh: .generateBox(size: [0.6, 10, 0.6]), materials: [materials.barrier])
+                post.position = [side * 10.3, 5, 0]
+                host.addChild(post)
+                let strip = ModelEntity(mesh: .generateBox(size: [0.16, 9.6, 0.18]), materials: [m])
+                strip.position = [side * 9.9, 4.8, 0.4]
+                host.addChild(strip)
+                roadPrimary.append((strip, 3.5))
+            }
+            let top = ModelEntity(mesh: .generateBox(size: [21.2, 0.7, 0.7]), materials: [materials.barrier])
+            top.position = [0, 10, 0]
+            host.addChild(top)
+            let strip = ModelEntity(mesh: .generateBox(size: [20.4, 0.16, 0.18]), materials: [m])
+            strip.position = [0, 9.55, 0.4]
+            host.addChild(strip)
+            roadPrimary.append((strip, 3.5))
+            let refl = ModelEntity(mesh: .generatePlane(width: 17, depth: 8), materials: [materials.reflection(ringColor, opacity: 0.2)])
+            refl.position = [0, 0.03, 3.5]
+            host.addChild(refl)
+            roadReflections.append((refl, 0.2))
+        default:
+            break
+        }
     }
 
     // MARK: Obstacles
@@ -1008,20 +1136,37 @@ final class WorldScroller {
     private var settings = FXSettings()
     private let recycleZ: Float = 60
     private let startZ: Float = 20
+    private var lastRecycledStyle: SegmentStyle? = nil
 
     /// Lateral shift the road centre made at the player's z during the last advance.
     private(set) var lastShift: Float = 0
     private(set) var playerOffset: Float = 0
-    private(set) var pendingForkDecision = false
     private(set) var lastDecision: String? = nil
+
+    // Fork: the side is sampled from `forkLead` metres before the split and locked when the
+    // split passes; the road's divergence ramps in over `forkRamp` metres of travel so nothing
+    // ahead of the player ever jumps sideways.
+    private var forkTarget: Float = 0          // -1 tunnel, +1 skyway, 0 undecided
+    private var forkBlend: Float = 0
+    private var forkLocked = false
+    private var forkStyled: Float = 0
+    static let forkLead: Float = 30
+    static let forkRamp: Float = 24
+    /// Lead-in distances (metres) over which the section constraints ease in and out.
+    static let tubeLead: Float = 24
+    static let enclosureLead: Float = 20
 
     var currentBlock: TrackBlock { segmentAt(worldZ: 0)?.block ?? .city() }
     /// How strongly a sliding road tugs the vehicle: the fork diverges the road itself, so barely.
     var tugFactor: Float { currentBlock.style == .fork ? 0.12 : 0.5 }
-    /// Cylinder constraint when the player is inside a conduit segment.
-    var tubeConstraint: (centerY: Float, radius: Float)? {
-        currentBlock.style == .tube ? (RoadSegment.tubeCenterY, RoadSegment.tubeRadius - 0.7) : nil
-    }
+    /// Conduit geometry (constant) and how much of it applies right now (0 open road, 1 inside).
+    static let tubeGeometry: (centerY: Float, radius: Float) = (RoadSegment.tubeCenterY, RoadSegment.tubeRadius - 0.7)
+    private(set) var tubeBlend: Float = 0
+    /// 0 in the open, 1 inside a tunnel or conduit, eased over `enclosureLead` metres.
+    private(set) var enclosure: Float = 0
+    /// Past the fork's nose the V divider is a wall: (side the player is on, minimum |x| from the
+    /// road centre on that side). The vehicle scrapes along it instead of passing through.
+    private(set) var wedgeLimit: (side: Float, limit: Float)? = nil
 
     init(materials: SceneMaterials, settings: FXSettings, program: TrackProgram = TrackProgram()) {
         root.name = "WorldRoot"
@@ -1038,6 +1183,8 @@ final class WorldScroller {
             assign(seg, after: prev)
             prev = seg
         }
+        updateNeighbours()
+        updateSectionBlends()
     }
 
     private func assign(_ seg: RoadSegment, after prev: RoadSegment?) {
@@ -1046,7 +1193,15 @@ final class WorldScroller {
         seg.endOffset = seg.startOffset + (block.style == .fork ? 0 : block.curvature)
         seg.configure(block: block, settings: settings)
         seg.placeTransform()
-        if block.style == .fork { pendingForkDecision = true }
+        if block.style == .fork { forkTarget = 0; forkBlend = 0; forkLocked = false; forkStyled = 0 }
+    }
+
+    private func updateNeighbours() {
+        for (i, seg) in segments.enumerated() {
+            let prev: SegmentStyle? = i > 0 ? segments[i - 1].block.style : lastRecycledStyle
+            let next: SegmentStyle? = i + 1 < segments.count ? segments[i + 1].block.style : nil
+            seg.setNeighbours(prev: prev, next: next)
+        }
     }
 
     func segmentAt(worldZ z: Float) -> RoadSegment? {
@@ -1064,49 +1219,102 @@ final class WorldScroller {
         let loop = Float(segmentCount) * segmentLength
         for seg in segments { seg.root.position.z += travel }
         // recycle from the near end; keep the ring ordered near -> far
+        var recycled = false
         while let first = segments.first, first.root.position.z > recycleZ {
             first.root.position.z -= loop
+            lastRecycledStyle = first.block.style
             first.recycle()
             segments.removeFirst()
             assign(first, after: segments.last)
             segments.append(first)
+            recycled = true
         }
-        // fork decision when the split point passes the player
-        if pendingForkDecision, let seg = segments.first(where: { $0.block.style == .fork }) {
-            let splitZ = seg.root.position.z - segmentLength * 0.25
-            if splitZ >= 0 {
-                decideFork(seg, right: playerX >= 0)
-            }
-        }
+        if recycled { updateNeighbours() }
+        updateFork(travel: travel, playerX: playerX)
         let newOffset = offset(atWorldZ: 0)
         lastShift = newOffset - playerOffset
         playerOffset = newOffset
         root.position.x = -newOffset
         for seg in segments.prefix(3) { seg.animate(time: time) }
         skyline.advance(travel * 0.22)
+        updateSectionBlends()
     }
 
-    private func decideFork(_ fork: RoadSegment, right: Bool) {
-        pendingForkDecision = false
-        lastDecision = right ? "skyway" : "tunnel"
-        fork.endOffset = fork.startOffset + (right ? 5 : -5)
-        fork.placeTransform()
-        let branch = right ? TrackProgram.rightBranch : TrackProgram.leftBranch
-        guard let fi = segments.firstIndex(where: { $0 === fork }) else { return }
-        var prev = fork
-        var b = 0
-        for seg in segments[(fi + 1)...] {
-            var block = seg.block
-            if block.style == .branch && b < branch.count {
-                block = branch[b]
-                if b == 0 { block.curvature += right ? 4 : -4 }
-                b += 1
+    private func updateFork(travel: Float, playerX: Float) {
+        guard let fi = segments.firstIndex(where: { $0.block.style == .fork }) else { return }
+        let fork = segments[fi]
+        let splitZ = fork.root.position.z - segmentLength * 0.25      // where the road starts to diverge
+        if !forkLocked {
+            if splitZ >= -Self.forkLead {
+                forkTarget = playerX >= 0 ? 1 : -1
+                if forkStyled != forkTarget { restyleBranches(after: fi, right: forkTarget > 0); forkStyled = forkTarget }
             }
+            if splitZ >= 0 { forkLocked = true; lastDecision = forkTarget > 0 ? "skyway" : "tunnel" }
+        }
+        guard forkTarget != 0, forkBlend != forkTarget else { return }
+        let step = travel / Self.forkRamp
+        forkBlend = forkBlend < forkTarget ? min(forkTarget, forkBlend + step) : max(forkTarget, forkBlend - step)
+        relayout(from: fi)
+    }
+
+    /// The four placeholder segments after the fork become the chosen branch.
+    private func restyleBranches(after fi: Int, right: Bool) {
+        let branch = right ? TrackProgram.rightBranch : TrackProgram.leftBranch
+        var b = 0
+        for seg in segments[(fi + 1)...] where b < branch.count {
+            guard [.branch, .tunnel, .elevated].contains(seg.block.style) else { break }
+            seg.configure(block: branch[b], settings: settings)
+            b += 1
+        }
+        relayout(from: fi)
+        updateNeighbours()
+    }
+
+    /// Re-place the fork and everything beyond it for the current divergence blend.
+    private func relayout(from fi: Int) {
+        let fork = segments[fi]
+        fork.endOffset = fork.startOffset + forkBlend * RoadSegment.forkDiverge
+        fork.placeTransform()
+        var prev = fork
+        for (j, seg) in segments[(fi + 1)...].enumerated() {
+            let extra: Float = j == 0 ? forkBlend * 3 : 0      // the first branch segment keeps curving away
             seg.startOffset = prev.endOffset
-            seg.endOffset = seg.startOffset + (block.style == .fork ? 0 : block.curvature)
-            seg.configure(block: block, settings: settings)
+            seg.endOffset = seg.startOffset + seg.block.curvature + extra
             seg.placeTransform()
             prev = seg
+        }
+    }
+
+    /// 1 inside a segment of one of `styles`, easing in over `lead` metres before its mouth and
+    /// out over the last `lead` metres before its exit.
+    private func blend(for styles: Set<SegmentStyle>, lead: Float) -> Float {
+        guard let ci = segments.firstIndex(where: { $0.root.position.z >= 0 && $0.root.position.z - segmentLength < 0 }) else { return 0 }
+        let cur = segments[ci]
+        let next: RoadSegment? = ci + 1 < segments.count ? segments[ci + 1] : nil
+        if styles.contains(cur.block.style) {
+            if let next, !styles.contains(next.block.style) {
+                return clamp01((segmentLength - cur.root.position.z) / lead)
+            }
+            return 1
+        }
+        if let next, styles.contains(next.block.style) {
+            return clamp01(1 + next.root.position.z / lead)
+        }
+        return 0
+    }
+
+    private func updateSectionBlends() {
+        tubeBlend = blend(for: [.tube], lead: Self.tubeLead)
+        enclosure = blend(for: [.tube, .tunnel], lead: Self.enclosureLead)
+        wedgeLimit = nil
+        if forkTarget != 0, let fork = segmentAt(worldZ: 0), fork.block.style == .fork {
+            let t = fork.root.position.z / segmentLength            // 0 near edge ... 1 far edge
+            let noseT: Float = 9 / segmentLength
+            if t > noseT {
+                let wedgeHalf = RoadSegment.forkHalfSpread * min(1, (t - noseT) / (31 / segmentLength))
+                let roadRel = fork.offset(at: t) - fork.startOffset  // how far the road centre has slid toward the branch
+                wedgeLimit = (forkTarget, wedgeHalf + 1.3 - roadRel * forkTarget)
+            }
         }
     }
 

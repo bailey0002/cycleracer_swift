@@ -117,6 +117,15 @@ final class SpeederController {
         recoilDir = direction
     }
 
+    /// Conduit geometry and how much of it applies (eased in and out by the scroller so a
+    /// section change never snaps the vehicle).
+    var tubeBlend: Float = 0
+    /// Fork divider: (side, minimum |x| on that side); set by the scroller past the nose.
+    var wedgeLimit: (side: Float, limit: Float)? = nil
+    /// Bank without the collision jolt: what the camera follows.
+    private(set) var smoothBank: Float = 0
+    private var lastTrailRate = -1
+
     func update(dt: Float, time: Float, steerInput: Float, climbInput: Float, speedNorm: Float, roadShift: Float) {
         steer = damp(steer, steerInput, 8.0, dt)
         // velocity-based steering; curves tug the vehicle toward the outside
@@ -125,46 +134,60 @@ final class SpeederController {
         if recoilTimer > 0 { newX += recoilDir * 6.0 * dt * (recoilTimer / 0.45) }
         // altitude: stick drives vertical speed, settles back toward hover height when released
         let climbSpeed: Float = 6.5
+        let inTube = tubeBlend >= 0.5
         if abs(climbInput) > 0.05 {
             vy = damp(vy, climbInput * climbSpeed, 10, dt)
         } else {
             // hold altitude when released; only drift down when already close to the deck
-            let settle: Float = (tube == nil && altitude < 1.6) ? -1.2 : 0
+            let settle: Float = (!inTube && altitude < 1.6) ? -1.2 : 0
             vy = damp(vy, settle, 6, dt)
         }
         var newY = altitude + vy * dt
-        scraping = false
-        if let tube {
-            let r = tube.radius
+        // two constraint sets blended by the conduit lead-in: the flat road's lane limit and
+        // altitude band, and the pipe's cylinder
+        var flatScrape = abs(newX) > laneLimit
+        var flatX = max(-laneLimit, min(laneLimit, newX))
+        if let w = wedgeLimit, flatX * w.side < w.limit {
+            // the divider wall: pushed out to the branch, with the scrape response
+            flatX = w.limit * w.side
+            flatScrape = true
+        }
+        let flatY = max(restHeight, min(maxAltitude, newY))
+        var tubeX = newX, tubeY = newY, tubeScrape = false
+        if let tube, tubeBlend > 0 {
             var d = SIMD2<Float>(newX, newY - tube.centerY)
             let len = simd_length(d)
-            if len > r { d *= r / len; scraping = true }
-            newX = d.x; newY = d.y + tube.centerY
-        } else {
-            scraping = abs(newX) > laneLimit
-            newX = max(-laneLimit, min(laneLimit, newX))
-            newY = max(restHeight, min(maxAltitude, newY))
+            if len > tube.radius { d *= tube.radius / len; tubeScrape = true }
+            tubeX = d.x; tubeY = d.y + tube.centerY
         }
+        let b = tubeBlend
+        newX = flatX + (tubeX - flatX) * b
+        newY = flatY + (tubeY - flatY) * b
+        scraping = inTube ? tubeScrape : flatScrape
         if newY <= restHeight && vy < 0 { vy = 0 }
         altitude = newY
         vx = (newX - x) / max(dt, 1e-4)
         x = newX
         recoilTimer = max(0, recoilTimer - dt)
 
-        let hover = sin(time * 4.5) * 0.04 + sin(time * 2.3) * 0.02
+        // hover bob: slow and deep at rest, quicker and shallower at speed; vibration only at speed
+        let idle = 1 - speedNorm
+        let hover = sin(time * (2.2 + speedNorm * 1.6)) * (0.02 + 0.03 * idle) + sin(time * 4.5) * 0.015
         let vibration = sin(time * 23) * 0.012 * speedNorm
         root.position = [x, altitude + hover + vibration, 0]
 
-        let jolt = recoilTimer > 0 ? sin(recoilTimer * 40) * recoilTimer * 0.5 : 0
+        // the knock starts from zero and rolls the vehicle the way it is pushed, so it never fights the sideways motion
+        let jolt = recoilTimer > 0 ? sin((0.45 - recoilTimer) * 40) * recoilTimer * 0.35 : 0
         var wallBank: Float = 0
-        if let tube {
+        if let tube, b > 0 {
             // roll toward the tube wall when flying near it, like riding the inside of a pipe
             let d = SIMD2<Float>(x, altitude - tube.centerY)
             let len = simd_length(d)
-            if len > 2.0 { wallBank = atan2(d.x, -d.y) * min(1, (len - 2.0) / (tube.radius - 2.0)) * 0.45 }
+            if len > 2.0 { wallBank = atan2(d.x, -d.y) * min(1, (len - 2.0) / (tube.radius - 2.0)) * 0.45 * b }
         }
-        bank = -steer * 0.24 - vx * 0.02 + jolt * recoilDir + wallBank
-        let yaw = -steer * 0.12
+        smoothBank = -steer * 0.24 - vx * 0.02 + wallBank
+        bank = smoothBank - jolt * recoilDir
+        let yaw = -steer * 0.12 + sin(time * 0.7) * 0.012 * idle
         let pitch = -speedNorm * 0.035 + sin(time * 3.1) * 0.008 + jolt * 0.4 + vy * 0.045
         root.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0])
                          * simd_quatf(angle: pitch, axis: [1, 0, 0])
@@ -172,10 +195,18 @@ final class SpeederController {
 
         underGlow?.orientation = root.orientation.inverse
         underGlow?.position = root.orientation.inverse.act([0, -(altitude + hover + vibration) + 0.04, 0.2])
-        underGlow?.isEnabled = tube == nil
+        underGlow?.isEnabled = !inTube
         let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
         engineLight.light.intensity = 14000 + speedNorm * 18000
+        // the exhaust idles when parked instead of blasting at full rate
+        let trailRate = Int((30 + speedNorm * 160) / 10)
+        if trailRate != lastTrailRate, let t = trail, var e = t.components[ParticleEmitterComponent.self] {
+            lastTrailRate = trailRate
+            e.mainEmitter.birthRate = Float(trailRate * 10)
+            e.speed = 6 + speedNorm * 18
+            t.components.set(e)
+        }
     }
 
     // MARK: - Arena

@@ -9,6 +9,7 @@ struct PostUniforms {
     float4 proj;            // x: P[2][2]  y: P[3][2]  z: exposure  w: vignette
     float4 misc;            // x: chromatic aberration  y: time  z: saturation  w: grade strength
     float4 flags;           // x: fog  y: bloom  z: streaks  w: grade   (0/1); flags.x < 0 => passthrough
+    float4 section;         // x: enclosure (0 open, 1 tunnel/conduit)  y: curtain (0 clear, 1 black)  z: kick  w: unused
 };
 
 static inline float luminance(float3 c) { return dot(c, float3(0.2126, 0.7152, 0.0722)); }
@@ -100,9 +101,11 @@ kernel void compositePass(texture2d<float, access::sample> src   [[texture(0)]],
             if (!isfinite(dist)) dist = 1e6;
         }
         float fog = 1.0 - exp(-dist * u.bloom.w);
-        // horizon glow: haze is brighter near the vanishing line
+        // horizon glow: haze is brighter near the vanishing line; inside a tunnel or conduit the
+        // haze darkens and the glow goes away, blended over the section lead-in
+        float enc = u.section.x;
         float horizon = 1.0 - saturate(abs(uv.y - vp.y) * 2.2);
-        float3 fogCol = u.fogColor.rgb * (1.0 + u.fogColor.w * horizon * horizon);
+        float3 fogCol = mix(u.fogColor.rgb, u.fogColor.rgb * 0.35, enc) * (1.0 + u.fogColor.w * (1.0 - enc) * horizon * horizon);
         fog = min(fog, 0.92);
         color = mix(color, fogCol, fog);
     }
@@ -149,9 +152,12 @@ kernel void compositePass(texture2d<float, access::sample> src   [[texture(0)]],
         color += f * 0.08;
     }
 
-    // vignette
-    float v = 1.0 - u.proj.w * smoothstep(0.35, 1.25, length((uv - 0.5) * float2(1.2, 1.0)));
+    // vignette (tighter inside enclosed sections)
+    float v = 1.0 - u.proj.w * (1.0 + 0.6 * u.section.x) * smoothstep(0.35, 1.25, length((uv - 0.5) * float2(1.2, 1.0)));
     color *= v;
+
+    // curtain: fade to black over rebuilds and the launch
+    color *= 1.0 - u.section.y;
 
     dst.write(float4(color, 1.0), gid);
 }

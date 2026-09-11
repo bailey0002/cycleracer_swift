@@ -6,9 +6,11 @@ struct HUDView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            statsBlock
-                .padding(12)
-                .padding(.top, 4)
+            if showStats {
+                statsBlock
+                    .padding(12)
+                    .padding(.top, 4)
+            }
             VStack {
                 HStack {
                     Spacer()
@@ -18,23 +20,87 @@ struct HUDView: View {
                 HStack(alignment: .bottom) {
                     raceBlock
                     Spacer()
-                    hint
+                    VStack(alignment: .trailing, spacing: 6) {
+                        pips
+                        hint
+                    }
                 }
             }
             .padding(12)
             missionOverlay
-            if controller.stats.flash > 0.25 {
-                Text("HIT")
-                    .font(.system(size: 42, weight: .black, design: .rounded))
-                    .foregroundStyle(.red.opacity(0.9))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            stampOverlay
         }
-        .font(.system(size: 10, weight: .medium, design: .monospaced))
+        .font(.system(size: HUDStyle.baseSize, weight: .medium, design: .monospaced))
         #if os(iOS)
         .controlSize(.mini)
         #endif
         .foregroundStyle(.white.opacity(0.9))
+    }
+
+    /// The frame-stats block is diagnostic: always on the Mac, only with the settings panel on the phone.
+    private var showStats: Bool {
+        #if os(iOS)
+        return controller.panelVisible
+        #else
+        return true
+        #endif
+    }
+
+    // MARK: - Acknowledgement (same frame as the action)
+
+    /// Action pips: lit while the action is happening, dim otherwise. Only the actions of the current mode.
+    private var pips: some View {
+        let a = controller.ack
+        return HStack(spacing: 6) {
+            pip("BOOST", a.boost)
+            if isArena {
+                pip("JUMP", a.jump)
+                pip("SNAP", a.snap)
+                pip("PICKUP", a.pickup)
+            } else {
+                pip("FIRE", a.fire)
+            }
+        }
+    }
+
+    private func pip(_ label: String, _ on: Bool) -> some View {
+        Text(label)
+            .font(.system(size: HUDStyle.baseSize - 1, weight: .bold, design: .monospaced))
+            .foregroundStyle(on ? .black : .white.opacity(0.5))
+            .padding(.horizontal, 7).padding(.vertical, 3)
+            .background(RoundedRectangle(cornerRadius: 4).fill(on ? HUDStyle.accent : .black.opacity(0.45)))
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(on ? HUDStyle.accent : .white.opacity(0.25), lineWidth: 1))
+            .animation(.easeOut(duration: 0.12), value: on)
+    }
+
+    /// Centre stamps: section entry, launch, pickup use, hit, beacon.
+    @ViewBuilder private var stampOverlay: some View {
+        let a = controller.ack
+        VStack(spacing: 6) {
+            if !a.stamp.isEmpty {
+                Text(a.stamp)
+                    .font(.system(size: 30, weight: .black, design: .monospaced))
+                    .foregroundStyle(HUDStyle.accent)
+                    .shadow(color: HUDStyle.accent.opacity(0.7), radius: 8)
+                    .transition(.opacity.combined(with: .scale(scale: 1.15)))
+            }
+            if a.hit {
+                Text("HIT")
+                    .font(.system(size: 34, weight: .black, design: .monospaced))
+                    .foregroundStyle(.red.opacity(0.95))
+                    .transition(.opacity)
+            }
+            if a.beacon {
+                Text("BEACON +1")
+                    .font(.system(size: 20, weight: .black, design: .monospaced))
+                    .foregroundStyle(HUDStyle.pickup)
+                    .transition(.opacity)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .offset(y: -40)
+        .animation(.easeOut(duration: 0.15), value: a)
+        .allowsHitTesting(false)
     }
 
     private var statsBlock: some View {
@@ -47,8 +113,7 @@ struct HUDView: View {
             Text("world: \((Theme(rawValue: controller.settings.environment) ?? .neonCity).name)").foregroundStyle(.cyan)
             if let err = controller.loadError { Text("error: \(err)").foregroundStyle(.red) }
         }
-        .padding(8)
-        .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+        .hudPanel()
     }
 
     private var isArena: Bool { (Theme(rawValue: controller.settings.environment) ?? .neonCity).mode == .arena }
@@ -57,25 +122,24 @@ struct HUDView: View {
         let s = controller.stats
         return VStack(alignment: .leading, spacing: 2) {
             if isArena {
-                Text(String(format: "%4.0f km/h", s.speed * 3.6)).font(.system(size: 20, weight: .bold, design: .monospaced))
-                meter("energy", s.energy, .cyan)
-                meter("edge", s.edge, s.edge < 0.3 ? .red : .orange)
-                meter("grind", s.grind, .yellow)
-                Text("derezzed \(s.losses)   opponent derezzed \(s.wins)   walls \(s.trailSegments)")
-                Text("\(s.section.uppercased())   height \(String(format: "%.1f", s.altitude)) m").foregroundStyle(.cyan)
-                if let p = s.pickup { Text("pickup: \(p)  (A / F to use)").foregroundStyle(.purple) }
-                if let c = s.controller { Text("pad: \(c)").foregroundStyle(.green) }
-                if !s.state.isEmpty { Text(s.state).foregroundStyle(s.state.hasPrefix("DEREZZED") ? .red : .cyan).bold() }
+                Text(String(format: "%4.0f km/h", s.speed * 3.6)).font(.system(size: HUDStyle.bigSize, weight: .bold, design: .monospaced))
+                meter("ENERGY", s.energy, HUDStyle.accent)
+                meter("EDGE", s.edge, s.edge < 0.3 ? .red : .orange)
+                meter("GRIND", s.grind, .yellow)
+                Text("DEREZZED \(s.losses)   RIVAL \(s.wins)   WALLS \(s.trailSegments)").foregroundStyle(.white.opacity(0.75))
+                Text("\(s.section.uppercased())   \(String(format: "%.1f", s.altitude)) m").foregroundStyle(HUDStyle.accent)
+                if let p = s.pickup { Text("PICKUP \(p)   A / F TO USE").foregroundStyle(HUDStyle.pickup) }
+                if let c = s.controller { Text("PAD \(c.uppercased())").foregroundStyle(.green.opacity(0.8)) }
+                if !s.state.isEmpty { Text(s.state).foregroundStyle(s.state.hasPrefix("DEREZZED") ? .red : HUDStyle.accent).bold() }
             } else {
-                Text(String(format: "%6.0f m", s.distance)).font(.system(size: 20, weight: .bold, design: .monospaced))
-                Text("hits \(s.hits)   kills \(s.kills)   alt \(String(format: "%.1f", s.altitude)) m")
-                if let c = s.controller { Text("pad: \(c)").foregroundStyle(.green) }
-                Text(s.section.uppercased()).foregroundStyle(.cyan)
-                if let d = s.decision { Text("route: \(d)").foregroundStyle(.pink) }
+                Text(String(format: "%6.0f m", s.distance)).font(.system(size: HUDStyle.bigSize, weight: .bold, design: .monospaced))
+                Text("HITS \(s.hits)   KILLS \(s.kills)   ALT \(String(format: "%.1f", s.altitude)) m").foregroundStyle(.white.opacity(0.75))
+                if let c = s.controller { Text("PAD \(c.uppercased())").foregroundStyle(.green.opacity(0.8)) }
+                Text(s.section.uppercased()).foregroundStyle(HUDStyle.accent)
+                if let d = s.decision { Text("ROUTE \(d.uppercased())").foregroundStyle(HUDStyle.pickup) }
             }
         }
-        .padding(8)
-        .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+        .hudPanel()
     }
 
     // MARK: - Missions
@@ -88,76 +152,75 @@ struct HUDView: View {
                 HStack(spacing: 10) {
                     contactBadge(m.contact)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(m.code)  //  \(m.title)").font(.system(size: 16, weight: .black, design: .monospaced)).foregroundStyle(.cyan)
-                        Text("contact \(m.contact)   job \(m.index + 1)/\(m.count)   credits \(m.credits)").foregroundStyle(.white.opacity(0.7))
+                        Text("\(m.code)  //  \(m.title)").font(.system(size: 16, weight: .black, design: .monospaced)).foregroundStyle(HUDStyle.accent)
+                        Text("CONTACT \(m.contact)   JOB \(m.index + 1)/\(m.count)   CREDITS \(m.credits)").foregroundStyle(.white.opacity(0.7))
                     }
                 }
-                Text(m.brief).font(.system(size: 11, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
-                Text(m.goalText).foregroundStyle(.cyan)
-                Text("A / F / TAP  ACCEPT").font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.white)
+                Text(m.brief).font(.system(size: HUDStyle.baseSize + 1, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
+                Text(m.goalText).foregroundStyle(HUDStyle.accent)
+                prompt("ACCEPT")
             }
         case .running:
             VStack {
                 HStack(spacing: 14) {
                     if m.kind != .duel {
-                        Text(String(format: "%3.0f s", m.timeLeft)).font(.system(size: 18, weight: .bold, design: .monospaced))
+                        Text(String(format: "%3.0f s", m.timeLeft)).font(.system(size: HUDStyle.bigSize, weight: .bold, design: .monospaced))
                             .foregroundStyle(m.timeLeft < 10 ? .red : .white)
                     }
                     switch m.kind {
                     case .delivery:
-                        stripMeter("CARGO", m.cargo, m.cargo > 0.5 ? .cyan : .red)
-                        Text(String(format: "%4.0f m to drop", m.distanceLeft)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                        meter("CARGO", m.cargo, m.cargo > 0.5 ? HUDStyle.accent : .red)
+                        Text(String(format: "%4.0f m TO DROP", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .search:
-                        Text("BEACONS \(m.beaconsHit)/\(m.beaconsTotal)  need \(m.beaconsRequired)").font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundStyle(.purple)
-                        Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                        Text("BEACONS \(m.beaconsHit)/\(m.beaconsTotal)   NEED \(m.beaconsRequired)").font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.pickup)
+                        Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .escape:
-                        Text(String(format: "PURSUER %3.0f m", m.gap)).font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundStyle(m.gap < 20 ? .red : .orange)
-                        stripMeter("BOOST", m.boostMeter, m.boostMeter > 0.3 ? .cyan : .red)
-                        Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                        Text(String(format: "PURSUER %3.0f m", m.gap)).font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(m.gap < 20 ? .red : .orange)
+                        meter("BOOST", m.boostMeter, m.boostMeter > 0.3 ? HUDStyle.accent : .red)
+                        Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .duel:
-                        Text("FIRST TO \(m.duelTarget)    YOU \(m.duelWins)  -  \(m.duelLosses) \(m.contact)").font(.system(size: 14, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                        Text("FIRST TO \(m.duelTarget)    YOU \(m.duelWins)  -  \(m.duelLosses) \(m.contact)").font(.system(size: HUDStyle.baseSize + 4, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     }
                 }
-                .padding(.horizontal, 12).padding(.vertical, 6)
-                .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal, 4)
+                .hudPanel()
                 .padding(.top, 8)
                 Spacer()
             }
             .frame(maxWidth: .infinity, alignment: .center)
         case .success:
             missionCard {
-                Text(m.successTitle).font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(.cyan)
+                Text(m.successTitle).font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                 Text("\(m.code)  //  \(m.title)").foregroundStyle(.white.opacity(0.8))
                 Text("PAYOUT +\(m.payout)   CREDITS \(m.credits)" + (m.kind == .delivery ? "   CARGO \(Int(m.cargo * 100))%" : m.kind == .search ? "   BEACONS \(m.beaconsHit)/\(m.beaconsTotal)" : "")).foregroundStyle(.white)
-                Text("A / F / TAP  NEXT JOB").font(.system(size: 12, weight: .bold, design: .monospaced))
+                prompt("NEXT JOB")
             }
         case .failed:
             missionCard {
                 Text("RUN FAILED").font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(.red)
                 Text(m.failReason).foregroundStyle(.white.opacity(0.8))
-                Text("A / F / TAP  RETRY").font(.system(size: 12, weight: .bold, design: .monospaced))
+                prompt("RETRY")
             }
         case .freePlay:
             EmptyView()
         }
     }
 
-    private func stripMeter(_ label: String, _ value: Float, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.system(size: 8, design: .monospaced))
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.15)).frame(width: 110, height: 6)
-                RoundedRectangle(cornerRadius: 2).fill(color).frame(width: CGFloat(max(0, min(1, value))) * 110, height: 6)
-            }
+    /// The button prompt at the foot of every card, in the accent colour so it reads as the one thing to do.
+    private func prompt(_ action: String) -> some View {
+        HStack(spacing: 8) {
+            Text("A / F / TAP").font(.system(size: HUDStyle.baseSize, weight: .bold, design: .monospaced)).foregroundStyle(.black)
+                .padding(.horizontal, 6).padding(.vertical, 2).background(RoundedRectangle(cornerRadius: 4).fill(HUDStyle.accent))
+            Text(action).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(.white)
         }
+        .padding(.top, 2)
     }
 
     private func missionCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) { content() }
-            .padding(14)
+            .padding(6)
             .frame(width: 360)
-            .background(.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(.cyan.opacity(0.5), lineWidth: 1))
+            .hudPanel(opacity: 0.7)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
             .onTapGesture { controller.acceptMission() }
@@ -168,13 +231,14 @@ struct HUDView: View {
         Text(String(name.prefix(2)))
             .font(.system(size: 14, weight: .black, design: .monospaced))
             .frame(width: 40, height: 40)
-            .background(Circle().fill(.cyan.opacity(0.15)))
-            .overlay(Circle().stroke(.cyan, lineWidth: 1.5))
+            .background(Circle().fill(HUDStyle.accent.opacity(0.15)))
+            .overlay(Circle().stroke(HUDStyle.accent, lineWidth: 1.5))
     }
 
+    /// The one meter used everywhere: label, 110 x 6 bar, coloured fill.
     private func meter(_ label: String, _ value: Float, _ color: Color) -> some View {
         HStack(spacing: 6) {
-            Text(label).frame(width: 44, alignment: .leading)
+            Text(label).font(.system(size: HUDStyle.baseSize - 1, weight: .bold, design: .monospaced)).frame(width: 48, alignment: .leading).foregroundStyle(.white.opacity(0.75))
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.15)).frame(width: 110, height: 6)
                 RoundedRectangle(cornerRadius: 2).fill(color).frame(width: CGFloat(max(0, min(1, value))) * 110, height: 6)
@@ -186,7 +250,7 @@ struct HUDView: View {
         Image(systemName: "gearshape.fill")
             .font(.system(size: 22))
             .frame(width: 48, height: 48)
-            .background(.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+            .hudPanel()
             .contentShape(Rectangle())
             .onTapGesture { controller.panelVisible = true }
     }
@@ -202,12 +266,12 @@ struct HUDView: View {
             ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 4) {
             Divider().overlay(.white.opacity(0.3))
-            Text("ENVIRONMENT").bold().foregroundStyle(.cyan)
+            Text("ENVIRONMENT").bold().foregroundStyle(HUDStyle.accent)
             picker("world", \.environment, ["neon city", "canyon", "the grid"])
             toggle("missions (corridor)", \.missions)
             if isArena {
                 Divider().overlay(.white.opacity(0.3))
-                Text("THE GRID").bold().foregroundStyle(.cyan)
+                Text("THE GRID").bold().foregroundStyle(HUDStyle.accent)
                 picker("steering", \.steeringMode, ["analog", "snap 90"])
                 picker("jump", \.jumpRule, ["elevated trail", "trail gap"])
                 picker("trail", \.trailLength, ["short", "long", "endless"])
@@ -258,9 +322,9 @@ struct HUDView: View {
             .frame(maxHeight: 640)
             #endif
         }
-        .padding(10)
+        .padding(2)
         .frame(width: 250)
-        .background(.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+        .hudPanel()
         #if os(macOS)
         .controlSize(.mini)
         #endif
@@ -300,5 +364,37 @@ struct HUDView: View {
                 #endif
             }
         }
+        .font(.system(size: HUDStyle.baseSize - 2, design: .monospaced))
+        .foregroundStyle(.white.opacity(0.45))
+        .multilineTextAlignment(.trailing)
+        .frame(maxWidth: 420, alignment: .trailing)
     }
+}
+
+/// The HUD's one visual language: dark panel, thin accent stroke, monospaced type, cyan accent,
+/// violet for pickups and beacons, red for danger. Sizes are tuned for a 390 pt tall phone.
+enum HUDStyle {
+    static let accent = Color(red: 0.35, green: 0.9, blue: 1.0)
+    static let pickup = Color(red: 0.85, green: 0.7, blue: 1.0)
+    #if os(iOS)
+    static let baseSize: CGFloat = 11
+    static let bigSize: CGFloat = 22
+    #else
+    static let baseSize: CGFloat = 10
+    static let bigSize: CGFloat = 20
+    #endif
+}
+
+private struct HUDPanel: ViewModifier {
+    var opacity: Double
+    func body(content: Content) -> some View {
+        content
+            .padding(8)
+            .background(.black.opacity(opacity), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(HUDStyle.accent.opacity(0.35), lineWidth: 1))
+    }
+}
+
+extension View {
+    func hudPanel(opacity: Double = 0.55) -> some View { modifier(HUDPanel(opacity: opacity)) }
 }

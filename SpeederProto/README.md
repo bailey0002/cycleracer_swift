@@ -54,7 +54,11 @@ judged in isolation. On iOS the RealityKit view does not take touches at all: Sw
 ### Automation env vars
 
 - `SPEEDER_DEMO=1` — scripted steering and a boost burst, no input needed.
-- `SPEEDER_CAPTURE_DIR=<dir>` — saves the final post-processed frame at t = 4, 7, 10 s.
+- `SPEEDER_CAPTURE_DIR=<dir>` — saves the final post-processed frame at t = 4, 7, 10 s
+  (`SPEEDER_CAPTURE_TIMES=3.5,4,9` overrides; decimals allowed). Scene time starts once the
+  world is built, about 8 s of wall-clock after launch, and the app does not quit by itself:
+  `Captures/polish/capture.sh <dir> <seconds> ENV=VAL ...` runs and kills it.
+- `SPEEDER_CAMERA=overview` — high camera behind the vehicle (corridor layout captures).
 - `SPEEDER_SWEEP=1` (with capture dir) — one frame per disabled technique, plus `source.png`, the raw render before the post pass.
 
 ## What is in the scene
@@ -270,6 +274,38 @@ position, height, grind, edge and energy so mechanics can be checked numerically
 Debug build, Mac 2560x1440: 50-60 fps with two trails plus the post pass. iPhone 16e simulator:
 60 fps with ~180 entities. The iPhone 12 needs measuring with the HUD fps counter on a long run;
 the trail meshes are cheap (one draw per chunk part) and the main cost is still the post pass.
+
+## Polish pass (11 Sep 2026)
+
+`docs/polish-log.md` lists every rough edge that was fixed, with the capture that shows it;
+`docs/research-comparables.md` is the merged comparable-games research with a ranked shortlist
+of what to build next. The pieces the code now has:
+
+- **Eased section transitions**: `WorldScroller.tubeBlend` (24 m lead) mixes the flat lane/altitude
+  clamp with the conduit cylinder so nothing snaps at the pipe mouth; `enclosure` (20 m lead)
+  darkens and thickens the post-pass fog and tightens the vignette inside the tunnel and conduit;
+  every enclosed section has an entry and an exit portal frame (`RoadSegment.buildPortals`,
+  enabled by `setNeighbours`).
+- **Soft fork**: the branch is chosen from the player's side 30 m before the split, the road's
+  divergence ramps over 24 m of travel (`forkBlend`, re-placing the fork and downstream segments
+  each frame), and the side locks when the split passes. The V divider is a scraping wall past the
+  nose (`wedgeLimit`), the fork's building rows stand 1.7x further out, and the branches diverge
+  7 m + 3 m.
+- **One camera rig**: corridor chase and arena spring share roll gain/damping, FOV widening and
+  the shake formula (`CameraRig`); `punch()` is the boost/launch kick (150 ms in, 400 ms out,
+  +9 deg FOV, camera pull-back, extra streaks) used by both modes.
+- **Vehicle**: the collision jolt starts from zero and rolls with the push, the camera follows
+  the smooth bank plus 40 % of the jolt, 70 ms hit-stop on obstacle hits, speed-scaled hover bob,
+  idle sway, idling exhaust and no speed motes while parked.
+- **Same-frame acknowledgement**: `GameController.ack` (`ActionAck`) drives the HUD's pip row
+  (BOOST / FIRE, BOOST / JUMP / SNAP / PICKUP) and centre stamps (CONDUIT, UNDERCITY, SKYWAY,
+  SPLIT, GO, PHASE, PULSE, HIT, BEACON +1); every action also rumbles on the frame it happens.
+- **Curtain**: scene rebuilds (job change, world picker) run behind a fade to black in the post
+  pass (`PostProcessor.curtain`); the contact avatar faces the camera during briefings.
+- **HUD**: one panel style (`hudPanel()`), one meter, `HUDStyle` sizes for the phone (11 pt
+  base), diagnostics only with the settings panel on iOS.
+- Capture aids: `Captures/polish/capture.sh <dir> <seconds> ENV=...`, `SPEEDER_CAMERA=overview`
+  for a high corridor camera, `SIMCTL_CHILD_*` env vars for simulator HUD screenshots.
 
 ## Next steps (brief milestones 7–8)
 

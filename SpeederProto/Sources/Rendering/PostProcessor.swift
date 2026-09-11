@@ -13,6 +13,7 @@ struct PostUniforms {
     var proj           = SIMD4<Float>(0, 0, 1.15, 0.45)
     var misc           = SIMD4<Float>(0.002, 0, 1.15, 1.0)
     var flags          = SIMD4<Float>(1, 1, 1, 1)
+    var section        = SIMD4<Float>(0, 0, 0, 0)   // x: enclosure (tunnel/conduit)  y: curtain  z: kick  w: unused
 }
 
 /// Full-screen Metal post pass driven from ARView's render callback:
@@ -26,6 +27,12 @@ final class PostProcessor {
     var vanishing = SIMD2<Float>(0.5, 0.45)
     var speedNorm: Float = 0
     var flash: Float = 0
+    /// 0 in the open, 1 inside a tunnel or conduit: denser, darker fog and a tighter vignette.
+    var enclosure: Float = 0
+    /// 0 clear ... 1 black. Covers scene rebuilds and the launch.
+    var curtain: Float = 0
+    /// Boost kick envelope: extra streaks and aberration for a moment.
+    var kick: Float = 0
     var theme: Theme = .neonCity
     private(set) var sourceFormat: String = "-"
     /// Set to request a readback of the next finished frame.
@@ -102,13 +109,15 @@ final class PostProcessor {
         let lvl = max(0, min(2, s.bloomLevel))
         let bloomMul: Float = [0.5, 1.0, 2.0][lvl]
         let threshold: Float = [0.84, 0.74, 0.56][lvl]
-        let fogDensity: Float = [0.0020, 0.0060, 0.0140][max(0, min(2, s.fogLevel))] * th.fogDensityScale
+        let enc = enclosure, kk = kick
+        let fogDensity: Float = [0.0020, 0.0060, 0.0140][max(0, min(2, s.fogLevel))] * th.fogDensityScale * (1 + 1.5 * enc)
         u.vanishingTexel = SIMD4<Float>(vanishing.x, vanishing.y, flash, threshold)
         u.bloom = SIMD4<Float>((isHDR ? 0.6 : 0.72) * bloomMul,
-                               s.streaks ? (0.12 + sp * 0.5) * th.streakScale : 0,
-                               0.07 + sp * 0.22,
+                               s.streaks ? (0.12 + sp * 0.5 + kk * 0.35) * th.streakScale : 0,
+                               0.07 + sp * 0.22 + kk * 0.06,
                                fogDensity)
-        u.misc = SIMD4<Float>(0.0007 + sp * 0.0025, Float(ctx.time), th.saturation, th.gradeStrength)
+        u.misc = SIMD4<Float>(0.0007 + sp * 0.0025 + kk * 0.0015, Float(ctx.time), th.saturation, th.gradeStrength)
+        u.section = SIMD4<Float>(enc, curtain, kk, 0)
         u.proj.z = (isHDR ? 1.2 : 1.0) * th.exposure
         u.proj.w = th.vignette
         let fogMode: Float = s.fog ? (depthUsable == false ? 2 : 1) : 0

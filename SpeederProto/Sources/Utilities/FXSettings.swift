@@ -66,3 +66,16 @@ struct FrameStats {
     var losses = 0
     var trailSegments = 0
 }
+
+/// Same-frame acknowledgement of player actions for the HUD. Published only when it changes.
+struct ActionAck: Equatable {
+    var boost = false
+    var fire = false
+    var jump = false
+    var pickup = false
+    var snap = false
+    var beacon = false
+    var hit = false
+    /// Centre-screen stamp (section change, launch, derez); empty when off.
+    var stamp = ""
+}

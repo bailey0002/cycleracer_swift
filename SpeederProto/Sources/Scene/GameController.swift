@@ -16,7 +16,7 @@ final class GameController: ObservableObject {
                 var s = settings
                 (Theme(rawValue: s.environment) ?? .neonCity).adjust(&s)
                 settings = s
-                Task { await rebuildScene() }
+                requestRebuild()
                 return
             }
             applySettings()
@@ -24,6 +24,18 @@ final class GameController: ObservableObject {
     }
     @Published var stats = FrameStats()
     @Published var loadError: String? = nil
+    /// Same-frame action acknowledgement for the HUD.
+    @Published var ack = ActionAck()
+    private var ackTimers = (fire: Float(0), jump: Float(0), pickup: Float(0), snap: Float(0), beacon: Float(0), hit: Float(0), stamp: Float(0))
+    private var stampText = ""
+    private var lastStyle: SegmentStyle? = nil
+    private var boostPrev = false
+    /// Hit-stop: the simulation runs at 15 % for a few frames after an obstacle hit.
+    private var hitStop: Float = 0
+    /// Fade to black that covers scene rebuilds (and the launch). 0 clear ... 1 black.
+    private var curtain: Float = 1
+    private var curtainTarget: Float = 0
+    private var pendingRebuild = false
     /// Job loop (delivery missions) for the corridor worlds.
     let missions = MissionRunner()
     @Published var mission = MissionState()
@@ -83,6 +95,8 @@ final class GameController: ObservableObject {
     /// SPEEDER_ARENA_CAMERA=overview: fixed high view for layout captures.
     private let overviewCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "overview"
     private let sideCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "side"
+    /// SPEEDER_CAMERA=overview: a high camera behind the vehicle for corridor layout captures.
+    private let corridorOverview = ProcessInfo.processInfo.environment["SPEEDER_CAMERA"] == "overview"
     private var sweepSteps: [(Float, String, (inout FXSettings) -> Void)] = [
         (4.0, "all", { _ in }),
         (5.5, "source", { $0.postFX = false }),
@@ -163,10 +177,17 @@ final class GameController: ObservableObject {
         arView.renderCallbacks.postProcess = { ctx in post.process(ctx) }
     }
 
-    /// Tear down and rebuild the world for the selected theme.
+    /// Ask for a rebuild: the curtain closes first, the rebuild runs behind it, then it opens.
+    private func requestRebuild() {
+        curtainTarget = 1
+        pendingRebuild = true
+    }
+
+    /// Tear down and rebuild the world for the selected theme (behind the curtain).
     private func rebuildScene() async {
         guard !rebuilding else { return }
         rebuilding = true
+        lastStyle = nil
         world = nil; arena = nil; speeder = nil; cameraRig = nil; weapons = nil; contactAvatar = nil; beacons = nil; pursuer = nil
         for child in worldAnchor.children.map({ $0 }) { child.removeFromParent() }
         entityCount = 0
@@ -269,6 +290,7 @@ final class GameController: ObservableObject {
 
             arView.scene.addAnchor(worldAnchor)
             applySettings()
+            curtainTarget = 0
             updateSub = arView.scene.subscribe(to: SceneEvents.Update.self) { [weak self] ev in
                 self?.update(dt: Float(ev.deltaTime))
             }
@@ -354,13 +376,18 @@ final class GameController: ObservableObject {
         guard let speeder, let cameraRig else { return }
         let dt: Float = demoMode ? 1.0 / 60.0 : min(max(rawDt, 1.0 / 240.0), 1.0 / 20.0)
         time += dt
+        updateCurtain(dt: dt)
         let input = arView.input
         gamepad.poll(into: input)
         if let arena {
             updateArena(arena, dt: dt, rawDt: rawDt, input: input, cameraRig: cameraRig)
+            publishAck(dt: dt)
             return
         }
         guard let world else { return }
+        // hit-stop: a few frames at 15 % after an impact; the camera keeps its own time
+        hitStop = max(0, hitStop - dt)
+        let simDt: Float = hitStop > 0 ? dt * 0.15 : dt
         if demoMode {
             let bias = Float(ProcessInfo.processInfo.environment["SPEEDER_DEMO_BIAS"] ?? "0") ?? 0
             input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
@@ -383,35 +410,51 @@ final class GameController: ObservableObject {
             var beaconHits = 0
             if let beacons, missions.isRunning {
                 beaconHits = beacons.update(distance: distance, roadX: { world.offset(atWorldZ: $0) - world.playerOffset }, playerX: speeder.x, playerY: speeder.altitude, time: time)
-                if beaconHits > 0 { flash = max(flash, 0.35); gamepad.rumble(intensity: 0.5, sharpness: 0.9) }
+                if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9) }
             }
-            missions.update(dt: dt, travel: speed * dt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed, beaconsHitNow: beaconHits)
+            missions.update(dt: simDt, travel: speed * simDt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed, beaconsHitNow: beaconHits)
             missionHitsSeen = hits
             if let pursuer {
                 if missions.isRunning { pursuer.update(gap: missions.snapshot().gap, playerX: speeder.x, time: time) } else { pursuer.hide() }
             }
             if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = missions.snapshot() }
             contactAvatar?.root.isEnabled = missions.phase != .running
+            if missions.phase != .running { contactAvatar?.face(cameraRig.position) }
             if demoMode && Int(time * 4) % 4 == 0 && statsAccumulator > 0.2, let a = contactAvatar { print("avatar \(a.debugBounds())") }
         }
         let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
-        let boosting = input.boosting && (!missionActive || missions.boostAllowed)
+        let boosting = moving && input.boosting && (!missionActive || missions.boostAllowed)
+        if boosting && !boostPrev {
+            // boost onset: camera kick, haptic and the HUD pip on the same frame
+            cameraRig.punch(1.0)
+            gamepad.rumble(intensity: 0.5, sharpness: 0.5)
+        }
+        boostPrev = boosting
         let target = moving ? settings.cruiseSpeed * (boosting ? 1.8 : 1.0) : 0
-        speed = damp(speed, target, target > speed ? 1.6 : 2.0, dt)
+        speed = damp(speed, target, target > speed ? 1.6 : 2.0, simDt)
         let speedNorm = clamp01(speed / maxSpeed)
 
-        let travel = speed * dt
+        let travel = speed * simDt
         world.advance(travel, playerX: speeder.x, time: time)
         distance += travel
-        speeder.tube = world.tubeConstraint
+        speeder.tube = WorldScroller.tubeGeometry
+        speeder.tubeBlend = world.tubeBlend
+        speeder.wedgeLimit = world.wedgeLimit
+        post.enclosure = world.enclosure
+        // section stamp when the player crosses into a new kind of section
+        let style = world.currentBlock.style
+        if style != lastStyle {
+            if lastStyle != nil, let label = Self.sectionStamp(style) { stamp(label) }
+            lastStyle = style
+        }
         let parked = missionActive && !missions.allowsMotion
-        speeder.update(dt: dt, time: time, steerInput: parked ? 0 : input.steering, climbInput: parked ? 0 : input.climb, speedNorm: speedNorm, roadShift: world.lastShift * world.tugFactor / 0.6)
+        speeder.update(dt: simDt, time: time, steerInput: parked ? 0 : input.steering, climbInput: parked ? 0 : input.climb, speedNorm: speedNorm, roadShift: world.lastShift * world.tugFactor / 0.6)
 
         // barrier scraping: bleed speed, sparks, shake
         if speeder.scraping && speed > 5 {
             speed *= 1 - 0.7 * dt
             shakeBurst = max(shakeBurst, 0.25)
-            let sparkPos: SIMD3<Float> = speeder.tube == nil
+            let sparkPos: SIMD3<Float> = world.tubeBlend < 0.5
                 ? [speeder.root.position.x + (speeder.x > 0 ? 1.0 : -1.0), 0.6, 0.5]
                 : speeder.root.position + simd_normalize(SIMD3<Float>(speeder.x, speeder.altitude - RoadSegment.tubeCenterY, 0)) * 1.1
             emitSparks(at: sparkPos, duration: 0.1)
@@ -430,6 +473,8 @@ final class GameController: ObservableObject {
                     flash = 1.0
                     shakeBurst = 1.0
                     speed *= 0.6
+                    hitStop = 0.07
+                    ackTimers.hit = 0.5
                     speeder.recoil(direction: speeder.x >= p.x ? 1 : -1)
                     emitSparks(at: [p.x, p.y + o.centerY, p.z], duration: 0.18)
                     weapons?.explode(at: [p.x, p.y + o.centerY, p.z])
@@ -440,13 +485,15 @@ final class GameController: ObservableObject {
         }
         // weapons
         if let weapons {
-            if input.firing && settings.obstacles {
+            if input.firing && settings.obstacles && !parked {
                 if weapons.fire(from: speeder.root.position, orientation: speeder.root.orientation) {
                     shakeBurst = max(shakeBurst, 0.08)
+                    ackTimers.fire = 0.15
+                    gamepad.rumble(intensity: 0.25, sharpness: 1.0)
                 }
             }
             let targets = world.nearbyObstacles(segments: 4)
-            weapons.update(dt: dt) { tip in
+            weapons.update(dt: simDt) { tip in
                 for (o, p) in targets where o.active {
                     let c = SIMD3<Float>(p.x, p.y + o.centerY, p.z)
                     if abs(tip.x - c.x) < o.halfWidth + 0.3 && abs(tip.y - c.y) < o.halfHeight + 0.3 && abs(tip.z - c.z) < o.halfLength + 1.2 {
@@ -477,18 +524,26 @@ final class GameController: ObservableObject {
         if flash > 0 && stats.flash != flash { stats.flash = flash }
 
         let curveAhead = world.offset(atWorldZ: -14) - world.playerOffset
-        cameraRig.update(dt: dt, time: time, speederX: speeder.x, speederY: speeder.altitude, bank: speeder.bank, speedNorm: speedNorm,
-                         shake: settings.cameraShake, curveAhead: curveAhead, extraShake: shakeBurst, inTube: speeder.tube != nil)
+        // the camera follows the smooth bank and only a little of the collision jolt
+        let camBank = speeder.smoothBank + (speeder.bank - speeder.smoothBank) * 0.4
+        if corridorOverview {
+            cameraRig.overviewCorridor(speederX: speeder.x)
+        } else {
+            cameraRig.update(dt: dt, time: time, speederX: speeder.x, speederY: speeder.altitude, bank: camBank, speedNorm: speedNorm,
+                             shake: settings.cameraShake, curveAhead: curveAhead, extraShake: shakeBurst, inTube: world.tubeBlend)
+        }
 
-        // speed particles follow the vehicle speed
+        // speed particles follow the vehicle speed (none while parked)
         if settings.particles, var e = speedParticles.components[ParticleEmitterComponent.self] {
             e.speed = 20 + speed * 0.9
-            e.mainEmitter.birthRate = 80 + speedNorm * 360
+            e.mainEmitter.birthRate = speed < 4 ? 0 : 80 + speedNorm * 360
             speedParticles.components.set(e)
         }
 
         // post-process uniforms
         post.speedNorm = speedNorm
+        post.kick = cameraRig.kickLevel
+        ackBoost = boosting
         if let vp = arView.project([cameraRig.position.x, cameraRig.position.y, -900]) {
             let size = arView.bounds.size
             if size.width > 0 && size.height > 0 {
@@ -511,6 +566,49 @@ final class GameController: ObservableObject {
                                sourceFormat: post.sourceFormat, distance: distance, hits: hits,
                                section: world.currentBlock.name, flash: flash, decision: world.lastDecision,
                                kills: kills, altitude: speeder.altitude, controller: gamepad.connectedName)
+        }
+        publishAck(dt: dt)
+    }
+
+    private var ackBoost = false
+
+    /// Centre-screen stamp text for a section entry.
+    private static func sectionStamp(_ style: SegmentStyle) -> String? {
+        switch style {
+        case .tube: return "CONDUIT"
+        case .tunnel: return "UNDERCITY"
+        case .elevated: return "SKYWAY"
+        case .fork: return "SPLIT"
+        default: return nil
+        }
+    }
+
+    private func stamp(_ text: String, seconds: Float = 0.7) {
+        stampText = text
+        ackTimers.stamp = seconds
+    }
+
+    /// Decay the action timers and publish the HUD acknowledgement only when it changed.
+    private func publishAck(dt: Float) {
+        ackTimers.fire = max(0, ackTimers.fire - dt); ackTimers.jump = max(0, ackTimers.jump - dt)
+        ackTimers.pickup = max(0, ackTimers.pickup - dt); ackTimers.snap = max(0, ackTimers.snap - dt)
+        ackTimers.beacon = max(0, ackTimers.beacon - dt); ackTimers.hit = max(0, ackTimers.hit - dt)
+        ackTimers.stamp = max(0, ackTimers.stamp - dt)
+        let a = ActionAck(boost: ackBoost, fire: ackTimers.fire > 0, jump: ackTimers.jump > 0, pickup: ackTimers.pickup > 0,
+                          snap: ackTimers.snap > 0, beacon: ackTimers.beacon > 0, hit: ackTimers.hit > 0,
+                          stamp: ackTimers.stamp > 0 ? stampText : "")
+        if a != ack { ack = a }
+    }
+
+    /// The curtain closes before a rebuild, the rebuild runs behind it, and it opens after `build()`.
+    private func updateCurtain(dt: Float) {
+        curtain = damp(curtain, curtainTarget, curtainTarget > curtain ? 9 : 5, dt)
+        if curtainTarget > 0.5 && curtain > 0.97 { curtain = 1 }
+        if curtainTarget < 0.5 && curtain < 0.01 { curtain = 0 }
+        post.curtain = curtain
+        if pendingRebuild && curtain >= 1 {
+            pendingRebuild = false
+            Task { await rebuildScene() }
         }
     }
 
@@ -549,17 +647,24 @@ final class GameController: ObservableObject {
     /// Accept the briefing or continue past a result (also called by the HUD tap).
     func acceptMission() {
         guard missionActive else { return }
+        let wasBriefing = missions.phase == .briefing
         let rebuild = missions.accept()
         mission = missions.snapshot()
+        if wasBriefing && missions.phase == .running {
+            // launch: the same kick as a boost, plus the stamp
+            cameraRig?.punch(0.8)
+            gamepad.rumble(intensity: 0.6, sharpness: 0.4)
+            stamp("GO", seconds: 0.6)
+        }
         if rebuild {
             let theme = missions.current.theme
             if theme.rawValue != settings.environment {
                 var s = settings
                 s.environment = theme.rawValue
                 theme.adjust(&s)
-                settings = s          // didSet rebuilds
+                settings = s          // didSet closes the curtain and rebuilds
             } else {
-                Task { await rebuildScene() }
+                requestRebuild()
             }
         }
     }
@@ -632,7 +737,15 @@ final class GameController: ObservableObject {
             if missions.phase != mission.phase || statsAccumulator > 0.2 { mission = missions.snapshot() }
             if missions.phase != .running { cmd = CycleInput() }
         }
+        if cmd.boost && !boostPrev && arena.energy > 0.02 { cameraRig.punch(1.0); gamepad.rumble(intensity: 0.5, sharpness: 0.5) }
+        boostPrev = cmd.boost && arena.energy > 0.02
         arena.update(dt: dt, time: time, input: cmd, aiInput: aiCmd)
+        let ev = arena.events
+        if ev.snapped { ackTimers.snap = 0.2 }
+        if ev.jumped { ackTimers.jump = 0.35 }
+        if ev.pickupUsed != nil { ackTimers.pickup = 0.4; stamp(ev.pickupUsed == .phase ? "PHASE" : "PULSE", seconds: 0.6) }
+        if ev.pickupTaken { ackTimers.pickup = 0.3 }
+        ackBoost = boostPrev
 
         let player = arena.player
         let speedNorm = arena.speedNorm
@@ -651,6 +764,7 @@ final class GameController: ObservableObject {
             speedParticles.components.set(e)
         }
         post.speedNorm = speedNorm * 0.8
+        post.kick = cameraRig.kickLevel
         // vanishing point for the streaks: where the cycle is heading, far ahead
         if let vp = arView.project(player.position + player.forward * 400 + [0, 1.0, 0]) {
             let size = arView.bounds.size
