@@ -530,7 +530,8 @@ final class GameController: ObservableObject {
             cameraRig.overviewCorridor(speederX: speeder.x)
         } else {
             cameraRig.update(dt: dt, time: time, speederX: speeder.x, speederY: speeder.altitude, bank: camBank, speedNorm: speedNorm,
-                             shake: settings.cameraShake, curveAhead: curveAhead, extraShake: shakeBurst, inTube: world.tubeBlend)
+                             shake: settings.cameraShake, curveAhead: curveAhead, extraShake: shakeBurst, inTube: world.tubeBlend,
+                             frameShift: parked ? -2.2 : 0)
         }
 
         // speed particles follow the vehicle speed (none while parked)

@@ -221,7 +221,8 @@ struct HUDView: View {
             .padding(6)
             .frame(width: 360)
             .hudPanel(opacity: 0.7)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.leading, 40)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture { controller.acceptMission() }
     }

@@ -55,15 +55,17 @@ final class CameraRig {
     private var y: Float = 0
     private var roll: Float = 0
 
-    func update(dt: Float, time: Float, speederX: Float, speederY: Float, bank: Float, speedNorm: Float, shake: Bool, curveAhead: Float, extraShake: Float, inTube: Float) {
+    /// `frameShift` slides the whole framing sideways (metres): the briefing uses -2.2 so the bike
+    /// and the contact sit in the right two thirds, clear of the card; it eases out on launch.
+    func update(dt: Float, time: Float, speederX: Float, speederY: Float, bank: Float, speedNorm: Float, shake: Bool, curveAhead: Float, extraShake: Float, inTube: Float, frameShift: Float = 0) {
         advanceKick(dt: dt)
-        x = damp(x, speederX * (0.5 + 0.25 * inTube), 3.5, dt)
+        x = damp(x, speederX * (0.5 + 0.25 * inTube) + frameShift, 3.5, dt)
         y = damp(y, (speederY - 1.05) * (0.85 + 0.10 * inTube), 4.0, dt)
         roll = damp(roll, bank * Self.rollGain, Self.rollDamp, dt)
         let offset = shakeOffset(time: time, speedNorm: speedNorm, shake: shake, extra: extraShake)
         let back = baseDistance - speedNorm * 0.8 + kickEnv * 0.45
         let from = SIMD3<Float>(x, baseHeight + y + speedNorm * 0.25, back) + offset
-        let target = SIMD3<Float>(speederX * 0.55 + curveAhead * 0.35, 1.0 + y * 0.9, -7)
+        let target = SIMD3<Float>(speederX * 0.55 + curveAhead * 0.35 + (x - speederX * (0.5 + 0.25 * inTube)) * 0.9, 1.0 + y * 0.9, -7)
         let up = simd_quatf(angle: roll, axis: [0, 0, 1]).act([0, 1, 0])
         root.look(at: target, from: from, upVector: up, relativeTo: nil)
         fov = damp(fov, 52 + speedNorm * Self.speedFov + kickEnv * 9, Self.fovDamp, dt)
