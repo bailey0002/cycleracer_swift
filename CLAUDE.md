@@ -31,7 +31,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   divergence, portal frames at section mouths, enclosure fog, one camera rig with a boost kick,
   same-frame action acks (`ActionAck` -> HUD pips and stamps), curtain over rebuilds, HUD style
   unification. Research merged in `SpeederProto/docs/research-comparables.md` (ranked shortlist;
-  nothing from it implemented yet).
+  nothing from it implemented yet). The polish build was NOT installed on the phone (device
+  `unavailable` over Wi-Fi at the time): install `SpeederProto/build-device/Build/Products/
+  Debug-iphoneos/SpeederProto.app` first thing, or rebuild and push per the README.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)
