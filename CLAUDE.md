@@ -68,6 +68,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Arena levels: `ArenaTerrain` is the height field (decks + ramps); anything static that should
   block bikes goes into trail 0 (marked `isStatic`, never decayed) as a strand. Height queries must
   pass the asker's current y (`below:`) or a ground bike gets lifted onto the deck above it.
+- RealityKit culls zero-thickness meshes (flat `generatePlane` quads, the flat `Meshes.ring`) on
+  entities that are repositioned after being added to the scene: they never draw, with no error,
+  while a box on the same entity draws. Give such quads a tiny tilt (0.01-0.03 rad) or use geometry
+  with volume (`Meshes.tube` band). Cost a long bisect on the search beacons (11 Sep 2026).
+- Mission captures: `SPEEDER_MISSION=<n>`, `SPEEDER_RESET_PROGRESS=1`, `SPEEDER_HOLD_BRIEFING=1`,
+  `SPEEDER_DEMO_BOOST=0`; the HUD is SwiftUI so only simulator screenshots show the cards.
 - Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view, `side` a side elevation; the chase camera cannot
   show elevated trails or trail cuts. Capture times with decimals are allowed (`frame-1.5.png`).
 - The MCP iOS simulator panel crashed in this session; `xcrun simctl io <udid> screenshot` works

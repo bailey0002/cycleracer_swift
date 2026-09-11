@@ -54,6 +54,8 @@ final class ArenaController {
     private(set) var heldPickup: Pickup? = nil
     private var phaseTimer: Float = 0
     var rumble: ((Float, Float) -> Void)? = nil
+    /// Held by a mission briefing: nothing moves, the countdown waits.
+    var paused = false
 
     // fx
     private let sparks = Entity()
@@ -188,11 +190,14 @@ final class ArenaController {
             core.orientation = simd_quatf(angle: .pi / 4, axis: [1, 0, 0]) * simd_quatf(angle: .pi / 4, axis: [0, 0, 1])
             core.position = [0, 1.6, 0]
             e.addChild(core)
+            // flat quads on an entity that is repositioned later can be culled for good (see CLAUDE.md); tilt them a hair
             let halo = ModelEntity(mesh: .generatePlane(width: 3.2, height: 3.2), materials: [materials.glow(Self.pickupColor, opacity: 0.5)])
             halo.position = [0, 1.6, 0]
+            halo.orientation = simd_quatf(angle: 0.03, axis: [1, 0, 0])
             e.addChild(halo)
             let pool = ModelEntity(mesh: .generatePlane(width: 4, depth: 4), materials: [materials.glow(Self.pickupColor, opacity: 0.3)])
             pool.position = [0, 0.04, 0]
+            pool.orientation = simd_quatf(angle: 0.01, axis: [1, 0, 0])
             e.addChild(pool)
             let pillar = ModelEntity(mesh: .generateBox(size: [0.12, 8, 0.12]), materials: [materials.neon(Self.pickupColor, intensity: 2)])
             pillar.position = [0, 4, 0]
@@ -272,6 +277,7 @@ final class ArenaController {
     func update(dt rawDt: Float, time: Float, input: CycleInput, aiInput: CycleInput? = nil) {
         self.time = time
         var dt = rawDt
+        if paused { world.animate(time: time); pose(); return }
         flash = max(0, flash - dt * 3.0)
         shake = max(0, shake - dt * 2.5)
         world.animate(time: time)

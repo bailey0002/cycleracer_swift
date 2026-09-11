@@ -30,6 +30,9 @@ final class GameController: ObservableObject {
     private var missionFirePrev = false
     /// The contact, standing by the parked bike during briefings (avatar pipeline test).
     private var contactAvatar: AvatarActor?
+    private var beacons: BeaconLayer?
+    private var beaconProbe: SIMD3<Float> { beacons?.nearestWorldPosition ?? .zero }
+    private var pursuer: PursuerActor?
     private let holdBriefing = ProcessInfo.processInfo.environment["SPEEDER_HOLD_BRIEFING"] == "1"
     private var missionHitsSeen = 0
     #if os(macOS)
@@ -164,7 +167,7 @@ final class GameController: ObservableObject {
     private func rebuildScene() async {
         guard !rebuilding else { return }
         rebuilding = true
-        world = nil; arena = nil; speeder = nil; cameraRig = nil; weapons = nil; contactAvatar = nil
+        world = nil; arena = nil; speeder = nil; cameraRig = nil; weapons = nil; contactAvatar = nil; beacons = nil; pursuer = nil
         for child in worldAnchor.children.map({ $0 }) { child.removeFromParent() }
         entityCount = 0
         post.captureRequest = nil
@@ -201,6 +204,17 @@ final class GameController: ObservableObject {
                 let world = WorldScroller(materials: materials, settings: settings, program: program)
                 distance = 0; hits = 0; missionHitsSeen = 0; kills = 0
                 if missionActive {
+                    let m = missions.current
+                    if m.kind == .search {
+                        let layer = BeaconLayer(materials: materials, count: m.beacons, trackLength: m.distance, seed: UInt64(m.id * 131 + 7))
+                        worldAnchor.addChild(layer.root)
+                        beacons = layer
+                    }
+                    if m.kind == .escape {
+                        let p = PursuerActor(materials: materials)
+                        worldAnchor.addChild(p.root)
+                        pursuer = p
+                    }
                     // the contact waits beside the bike; hidden once the job is live
                     do {
                         let avatar = try await AvatarActor.load()
@@ -353,7 +367,7 @@ final class GameController: ObservableObject {
             input.pointerClimb = max(-1, min(1, sin(time * 0.6 + 1.0) * 0.9))
             // weapons pulse during a run; while parked the only "fire" is the scripted accept
             input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing) : Int(time * 2) % 3 == 0
-            input.pointerBoost = time > 6.5 && time < 11
+            input.pointerBoost = time > 6.5 && time < 11 && ProcessInfo.processInfo.environment["SPEEDER_DEMO_BOOST"] != "0"
         }
         handleCommonInput(input)
         handleCaptures()
@@ -366,14 +380,23 @@ final class GameController: ObservableObject {
             let fire = input.firing
             if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
             missionFirePrev = fire
-            missions.update(dt: dt, travel: speed * dt, newHits: hits - missionHitsSeen)
+            var beaconHits = 0
+            if let beacons, missions.isRunning {
+                beaconHits = beacons.update(distance: distance, roadX: { world.offset(atWorldZ: $0) - world.playerOffset }, playerX: speeder.x, playerY: speeder.altitude, time: time)
+                if beaconHits > 0 { flash = max(flash, 0.35); gamepad.rumble(intensity: 0.5, sharpness: 0.9) }
+            }
+            missions.update(dt: dt, travel: speed * dt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed, beaconsHitNow: beaconHits)
             missionHitsSeen = hits
+            if let pursuer {
+                if missions.isRunning { pursuer.update(gap: missions.snapshot().gap, playerX: speeder.x, time: time) } else { pursuer.hide() }
+            }
             if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = missions.snapshot() }
             contactAvatar?.root.isEnabled = missions.phase != .running
             if demoMode && Int(time * 4) % 4 == 0 && statsAccumulator > 0.2, let a = contactAvatar { print("avatar \(a.debugBounds())") }
         }
         let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
-        let target = moving ? settings.cruiseSpeed * (input.boosting ? 1.8 : 1.0) : 0
+        let boosting = input.boosting && (!missionActive || missions.boostAllowed)
+        let target = moving ? settings.cruiseSpeed * (boosting ? 1.8 : 1.0) : 0
         speed = damp(speed, target, target > speed ? 1.6 : 2.0, dt)
         let speedNorm = clamp01(speed / maxSpeed)
 
@@ -478,7 +501,10 @@ final class GameController: ObservableObject {
         statsAccumulator += dt
         if statsAccumulator > 0.25 {
             statsAccumulator = 0
-            if demoMode && Int(time * 4) % 8 == 0 { print(String(format: "t=%.1f fps=%.0f speed=%.0f m/s entities=%d", time, fpsSmoothed, speed, entityCount)) }
+            if demoMode && Int(time * 4) % 4 == 0 {
+                let ms = missions.snapshot()
+                print(String(format: "t=%.1f fps=%.0f speed=%.0f m/s entities=%d dist=%.0f mission=%@ beacons=%d/%d gap=%.0f boost=%.2f cargo=%.2f", time, fpsSmoothed, speed, entityCount, distance, "\(ms.phase)", ms.beaconsHit, ms.beaconsTotal, ms.gap, ms.boostMeter, ms.cargo) + " beacon " + (beacons?.debugNearest ?? "-") + String(format: " player x=%.1f alt=%.1f", speeder.x, speeder.altitude) + " proj=\(beacons.flatMap { _ in arView.project(beaconProbe) }.map { "\($0)" } ?? "-") view=\(arView.bounds.size)")
+            }
             if entityCount == 0 { entityCount = count(worldAnchor) }
             stats = FrameStats(fps: fpsSmoothed, frameMs: Double(rawDt) * 1000, speed: speed,
                                entities: entityCount, lights: settings.realLights ? 5 : 0,
@@ -518,7 +544,7 @@ final class GameController: ObservableObject {
     private func count(_ e: Entity) -> Int { 1 + e.children.reduce(0) { $0 + count($1) } }
 
     /// Missions run in the corridor worlds when the toggle is on.
-    private var missionActive: Bool { settings.missions && (Theme(rawValue: settings.environment) ?? .neonCity).mode == .corridor }
+    private var missionActive: Bool { settings.missions && missions.current.theme.rawValue == settings.environment }
 
     /// Accept the briefing or continue past a result (also called by the HUD tap).
     func acceptMission() {
@@ -596,6 +622,16 @@ final class GameController: ObservableObject {
         handleCommonInput(input)
         handleCaptures()
         if demoMode, let script = ProcessInfo.processInfo.environment["SPEEDER_DEMO_SCRIPT"], script == "noai" { aiCmd = CycleInput() }
+        if missionActive {
+            // duel: the briefing holds the arena; A / F / tap accepts, the arena's score decides the job
+            let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing)
+            if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
+            missionFirePrev = fire
+            arena.paused = missions.phase != .running
+            missions.updateDuel(dt: dt, wins: arena.wins, losses: arena.losses)
+            if missions.phase != mission.phase || statsAccumulator > 0.2 { mission = missions.snapshot() }
+            if missions.phase != .running { cmd = CycleInput() }
+        }
         arena.update(dt: dt, time: time, input: cmd, aiInput: aiCmd)
 
         let player = arena.player

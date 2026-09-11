@@ -93,22 +93,30 @@ struct HUDView: View {
                     }
                 }
                 Text(m.brief).font(.system(size: 11, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
-                Text("DROP \(m.distanceText)   WINDOW \(m.timeText)   CARGO 100%").foregroundStyle(.cyan)
+                Text(m.goalText).foregroundStyle(.cyan)
                 Text("A / F / TAP  ACCEPT").font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.white)
             }
         case .running:
             VStack {
                 HStack(spacing: 14) {
-                    Text(String(format: "%3.0f s", m.timeLeft)).font(.system(size: 18, weight: .bold, design: .monospaced))
-                        .foregroundStyle(m.timeLeft < 10 ? .red : .white)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("CARGO").font(.system(size: 8, design: .monospaced))
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.15)).frame(width: 110, height: 6)
-                            RoundedRectangle(cornerRadius: 2).fill(m.cargo > 0.5 ? Color.cyan : Color.red).frame(width: CGFloat(m.cargo) * 110, height: 6)
-                        }
+                    if m.kind != .duel {
+                        Text(String(format: "%3.0f s", m.timeLeft)).font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .foregroundStyle(m.timeLeft < 10 ? .red : .white)
                     }
-                    Text(String(format: "%4.0f m to drop", m.distanceLeft)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                    switch m.kind {
+                    case .delivery:
+                        stripMeter("CARGO", m.cargo, m.cargo > 0.5 ? .cyan : .red)
+                        Text(String(format: "%4.0f m to drop", m.distanceLeft)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                    case .search:
+                        Text("BEACONS \(m.beaconsHit)/\(m.beaconsTotal)  need \(m.beaconsRequired)").font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundStyle(.purple)
+                        Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                    case .escape:
+                        Text(String(format: "PURSUER %3.0f m", m.gap)).font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundStyle(m.gap < 20 ? .red : .orange)
+                        stripMeter("BOOST", m.boostMeter, m.boostMeter > 0.3 ? .cyan : .red)
+                        Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                    case .duel:
+                        Text("FIRST TO \(m.duelTarget)    YOU \(m.duelWins)  -  \(m.duelLosses) \(m.contact)").font(.system(size: 14, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                    }
                 }
                 .padding(.horizontal, 12).padding(.vertical, 6)
                 .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
@@ -118,9 +126,9 @@ struct HUDView: View {
             .frame(maxWidth: .infinity, alignment: .center)
         case .success:
             missionCard {
-                Text("DELIVERED").font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(.cyan)
+                Text(m.successTitle).font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(.cyan)
                 Text("\(m.code)  //  \(m.title)").foregroundStyle(.white.opacity(0.8))
-                Text("PAYOUT +\(m.payout)   CREDITS \(m.credits)   CARGO \(Int(m.cargo * 100))%").foregroundStyle(.white)
+                Text("PAYOUT +\(m.payout)   CREDITS \(m.credits)" + (m.kind == .delivery ? "   CARGO \(Int(m.cargo * 100))%" : m.kind == .search ? "   BEACONS \(m.beaconsHit)/\(m.beaconsTotal)" : "")).foregroundStyle(.white)
                 Text("A / F / TAP  NEXT JOB").font(.system(size: 12, weight: .bold, design: .monospaced))
             }
         case .failed:
@@ -131,6 +139,16 @@ struct HUDView: View {
             }
         case .freePlay:
             EmptyView()
+        }
+    }
+
+    private func stripMeter(_ label: String, _ value: Float, _ color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.system(size: 8, design: .monospaced))
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.15)).frame(width: 110, height: 6)
+                RoundedRectangle(cornerRadius: 2).fill(color).frame(width: CGFloat(max(0, min(1, value))) * 110, height: 6)
+            }
         }
     }
 

@@ -141,13 +141,21 @@ atmosphere and grade. The HUD's *world* picker rebuilds the scene for the select
 
 ## Missions (the job loop)
 
-The game direction is a **mission runner** (see `docs/game-direction.md`): every corridor run is
-a job. `Missions/Mission.swift` is the catalogue (four delivery runs so far: three Neon City
-relays incl. the split and the conduit, one Sunset Canyon outlands run), each with its own
-track blocks, drop distance, time window and pay. `Missions/MissionRunner.swift` is the loop:
-briefing (vehicle parked) -> running (countdown, cargo integrity that loses 25 % per impact,
-distance to the drop) -> DELIVERED with payout (base + 5 credits per second left + 2 per cargo
-percent) or RUN FAILED (time out / cargo corrupted) -> next job or retry. A / F / tap accepts.
+The game direction is a **mission runner** (see `docs/game-direction.md`): every run is a job.
+`Missions/Mission.swift` is the catalogue of eight jobs in four kinds, each with its own track
+blocks, goal, time window and pay; `Missions/MissionRunner.swift` is the loop: briefing (vehicle
+parked, the contact avatar beside it) -> running -> a result card with payout -> next job or
+retry. A / F / tap accepts.
+
+- **Delivery** (RELAY 01-04): reach the drop inside the window; cargo integrity loses 25 % per
+  impact and an empty bar fails the run. Pay: base + 5 per second left + 2 per cargo percent.
+- **Search** (SWEEP 01-02): fly through beacon rings placed along the track (`BeaconLayer`,
+  some at altitude), N of M required by the end of the sweep. Pay adds 40 per beacon.
+- **Escape** (RUN 01): a pursuer sits behind you at a gap shown on the HUD; it cruises 2 m/s
+  faster than you, so boost (which now drains a meter and recharges) is how you keep it back.
+  Under ~18 m it pulls alongside on the right with a red searchlight; at 4 m you are caught.
+- **Duel** (DUEL 01): The Grid with a named rival; first to two derezzes. The briefing holds the
+  arena; the arena's score decides the job.
 Credits and the job index persist in UserDefaults (`SPEEDER_RESET_PROGRESS=1` clears them,
 `SPEEDER_MISSION=<n>` picks a job). The mission decides the world, so job changes rebuild the
 scene; the HUD toggle *missions (corridor)* turns the loop off for free play. The Grid is free
