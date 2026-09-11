@@ -23,9 +23,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   `Sources/Arena/` (`ArenaWorld`, `LightCycle`, `TrailSystem`, `TrailRenderer`, `ArenaController`,
   `ArenaAI`). The README's "The Grid" section documents the mechanics and capture hooks.
 - Direction (11 Sep 2026): a **mission runner**, Tron-clean tone, single player; see
-  `SpeederProto/docs/game-direction.md`. Delivery missions exist (`Sources/Missions/`); next are the
-  hub on the garage deck, search/escape missions, the avatar pipeline (Character Creator 5 exports
-  as GLB/FBX/OBJ; convert with Blender like the speeder), then duels.
+  `SpeederProto/docs/game-direction.md`. `Sources/Missions/` has the catalogue and runner with
+  delivery, search (beacon rings), escape (pursuer + boost meter) and duel (The Grid) kinds, HUD
+  cards, persistent credits, and the briefing avatar (`Scene/AvatarActor.swift`, Avaturn test
+  character; Character Creator 5 exports go through the same Blender step).
+- Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md` (research agents on comparable games,
+  then a polish pass on transitions, motion, actions, controls and HUD).
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)
@@ -40,8 +43,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   takes the tunnel branch; `SPEEDER_VARIANT=canyon` etc. applies a preset. Allow ~30 s per run.
 - Phone (Mark's iPhone 12, paired over Wi-Fi, id 1438FC4B-510E-5302-9AAE-0833BC5A856F, team HNBN55RN29):
   the exact build/install/launch command is in `SpeederProto/README.md`. Launch is refused when the
-  phone is locked; that is fine, the install still lands. The user expects every meaningful build to
-  be pushed to the phone without being asked.
+  phone is locked; the install itself also fails on a locked phone (CoreDevice error 12040, "developer
+  disk image could not be mounted"), so ask the user to unlock and retry. The user expects every
+  meaningful build to be pushed to the phone without being asked.
 - Simulator (iPhone 16e CC7815D7-8D0B-43FE-A4E1-EA4CBED5E83A): depth reads NaN there, the post pass
   falls back to screen-space fog automatically. The MCP simulator tool's `tap` maps (x, y) to app
   landscape point (y, 390 - x) and its instant tap is too short for a UISwitch; use `touch_path` ~150 ms.
