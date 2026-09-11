@@ -12,13 +12,14 @@ final class ArenaWorld {
     let wallHeight: Float = 11
     private var reflections: [Entity] = []
     private let towerGroup = Entity()
-    private(set) var hazardWalls: [(a: SIMD2<Float>, b: SIMD2<Float>)] = []
+    let terrain: ArenaTerrain
     private var pylonTops: [ModelEntity] = []
     let pickupGroup = Entity()
     private(set) var pickupEntities: [Entity] = []
 
     init(materials: SceneMaterials, halfSize: Float) {
         self.halfSize = halfSize
+        terrain = ArenaTerrain.garage(halfSize: halfSize)
         root.name = "Arena"
         let size = halfSize * 2
         // floor
@@ -83,15 +84,79 @@ final class ArenaWorld {
             t.addChild(e)
         }
         root.addChild(towerGroup)
-        // hazard walls (lime): static obstacles in the field, registered with the trail system by the controller
-        let q = halfSize * 0.42
-        hazardWalls = [
-            (SIMD2(-q, -q * 0.3), SIMD2(-q, q * 0.3)),
-            (SIMD2(q, -q * 0.3), SIMD2(q, q * 0.3)),
-            (SIMD2(-q * 0.3, q), SIMD2(q * 0.3, q)),
-            (SIMD2(-q * 0.3, -q), SIMD2(q * 0.3, -q)),
-        ]
+        buildDecks(materials: materials)
         root.addChild(pickupGroup)
+    }
+
+    /// Parking-garage levels: deck floors with a dark slab underneath and an edge strip, inclined
+    /// ramps in the same grid material, and columns. Rails are drawn by the hazard trail renderer.
+    private func buildDecks(materials: SceneMaterials) {
+        let bandMat = materials.neon(SIMD3(0.30, 0.80, 1.0), intensity: 3.5)
+        // decks and ramps read as lighter steel slabs with a coarser grid so they separate from the ground
+        var deckMat = materials.gridFloor ?? materials.road
+        deckMat.baseColor = .init(tint: .rgb(0.42, 0.50, 0.60), texture: deckMat.baseColor.texture)
+        deckMat.emissiveIntensity = 1.6
+        deckMat.roughness = .init(floatLiteral: 0.35)
+        var slabMat = PhysicallyBasedMaterial()
+        slabMat.baseColor = .init(tint: .rgb(0.16, 0.20, 0.26))
+        slabMat.roughness = .init(floatLiteral: 0.6)
+        slabMat.metallic = .init(floatLiteral: 0.3)
+        let thick: Float = 1.2
+        for d in terrain.decks {
+            let w = d.max.x - d.min.x, l = d.max.y - d.min.y
+            let c = (d.min + d.max) / 2
+            var top = deckMat
+            top.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(w / 32, l / 32), rotation: 0)
+            let floor = ModelEntity(mesh: .generatePlane(width: w, depth: l), materials: [top])
+            floor.position = [c.x, d.height + 0.01, c.y]
+            root.addChild(floor)
+            let slab = ModelEntity(mesh: .generateBox(size: [w, thick, l]), materials: [slabMat])
+            slab.position = [c.x, d.height - thick / 2, c.y]
+            root.addChild(slab)
+            // bright band around the slab face
+            for (sx, sz, ex, ez) in [(0, -1, w, 0.2), (0, 1, w, 0.2), (-1, 0, 0.2, l), (1, 0, 0.2, l)] as [(Float, Float, Float, Float)] {
+                let e = ModelEntity(mesh: .generateBox(size: [ex + 0.2, 0.45, ez + 0.2]), materials: [bandMat])
+                e.position = [c.x + sx * w / 2, d.height - 0.35, c.y + sz * l / 2]
+                root.addChild(e)
+            }
+            // ceiling lights under the deck
+            let lampMat = materials.neon(SIMD3(0.7, 0.9, 1.0), intensity: 2.2)
+            for k in stride(from: d.min.y + 10, to: d.max.y, by: 20) {
+                let lamp = ModelEntity(mesh: .generateBox(size: [w * 0.9, 0.12, 0.3]), materials: [lampMat])
+                lamp.position = [c.x, d.height - thick - 0.1, k]
+                root.addChild(lamp)
+            }
+        }
+        for r in terrain.ramps {
+            let w = r.xMax - r.xMin
+            let run = r.length
+            let hyp = sqrt(run * run + r.rise * r.rise)
+            var top = deckMat
+            top.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(w / 32, hyp / 32), rotation: 0)
+            let holder = Entity()
+            let cz = (r.z0 + r.z1) / 2
+            holder.position = [(r.xMin + r.xMax) / 2, (r.h0 + r.h1) / 2, cz]
+            // the surface rises toward the end with the greater height; rotate about X accordingly
+            let angle = atan2(r.h1 - r.h0, r.z1 - r.z0)
+            holder.orientation = simd_quatf(angle: -angle, axis: [1, 0, 0])
+            let surface = ModelEntity(mesh: .generatePlane(width: w, depth: hyp), materials: [top])
+            surface.position = [0, 0.01, 0]
+            holder.addChild(surface)
+            let slab = ModelEntity(mesh: .generateBox(size: [w, thick, hyp]), materials: [slabMat])
+            slab.position = [0, -thick / 2, 0]
+            holder.addChild(slab)
+            for x in [-w / 2, w / 2] {
+                let e = ModelEntity(mesh: .generateBox(size: [0.2, 0.45, hyp]), materials: [bandMat])
+                e.position = [x, -0.35, 0]
+                holder.addChild(e)
+            }
+            root.addChild(holder)
+        }
+        for (p, h) in terrain.columns {
+            let col = ModelEntity(mesh: .generateBox(size: [1.6, h, 1.6]), materials: [slabMat])
+            col.position = [p.x, h / 2, p.y]
+            root.addChild(col)
+        }
     }
 
     func apply(_ s: FXSettings) {

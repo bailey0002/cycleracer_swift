@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		02D3D56823114D66FCF57FEF /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
+		03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
 		0DA9524FD78109DD0B910430 /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
 		0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
@@ -48,6 +49,7 @@
 		92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
 		9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
 		9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
+		A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		A975139BC959AB5AC5F0212B /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
 		ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
@@ -82,6 +84,7 @@
 		868ACE88113A37309BDE3C7D /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
 		95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessor.swift; sourceTree = "<group>"; };
 		96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralTextures.swift; sourceTree = "<group>"; };
+		9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaTerrain.swift; sourceTree = "<group>"; };
 		9D1146D252113EB8417E5731 /* SpeederApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederApp.swift; sourceTree = "<group>"; };
 		9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaWorld.swift; sourceTree = "<group>"; };
 		AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
@@ -190,6 +193,7 @@
 			children = (
 				84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */,
 				EA98E8EC40131A52017CCC61 /* ArenaController.swift */,
+				9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */,
 				9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */,
 				733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */,
 				B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */,
@@ -310,6 +314,7 @@
 			files = (
 				0DA9524FD78109DD0B910430 /* ArenaAI.swift in Sources */,
 				A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */,
+				03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */,
 				1B5F82B56A0874899A2867FA /* ArenaWorld.swift in Sources */,
 				59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */,
 				60068708FF0A24190CD48367 /* FXSettings.swift in Sources */,
@@ -344,6 +349,7 @@
 			files = (
 				4FF502840DA59438EA0F737B /* ArenaAI.swift in Sources */,
 				72A32373DFCD52235FAAC00E /* ArenaController.swift in Sources */,
+				A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */,
 				8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */,
 				FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */,
 				D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */,

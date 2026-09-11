@@ -71,6 +71,7 @@ final class GameController: ObservableObject {
     private let sweepMode = ProcessInfo.processInfo.environment["SPEEDER_SWEEP"] == "1"
     /// SPEEDER_ARENA_CAMERA=overview: fixed high view for layout captures.
     private let overviewCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "overview"
+    private let sideCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "side"
     private var sweepSteps: [(Float, String, (inout FXSettings) -> Void)] = [
         (4.0, "all", { _ in }),
         (5.5, "source", { $0.postFX = false }),
@@ -546,7 +547,7 @@ final class GameController: ObservableObject {
         shakeBurst = max(0, shakeBurst - dt * 2.5)
         cameraRig.followArena(dt: dt, time: time, position: player.position + [0, 1.05, 0], forward: player.forward, lean: player.lean,
                               speedNorm: speedNorm, shake: settings.cameraShake, extraShake: shakeBurst, orbit: arena.cameraOrbit,
-                              overview: overviewCamera)
+                              overview: overviewCamera, ground: arena.groundHeight, side: sideCamera)
         if settings.particles, var e = speedParticles.components[ParticleEmitterComponent.self] {
             e.speed = 20 + player.speed * 0.9
             e.mainEmitter.birthRate = 40 + speedNorm * 300
@@ -572,7 +573,7 @@ final class GameController: ObservableObject {
             var st = FrameStats(fps: fpsSmoothed, frameMs: Double(rawDt) * 1000, speed: player.speed,
                                 entities: entityCount, lights: settings.realLights ? 5 : 0,
                                 sourceFormat: post.sourceFormat, distance: distance, hits: arena.losses,
-                                section: "the grid", flash: flash, decision: nil,
+                                section: "the grid - \(arena.levelName)", flash: flash, decision: nil,
                                 kills: arena.wins, altitude: player.position.y, controller: gamepad.connectedName)
             st.energy = arena.energy; st.edge = arena.edge; st.grind = arena.grind
             st.state = arena.phaseActive ? "PHASE ACTIVE" : arena.stateText
@@ -614,6 +615,13 @@ final class GameController: ObservableObject {
             c.action = t > 4.4 && t < 4.5
         case "uturn":
             c.steer = t > 2.4 && t < 4.0 ? 1 : 0
+        case "ramp":
+            // (start -52,70,0) straight up the west on-ramp onto the deck, right along it, down the east off-ramp
+            snapAt([(3.3, true), (6.2, true)])
+            c.boost = t > 6.5
+        case "garage":
+            // (start -20,60,0) straight under the deck between the columns
+            c.steer = 0
         case "jump":
             c.jump = t > 1.55 && t < 1.65
             c.steer = 0

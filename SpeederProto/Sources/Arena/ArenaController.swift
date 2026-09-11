@@ -78,15 +78,8 @@ final class ArenaController {
         root.addChild(world.root)
         trails = TrailSystem(halfSize: world.halfSize)
         let hazards = trails.addTrail(color: Self.hazardColor)
-        for w in world.hazardWalls {
-            _ = hazards.append([w.a.x, 0, w.a.y], height: 3.0)
-            _ = hazards.append([w.b.x, 0, w.b.y], height: 3.0)
-            hazards.breakStrand()
-        }
-        // register the hazard segments (append bypassed the system's insert)
-        for i in 0...hazards.newestIndex where hazards.segment(global: i)?.live == true {
-            trails.hash.insert(SegRef(trail: 0, index: i), hazards.segment(global: i)!)
-        }
+        hazards.isStatic = true
+        Self.registerHazards(hazards, terrain: world.terrain, trails: trails)
         let playerTrail = trails.addTrail(color: Self.playerColor)
         let opponentTrail = trails.addTrail(color: Self.opponentColor)
         for t in [hazards, playerTrail, opponentTrail] {
@@ -214,29 +207,37 @@ final class ArenaController {
         var p = SIMD2<Float>(rng.float(-h, h), rng.float(-h, h))
         // keep clear of walls
         for _ in 0..<8 {
-            if trails.nearest(to: p, radius: 6, yBand: 0...3, ignoreOwner: nil) == nil && simd_length(p - player.xz) > 25 { break }
+            let g = topSurface(p)
+            if trails.nearest(to: p, radius: 6, yBand: g...(g + 3), ignoreOwner: nil) == nil && simd_length(p - player.xz) > 25 { break }
             p = SIMD2<Float>(rng.float(-h, h), rng.float(-h, h))
         }
         pickups[i].pos = p
         pickups[i].active = true
-        pickups[i].entity.position = [p.x, 0, p.y]
+        pickups[i].entity.position = [p.x, topSurface(p), p.y]
         pickups[i].entity.isEnabled = true
     }
 
     // MARK: - Round control
 
-    private func startRound() {
-        trails.clearAll()
-        // hazards live in trail 0: re-register after the clear
-        let hazards = trails.trails[0]
-        for w in world.hazardWalls {
-            _ = hazards.append([w.a.x, 0, w.a.y], height: 3.0)
-            _ = hazards.append([w.b.x, 0, w.b.y], height: 3.0)
+    /// Static walls (hazard walls, deck rails, ramp rails, columns) live in trail 0.
+    private static func registerHazards(_ hazards: Trail, terrain: ArenaTerrain, trails: TrailSystem) {
+        for strand in terrain.strands {
+            for p in strand.points { _ = hazards.append(p, height: strand.wallHeight, floor: p.y) }
             hazards.breakStrand()
         }
         for i in 0...hazards.newestIndex where hazards.segment(global: i)?.live == true {
             trails.hash.insert(SegRef(trail: 0, index: i), hazards.segment(global: i)!)
         }
+    }
+
+    /// Ground under a point for a body at height y (see `ArenaTerrain.height`).
+    private var ground: (SIMD2<Float>, Float) -> Float { { [terrain = world.terrain] p, y in terrain.height(at: p, below: y) } }
+    /// Topmost surface (pickups, spawns).
+    private var topSurface: (SIMD2<Float>) -> Float { { [terrain = world.terrain] p in terrain.height(at: p) } }
+
+    private func startRound() {
+        trails.clearAll()
+        Self.registerHazards(trails.trails[0], terrain: world.terrain, trails: trails)
         let start = Self.startOverride() ?? (SIMD3<Float>(-world.halfSize * 0.25, 0, world.halfSize * 0.6), 0)
         player.reset(position: start.0, heading: start.1)
         opponent.reset(position: [world.halfSize * 0.25, 0, -world.halfSize * 0.6], heading: .pi)
@@ -357,14 +358,14 @@ final class ArenaController {
     private func stepCycle(_ c: LightCycle, input: CycleInput, dt: Float, bonus: Float) {
         let k = c.id - 1
         let pivot = c.position
-        let corner = c.step(dt: dt, input: input, snapMode: snapMode, speedBonus: bonus)
+        let corner = c.step(dt: dt, input: input, snapMode: snapMode, speedBonus: bonus, ground: ground)
         // jump rule: elevated trail follows the bike; gap rule breaks the strand while airborne
         let gapRule = settings.jumpRule == 1
         if c.airborne && !wasAirborne[k] && gapRule { trails.breakStrand(owner: c.id) }
         wasAirborne[k] = c.airborne
         if corner {
             // extend the old line to the pivot, then hold emission until the tail has passed it
-            trails.emit(owner: c.id, position: [pivot.x, pivot.y, pivot.z], height: c.trailHeight, force: true)
+            trails.emit(owner: c.id, position: [pivot.x, pivot.y, pivot.z], height: c.trailHeight, floor: ground(SIMD2(pivot.x, pivot.z), c.position.y), force: true)
             emitBlock[k] = pivot
             shake = max(shake, 0.12)
         }
@@ -373,7 +374,7 @@ final class ArenaController {
         }
         if emitBlock[k] == nil && !(c.airborne && gapRule) {
             let t = c.tail
-            trails.emit(owner: c.id, position: [t.x, c.position.y, t.z], height: c.trailHeight)
+            trails.emit(owner: c.id, position: [t.x, c.position.y, t.z], height: c.trailHeight, floor: ground(SIMD2(t.x, t.z), c.position.y))
         }
         // keep the cycle inside the arena (the boundary test below decides whether that costs a life)
         let h = world.halfSize - 0.2
@@ -454,10 +455,11 @@ final class ArenaController {
             guard simd_length(p - player.xz) > 45 else { continue }
             let heading = rng.float(0, 2 * .pi)
             let dir = SIMD2<Float>(-sin(heading), -cos(heading))
-            let open = trails.openDistance(from: p, dir: dir, maxDistance: 80, yBand: 0...2, ignoreOwner: nil)
+            let g = topSurface(p)
+            let open = trails.openDistance(from: p, dir: dir, maxDistance: 80, yBand: (g + 0.15)...(g + 2), ignoreOwner: nil)
             if open > bestOpen { bestOpen = open; best = p; opponent.heading = heading }
         }
-        opponent.reset(position: [best.x, 0, best.y], heading: opponent.heading)
+        opponent.reset(position: [best.x, topSurface(best), best.y], heading: opponent.heading)
         opponent.speed = opponent.baseSpeed
         ai.reset(heading: opponent.heading)
         trails.trails[opponent.id].reset()
@@ -538,7 +540,7 @@ final class ArenaController {
             }
             pickups[i].entity.children[0].orientation = simd_quatf(angle: time * 1.6, axis: [0, 1, 0]) * simd_quatf(angle: .pi / 4, axis: [1, 0, 0])
             pickups[i].entity.children[0].position.y = 1.6 + sin(time * 2.5 + Float(i)) * 0.25
-            if simd_length(pickups[i].pos - player.xz) < 2.6 && heldPickup == nil {
+            if simd_length(pickups[i].pos - player.xz) < 2.6 && abs(pickups[i].entity.position.y - player.position.y) < 3 && heldPickup == nil {
                 heldPickup = pickups[i].kind
                 pickups[i].active = false
                 pickups[i].entity.isEnabled = false
@@ -645,8 +647,12 @@ final class ArenaController {
         }
         for (i, r) in renderers.enumerated() {
             switch i {
-            case player.id: r.update(headPosition: headPoint(player, k: 0), headHeight: player.trailHeight)
-            case opponent.id: r.update(headPosition: headPoint(opponent, k: 1), headHeight: opponent.trailHeight)
+            case player.id:
+                let h = headPoint(player, k: 0)
+                r.update(headPosition: h, headHeight: player.trailHeight, headFloor: ground(SIMD2(h.x, h.z), player.position.y))
+            case opponent.id:
+                let h = headPoint(opponent, k: 1)
+                r.update(headPosition: h, headHeight: opponent.trailHeight, headFloor: ground(SIMD2(h.x, h.z), opponent.position.y))
             default: r.update(headPosition: trails.trails[0].lastPoint?.pos ?? .zero, headHeight: 3.0)
             }
         }
@@ -660,6 +666,8 @@ final class ArenaController {
     }
 
     var runSeconds: Float { runTime }
+    var groundHeight: (SIMD2<Float>, Float) -> Float { ground }
+    var levelName: String { world.terrain.deckName(at: player.xz, y: player.position.y) }
     var trailSegmentCount: Int { trails.trails.reduce(0) { $0 + max(0, $1.newestIndex - $1.firstAlive + 1) } }
     var phaseActive: Bool { phaseTimer > 0 }
 }

@@ -61,6 +61,7 @@ struct HUDView: View {
                 meter("edge", s.edge, s.edge < 0.3 ? .red : .orange)
                 meter("grind", s.grind, .yellow)
                 Text("derezzed \(s.losses)   opponent derezzed \(s.wins)   walls \(s.trailSegments)")
+                Text("\(s.section.uppercased())   height \(String(format: "%.1f", s.altitude)) m").foregroundStyle(.cyan)
                 if let p = s.pickup { Text("pickup: \(p)  (A / F to use)").foregroundStyle(.purple) }
                 if let c = s.controller { Text("pad: \(c)").foregroundStyle(.green) }
                 if !s.state.isEmpty { Text(s.state).foregroundStyle(s.state.hasPrefix("DEREZZED") ? .red : .cyan).bold() }

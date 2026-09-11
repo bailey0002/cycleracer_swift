@@ -80,7 +80,7 @@ final class TrailRenderer {
 
     /// Sync with the trail: append newly committed segments, drop dead chunks, refresh the
     /// provisional head segment and the fade uniforms.
-    func update(headPosition: SIMD3<Float>, headHeight: Float) {
+    func update(headPosition: SIMD3<Float>, headHeight: Float, headFloor: Float? = nil) {
         if trail.generation != generation {
             generation = trail.generation
             for c in chunks.values { c.entity.removeFromParent() }
@@ -108,7 +108,7 @@ final class TrailRenderer {
             let c = chunk(for: g)
             let seg = TrailSegment(a: last.pos, b: headPosition, heightA: last.height, heightB: headHeight,
                                    sA: last.s, sB: last.s + simd_length(SIMD2<Float>(headPosition.x - last.pos.x, headPosition.z - last.pos.z)),
-                                   live: true, owner: trail.owner)
+                                   live: true, owner: trail.owner, floorA: last.floor, floorB: headFloor ?? headPosition.y)
             write(seg, into: c, slot: g - c.start, provisional: true)
             applyParts(c, provisional: true)
         }
@@ -211,7 +211,7 @@ final class TrailRenderer {
             v[base + 6] = Vertex(position: b - [0, seg.heightB * glowPad, 0], uv: [seg.sB, -glowPad], color: [col.x, col.y, col.z, 1])
             v[base + 7] = Vertex(position: b + [0, seg.heightB * (1 + glowPad), 0], uv: [seg.sB, 1 + glowPad], color: [col.x, col.y, col.z, 1])
             // floor strip (reflection / light pool) just above the deck
-            let fa = SIMD3<Float>(a.x, 0.03, a.z), fb = SIMD3<Float>(b.x, 0.03, b.z)
+            let fa = SIMD3<Float>(a.x, seg.floorA + 0.03, a.z), fb = SIMD3<Float>(b.x, seg.floorB + 0.03, b.z)
             v[base + 8]  = Vertex(position: fa - n * floorHalf, uv: [seg.sA, -1], color: [col.x, col.y, col.z, 2])
             v[base + 9]  = Vertex(position: fa + n * floorHalf, uv: [seg.sA, 1], color: [col.x, col.y, col.z, 2])
             v[base + 10] = Vertex(position: fb - n * floorHalf, uv: [seg.sB, -1], color: [col.x, col.y, col.z, 2])

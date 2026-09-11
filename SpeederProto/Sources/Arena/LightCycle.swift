@@ -27,6 +27,7 @@ final class LightCycle {
     private(set) var lean: Float = 0
     private(set) var pitch: Float = 0
     private(set) var steer: Float = 0
+    private var groundPitch: Float = 0
     // handling
     var baseSpeed: Float = 36
     var boostSpeed: Float = 60
@@ -63,7 +64,7 @@ final class LightCycle {
     /// Advance one step. `speedBonus` is the grinding surge. Returns true when a hard
     /// corner was made (the trail should sample immediately).
     @discardableResult
-    func step(dt: Float, input: CycleInput, snapMode: Bool, speedBonus: Float) -> Bool {
+    func step(dt: Float, input: CycleInput, snapMode: Bool, speedBonus: Float, ground: (SIMD2<Float>, Float) -> Float = { _, _ in 0 }) -> Bool {
         var corner = false
         // speed: brake < cruise < boost, plus the grind surge
         let target = (input.brake ? brakeSpeed : (input.boost ? boostSpeed : baseSpeed)) + speedBonus
@@ -87,12 +88,22 @@ final class LightCycle {
             airborne = true
             vy = jumpVelocity
         }
+        position += forward * speed * dt
+        let g = ground(xz, position.y)
         if airborne {
             vy -= gravity * dt
             position.y += vy * dt
-            if position.y <= 0 { position.y = 0; vy = 0; airborne = false }
+            if position.y <= g { position.y = g; vy = 0; airborne = false }
+        } else if g < position.y - 1.0 {
+            // drove off a deck edge: fall
+            airborne = true
+            vy = 0
+        } else {
+            position.y = g
         }
-        position += forward * speed * dt
+        // slope under the wheels drives the pitch (rise per metre along the heading)
+        let slope = (ground(xz + forward2 * 2.5, position.y) - ground(xz - forward2 * 2.5, position.y)) / 5
+        groundPitch = damp(groundPitch, max(-0.5, min(0.5, atan(slope))), 8, dt)
         // presentation: the visual heading chases the logical one so snap turns still show a lean
         var dh = heading - visualHeading
         while dh > .pi { dh -= 2 * .pi }
@@ -100,7 +111,7 @@ final class LightCycle {
         visualHeading += dh * min(1, dt * 14)
         let leanTarget = snapMode ? -dh * 1.1 : -steer * 0.55
         lean = damp(lean, max(-0.7, min(0.7, leanTarget)), 8, dt)
-        pitch = damp(pitch, airborne ? -vy * 0.03 : -clamp01((speed - baseSpeed) / 30) * 0.05, 6, dt)
+        pitch = damp(pitch, (airborne ? vy * 0.025 : -clamp01((speed - baseSpeed) / 30) * 0.05) + groundPitch, 6, dt)
         return corner
     }
 
@@ -112,7 +123,7 @@ final class LightCycle {
         vy = 0
         airborne = false
         alive = true
-        lean = 0; pitch = 0; steer = 0
+        lean = 0; pitch = 0; steer = 0; groundPitch = 0
         snapTarget = nil
         snapCooldown = 0
     }

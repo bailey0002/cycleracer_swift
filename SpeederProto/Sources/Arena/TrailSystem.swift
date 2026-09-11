@@ -16,6 +16,9 @@ struct TrailSegment {
     var sB: Float
     var live: Bool
     var owner: Int
+    /// Ground height under each end (the renderer's floor reflection strip sits there).
+    var floorA: Float = 0
+    var floorB: Float = 0
 
     var dir2: SIMD2<Float> {
         let d = SIMD2<Float>(b.x - a.x, b.z - a.z)
@@ -50,10 +53,12 @@ struct TrailHit {
 final class Trail {
     let owner: Int
     var color: SIMD3<Float>
+    /// Static walls (hazards, rails) never decay.
+    var isStatic = false
     private(set) var segments: [TrailSegment] = []
     private(set) var offset = 0
     private(set) var firstAlive = 0
-    private(set) var lastPoint: (pos: SIMD3<Float>, height: Float, s: Float)? = nil
+    private(set) var lastPoint: (pos: SIMD3<Float>, height: Float, s: Float, floor: Float)? = nil
     private var breakPending = false
     /// Increments each time the trail is reset so renderers can tell a fresh trail apart.
     private(set) var generation = 0
@@ -82,16 +87,17 @@ final class Trail {
     func isAlive(_ i: Int) -> Bool { i >= firstAlive && i <= newestIndex }
 
     /// Append a sample; returns the new segment's global index (nil for the first point).
-    func append(_ pos: SIMD3<Float>, height: Float) -> Int? {
+    func append(_ pos: SIMD3<Float>, height: Float, floor: Float? = nil) -> Int? {
+        let floorY = floor ?? pos.y
         guard let last = lastPoint else {
-            lastPoint = (pos, height, 0)
+            lastPoint = (pos, height, 0, floorY)
             return nil
         }
         let s = last.s + simd_length(SIMD2<Float>(pos.x - last.pos.x, pos.z - last.pos.z))
         segments.append(TrailSegment(a: last.pos, b: pos, heightA: last.height, heightB: height,
-                                     sA: last.s, sB: s, live: !breakPending, owner: owner))
+                                     sA: last.s, sB: s, live: !breakPending, owner: owner, floorA: last.floor, floorB: floorY))
         breakPending = false
-        lastPoint = (pos, height, s)
+        lastPoint = (pos, height, s, floorY)
         return newestIndex
     }
 
@@ -217,13 +223,13 @@ final class TrailSystem {
     /// Sample the emitter position if it moved far enough (or `force` for a corner).
     /// Returns true when a segment was added.
     @discardableResult
-    func emit(owner: Int, position: SIMD3<Float>, height: Float, force: Bool = false) -> Bool {
+    func emit(owner: Int, position: SIMD3<Float>, height: Float, floor: Float? = nil, force: Bool = false) -> Bool {
         let trail = trails[owner]
         if let last = trail.lastPoint, !force {
             let d = simd_length(SIMD2<Float>(position.x - last.pos.x, position.z - last.pos.z))
             if d < sampleDistance { return false }
         }
-        guard let idx = trail.append(position, height: height) else { return false }
+        guard let idx = trail.append(position, height: height, floor: floor) else { return false }
         if let seg = trail.segment(global: idx), seg.live { hash.insert(SegRef(trail: owner, index: idx), seg) }
         return true
     }
@@ -231,7 +237,7 @@ final class TrailSystem {
     func breakStrand(owner: Int) { trails[owner].breakStrand() }
 
     func decay(maxLength: Float) {
-        for t in trails {
+        for t in trails where !t.isStatic {
             for i in t.decay(maxLength: maxLength) {
                 if let seg = t.segment(global: i), seg.live { hash.remove(SegRef(trail: t.owner, index: i), seg) }
             }

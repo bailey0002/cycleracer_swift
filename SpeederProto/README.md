@@ -202,6 +202,20 @@ is `docs/NEXT-THREAD-PROMPT.md`.
   player, adds a little noise, and boosts on open ground. It uses snap turns in snap mode.
   A derezzed opponent respawns after 4 s at the most open spot far from the player.
 
+### Levels: the parking garage (added 10 Sep 2026)
+
+`Arena/ArenaTerrain.swift` is a height field made of flat **decks** and inclined **ramps**;
+`height(at:below:)` returns the highest surface no more than a step above the asker, so a bike
+under a deck stays on the ground and a bike on the deck stays up. The cycles, the trail floor
+strips, pickups and the camera all ask it. The current layout (`ArenaTerrain.garage`) is an
+upper deck 9 m up over the north half of the arena, an on-ramp and an off-ramp (16 m wide,
+40 m long) on its south edge, lime rails along every deck and ramp edge (registered as static
+hazard segments, split so their vertical bands stay tight), support columns (also hazards) and
+ceiling lamps underneath. Trails laid on the deck only collide with bikes on the deck, because
+every wall segment already carries a vertical band. Driving off a rail-less edge drops you to
+the level below with the normal airborne logic. Capture scripts: `ramp` (up, along, down) and
+`garage` (under the deck); `SPEEDER_ARENA_CAMERA=side` gives a side elevation to check heights.
+
 ### Controls in the arena
 
 | Input | Steer | Jump | Brake | Boost | Use pickup | Settings |

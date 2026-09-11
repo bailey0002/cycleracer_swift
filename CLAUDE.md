@@ -58,7 +58,10 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Arena: the camera-mounted fill spot (`Theme.useFillSpot`) makes a white blob on the glossy grid
   floor; keep it off for The Grid. Trails self-intersecting tangentially are deflected by the edge
   meter, so a "crash" demo must hit a wall square on (the `crash` script uses snap turns).
-- Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view; the chase camera cannot
+- Arena levels: `ArenaTerrain` is the height field (decks + ramps); anything static that should
+  block bikes goes into trail 0 (marked `isStatic`, never decayed) as a strand. Height queries must
+  pass the asker's current y (`below:`) or a ground bike gets lifted onto the deck above it.
+- Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view, `side` a side elevation; the chase camera cannot
   show elevated trails or trail cuts. Capture times with decimals are allowed (`frame-1.5.png`).
 - The MCP iOS simulator panel crashed in this session; `xcrun simctl io <udid> screenshot` works
   and `SIMCTL_CHILD_<VAR>` passes env vars to `simctl launch`.

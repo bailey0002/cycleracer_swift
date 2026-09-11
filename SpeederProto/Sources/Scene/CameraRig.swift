@@ -54,7 +54,15 @@ final class CameraRig {
     /// cycle, looks at a point ahead of it, rolls slightly with the lean and widens with
     /// speed. `orbit` replaces all of that with a slow circle around a crash site.
     func followArena(dt: Float, time: Float, position: SIMD3<Float>, forward: SIMD3<Float>, lean: Float, speedNorm: Float,
-                     shake: Bool, extraShake: Float, orbit: (center: SIMD3<Float>, progress: Float)?, snap: Bool = false, overview: Bool = false) {
+                     shake: Bool, extraShake: Float, orbit: (center: SIMD3<Float>, progress: Float)?, snap: Bool = false, overview: Bool = false,
+                     ground: (SIMD2<Float>, Float) -> Float = { _, _ in 0 }, side: Bool = false) {
+        if side {
+            // capture aid: side elevation, to check heights against ramps and decks
+            let from = position + [38, 9, 0]
+            root.look(at: position + [0, 1, 0], from: from, upVector: [0, 1, 0], relativeTo: nil)
+            camera.camera.fieldOfViewInDegrees = 50
+            return
+        }
         if overview {
             // capture aid: high, behind and above the cycle, so trail layout reads at a glance
             let from = position + [0, 42, 34]
@@ -86,7 +94,7 @@ final class CameraRig {
         camPos = camPos! + (desired - camPos!) * min(1, dt * 7.5)
         camTarget = camTarget! + (desiredTarget - camTarget!) * min(1, dt * 12)
         // keep the camera from sinking into the deck
-        camPos!.y = max(camPos!.y, 1.4)
+        camPos!.y = max(camPos!.y, ground(SIMD2<Float>(camPos!.x, camPos!.z), position.y) + 1.4)
         roll = damp(roll, lean * 0.28, 4.0, dt)
         let upVec = simd_quatf(angle: roll, axis: simd_normalize(camTarget! - camPos!)).act(up)
         root.look(at: camTarget!, from: camPos! + offset, upVector: upVec, relativeTo: nil)
