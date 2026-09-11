@@ -139,6 +139,20 @@ atmosphere and grade. The HUD's *world* picker rebuilds the scene for the select
 - Gotcha: `PhysicallyBasedMaterial.EmissiveColor(color:texture:)` *adds* the colour to the texture; pass `.black` when you want the texture alone.
 - Gotcha: the iOS simulator returns NaN when the post pass reads the depth buffer (and logs RealityKit shader limit errors); the post pass probes for this and falls back to a screen-space fog estimate. A physical iPhone behaves like macOS (depth fog works there).
 
+## Missions (the job loop)
+
+The game direction is a **mission runner** (see `docs/game-direction.md`): every corridor run is
+a job. `Missions/Mission.swift` is the catalogue (four delivery runs so far: three Neon City
+relays incl. the split and the conduit, one Sunset Canyon outlands run), each with its own
+track blocks, drop distance, time window and pay. `Missions/MissionRunner.swift` is the loop:
+briefing (vehicle parked) -> running (countdown, cargo integrity that loses 25 % per impact,
+distance to the drop) -> DELIVERED with payout (base + 5 credits per second left + 2 per cargo
+percent) or RUN FAILED (time out / cargo corrupted) -> next job or retry. A / F / tap accepts.
+Credits and the job index persist in UserDefaults (`SPEEDER_RESET_PROGRESS=1` clears them,
+`SPEEDER_MISSION=<n>` picks a job). The mission decides the world, so job changes rebuild the
+scene; the HUD toggle *missions (corridor)* turns the loop off for free play. The Grid is free
+play for now (duels come later). The contact badge is a placeholder for the avatar portrait.
+
 ## The Grid (light-cycle arena, third world)
 
 The third world is a different game, not a theme: `Scene/GameMode.swift` splits the app into

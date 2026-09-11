@@ -22,6 +22,10 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   splits corridor vs arena; `Theme.theGrid.mode == .arena`; everything arena-only lives in
   `Sources/Arena/` (`ArenaWorld`, `LightCycle`, `TrailSystem`, `TrailRenderer`, `ArenaController`,
   `ArenaAI`). The README's "The Grid" section documents the mechanics and capture hooks.
+- Direction (11 Sep 2026): a **mission runner**, Tron-clean tone, single player; see
+  `SpeederProto/docs/game-direction.md`. Delivery missions exist (`Sources/Missions/`); next are the
+  hub on the garage deck, search/escape missions, the avatar pipeline (Character Creator 5 exports
+  as GLB/FBX/OBJ; convert with Blender like the speeder), then duels.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)

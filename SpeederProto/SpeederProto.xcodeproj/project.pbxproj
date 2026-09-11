@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		02D3D56823114D66FCF57FEF /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
 		03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
+		077FD038A6003EABA8B6BC90 /* MissionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */; };
 		08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
 		0DA9524FD78109DD0B910430 /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
 		0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
@@ -34,6 +35,7 @@
 		5F20EC056DE38F2E4417C878 /* LightCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */; };
 		60068708FF0A24190CD48367 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
 		621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
+		6373BFD599684FB42ACE19A1 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
 		6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
 		6A80F9F3360AD1340BF798D3 /* Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830774F78514CA1A5F4B7434 /* Input.swift */; };
 		6AF2A544D10486D2193FCC54 /* WorldScroller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196B1573C8FB9CC7F731E150 /* WorldScroller.swift */; };
@@ -53,6 +55,7 @@
 		A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		A975139BC959AB5AC5F0212B /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
 		ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
+		B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */; };
 		B671EFFBFEDC2FCD6CE6E5B7 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
 		BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
 		BFE2CA340C16BD0C8218EFA0 /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
@@ -60,6 +63,7 @@
 		D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
 		DC41CBFF327A56F45112A39A /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
 		E4BA5063FAA37F1CB0887EBE /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
+		EA6E0C0F4AB2DC46D198DA28 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
 		ED7A03D5F51FEA26BECEA23A /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
 		EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
 		F4CA0144019743170E987786 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
@@ -69,6 +73,7 @@
 
 /* Begin PBXFileReference section */
 		0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialFactory.swift; sourceTree = "<group>"; };
+		1362513C3D8ABE25AC8315B7 /* Mission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mission.swift; sourceTree = "<group>"; };
 		196B1573C8FB9CC7F731E150 /* WorldScroller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldScroller.swift; sourceTree = "<group>"; };
 		224CF6515E65592F712F0902 /* FXSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FXSettings.swift; sourceTree = "<group>"; };
 		29EC8E7CD387377F03E68669 /* TrackProgram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProgram.swift; sourceTree = "<group>"; };
@@ -94,6 +99,7 @@
 		C9878B4DE09B4382EE413D42 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederController.swift; sourceTree = "<group>"; };
 		DA03C8CBB3AECCC551185AD4 /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
+		E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionRunner.swift; sourceTree = "<group>"; };
 		E59AAB31C250E0E039642DF5 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		EA98E8EC40131A52017CCC61 /* ArenaController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaController.swift; sourceTree = "<group>"; };
 		F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "SpeederProto-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -140,12 +146,22 @@
 			children = (
 				8D77DD23F54D80E39174AFD9 /* App */,
 				E87E23EDACC0C849C6E4598B /* Arena */,
+				41A26131AA380A7C955A557C /* Missions */,
 				14456DB4C36B752427D5A0E6 /* Rendering */,
 				58FAD8C39C416204195ADA96 /* Scene */,
 				4F90627EE602D4C7D813EC94 /* Utilities */,
 				1844EE35F9CAB3E4DD50EF2B /* Views */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		41A26131AA380A7C955A557C /* Missions */ = {
+			isa = PBXGroup;
+			children = (
+				1362513C3D8ABE25AC8315B7 /* Mission.swift */,
+				E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */,
+			);
+			path = Missions;
 			sourceTree = "<group>";
 		};
 		4F90627EE602D4C7D813EC94 /* Utilities */ = {
@@ -327,6 +343,8 @@
 				5F20EC056DE38F2E4417C878 /* LightCycle.swift in Sources */,
 				B671EFFBFEDC2FCD6CE6E5B7 /* MaterialFactory.swift in Sources */,
 				4C82EB5F2D71407DA09681A7 /* Meshes.swift in Sources */,
+				6373BFD599684FB42ACE19A1 /* Mission.swift in Sources */,
+				077FD038A6003EABA8B6BC90 /* MissionRunner.swift in Sources */,
 				ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */,
 				D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */,
 				4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */,
@@ -362,6 +380,8 @@
 				8A156D2A07099DCA7F9BC9F2 /* LightCycle.swift in Sources */,
 				843CCA4CA54FC1DDD43FABC9 /* MaterialFactory.swift in Sources */,
 				0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */,
+				EA6E0C0F4AB2DC46D198DA28 /* Mission.swift in Sources */,
+				B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */,
 				02D3D56823114D66FCF57FEF /* Platform.swift in Sources */,
 				114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */,
 				5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */,

@@ -1004,7 +1004,7 @@ final class WorldScroller {
     let segmentCount = 8
     private(set) var segments: [RoadSegment] = []   // near -> far
     let skyline: SkylineLayer
-    private let program = TrackProgram()
+    private let program: TrackProgram
     private var settings = FXSettings()
     private let recycleZ: Float = 60
     private let startZ: Float = 20
@@ -1023,9 +1023,10 @@ final class WorldScroller {
         currentBlock.style == .tube ? (RoadSegment.tubeCenterY, RoadSegment.tubeRadius - 0.7) : nil
     }
 
-    init(materials: SceneMaterials, settings: FXSettings) {
+    init(materials: SceneMaterials, settings: FXSettings, program: TrackProgram = TrackProgram()) {
         root.name = "WorldRoot"
         self.settings = settings
+        self.program = program
         skyline = SkylineLayer(materials: materials)
         root.addChild(skyline.root)
         var prev: RoadSegment? = nil

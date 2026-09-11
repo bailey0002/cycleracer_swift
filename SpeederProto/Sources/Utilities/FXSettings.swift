@@ -37,6 +37,8 @@ struct FXSettings: Equatable {
     var trailLength  = 1        // 0 short (220 m), 1 long (420 m), 2 endless
     var opponent     = true     // AI light cycle
     var grinding     = true     // proximity speed surge + energy
+    // missions
+    var missions     = true     // corridor worlds run the job loop; off = free play
 }
 
 struct FrameStats {

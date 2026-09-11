@@ -24,6 +24,11 @@ final class GameController: ObservableObject {
     }
     @Published var stats = FrameStats()
     @Published var loadError: String? = nil
+    /// Job loop (delivery missions) for the corridor worlds.
+    let missions = MissionRunner()
+    @Published var mission = MissionState()
+    private var missionFirePrev = false
+    private var missionHitsSeen = 0
     #if os(macOS)
     @Published var panelVisible = true
     #else
@@ -91,6 +96,12 @@ final class GameController: ObservableObject {
         #endif
         configureView()
         applyVariantPreset()
+        if settings.missions && ProcessInfo.processInfo.environment["SPEEDER_VARIANT"] == nil {
+            // the current job decides the world
+            settings.environment = missions.current.theme.rawValue
+            missions.current.theme.adjust(&settings)
+        }
+        mission = missionActive ? missions.snapshot() : MissionState()
         Task { await build() }
     }
 
@@ -183,7 +194,9 @@ final class GameController: ObservableObject {
                 let rival = try await SpeederController.load(materials: materials)
                 arena.attachOpponent(rival)
             } else {
-                let world = WorldScroller(materials: materials, settings: settings)
+                let program = missionActive ? TrackProgram(blocks: missions.current.blocks) : TrackProgram()
+                let world = WorldScroller(materials: materials, settings: settings, program: program)
+                distance = 0; hits = 0; missionHitsSeen = 0; kills = 0
                 worldAnchor.addChild(world.root)
                 self.world = world
             }
@@ -325,7 +338,7 @@ final class GameController: ObservableObject {
             let bias = Float(ProcessInfo.processInfo.environment["SPEEDER_DEMO_BIAS"] ?? "0") ?? 0
             input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
             input.pointerClimb = max(-1, min(1, sin(time * 0.6 + 1.0) * 0.9))
-            input.fire = Int(time * 2) % 3 == 0
+            input.fire = Int(time * 2) % 3 == 0 || (missionActive && missions.phase != .running && time > 1.5)
             input.pointerBoost = time > 6.5 && time < 11
         }
         handleCommonInput(input)
@@ -334,7 +347,17 @@ final class GameController: ObservableObject {
         // throttle: cruise speed adjusted with up/down, boost multiplies
         if input.speedUp { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
         if input.speedDown { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
-        let target = settings.roadMotion ? settings.cruiseSpeed * (input.boosting ? 1.8 : 1.0) : 0
+        // missions: A / F / tap accepts a briefing or a result; the vehicle only moves during a live job
+        if missionActive {
+            let fire = input.firing
+            if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
+            missionFirePrev = fire
+            missions.update(dt: dt, travel: speed * dt, newHits: hits - missionHitsSeen)
+            missionHitsSeen = hits
+            if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = missions.snapshot() }
+        }
+        let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
+        let target = moving ? settings.cruiseSpeed * (input.boosting ? 1.8 : 1.0) : 0
         speed = damp(speed, target, target > speed ? 1.6 : 2.0, dt)
         let speedNorm = clamp01(speed / maxSpeed)
 
@@ -476,6 +499,27 @@ final class GameController: ObservableObject {
     }
 
     private func count(_ e: Entity) -> Int { 1 + e.children.reduce(0) { $0 + count($1) } }
+
+    /// Missions run in the corridor worlds when the toggle is on.
+    private var missionActive: Bool { settings.missions && (Theme(rawValue: settings.environment) ?? .neonCity).mode == .corridor }
+
+    /// Accept the briefing or continue past a result (also called by the HUD tap).
+    func acceptMission() {
+        guard missionActive else { return }
+        let rebuild = missions.accept()
+        mission = missions.snapshot()
+        if rebuild {
+            let theme = missions.current.theme
+            if theme.rawValue != settings.environment {
+                var s = settings
+                s.environment = theme.rawValue
+                theme.adjust(&s)
+                settings = s          // didSet rebuilds
+            } else {
+                Task { await rebuildScene() }
+            }
+        }
+    }
 
     private func handleCommonInput(_ input: InputState) {
         if input.panelToggleRequested {

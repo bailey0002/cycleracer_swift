@@ -23,7 +23,13 @@ struct TrackBlock {
 /// the player at the split. The four blocks after a fork are `.branch` placeholders
 /// that the scroller re-styles once the choice is made.
 final class TrackProgram {
-    private let main: [TrackBlock] = [
+    private let main: [TrackBlock]
+    /// Endless free-play track.
+    init() { main = TrackProgram.freePlay }
+    /// A mission's track. The list is followed once, then the last block repeats.
+    init(blocks: [TrackBlock]) { main = blocks.isEmpty ? TrackProgram.freePlay : blocks; loops = false }
+    private var loops = true
+    static let freePlay: [TrackBlock] = [
         .city(0, rows: 0, "downtown"),
         .city(0, rows: 1, "downtown"),
         .city(3, rows: 1, "downtown - right bend"),
@@ -56,7 +62,7 @@ final class TrackProgram {
     private var index = 0
 
     func next() -> TrackBlock {
-        let b = main[index % main.count]
+        let b = loops ? main[index % main.count] : main[min(index, main.count - 1)]
         index += 1
         return b
     }

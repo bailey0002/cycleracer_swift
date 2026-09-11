@@ -22,6 +22,7 @@ struct HUDView: View {
                 }
             }
             .padding(12)
+            missionOverlay
             if controller.stats.flash > 0.25 {
                 Text("HIT")
                     .font(.system(size: 42, weight: .black, design: .rounded))
@@ -77,6 +78,82 @@ struct HUDView: View {
         .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
     }
 
+    // MARK: - Missions
+
+    @ViewBuilder private var missionOverlay: some View {
+        let m = controller.mission
+        switch m.phase {
+        case .briefing:
+            missionCard {
+                HStack(spacing: 10) {
+                    contactBadge(m.contact)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(m.code)  //  \(m.title)").font(.system(size: 16, weight: .black, design: .monospaced)).foregroundStyle(.cyan)
+                        Text("contact \(m.contact)   job \(m.index + 1)/\(m.count)   credits \(m.credits)").foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                Text(m.brief).font(.system(size: 11, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
+                Text("DROP \(m.distanceText)   WINDOW \(m.timeText)   CARGO 100%").foregroundStyle(.cyan)
+                Text("A / F / TAP  ACCEPT").font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.white)
+            }
+        case .running:
+            VStack {
+                HStack(spacing: 14) {
+                    Text(String(format: "%3.0f s", m.timeLeft)).font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .foregroundStyle(m.timeLeft < 10 ? .red : .white)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("CARGO").font(.system(size: 8, design: .monospaced))
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.15)).frame(width: 110, height: 6)
+                            RoundedRectangle(cornerRadius: 2).fill(m.cargo > 0.5 ? Color.cyan : Color.red).frame(width: CGFloat(m.cargo) * 110, height: 6)
+                        }
+                    }
+                    Text(String(format: "%4.0f m to drop", m.distanceLeft)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(.cyan)
+                }
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+                .padding(.top, 8)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+        case .success:
+            missionCard {
+                Text("DELIVERED").font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(.cyan)
+                Text("\(m.code)  //  \(m.title)").foregroundStyle(.white.opacity(0.8))
+                Text("PAYOUT +\(m.payout)   CREDITS \(m.credits)   CARGO \(Int(m.cargo * 100))%").foregroundStyle(.white)
+                Text("A / F / TAP  NEXT JOB").font(.system(size: 12, weight: .bold, design: .monospaced))
+            }
+        case .failed:
+            missionCard {
+                Text("RUN FAILED").font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(.red)
+                Text(m.failReason).foregroundStyle(.white.opacity(0.8))
+                Text("A / F / TAP  RETRY").font(.system(size: 12, weight: .bold, design: .monospaced))
+            }
+        case .freePlay:
+            EmptyView()
+        }
+    }
+
+    private func missionCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) { content() }
+            .padding(14)
+            .frame(width: 360)
+            .background(.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(.cyan.opacity(0.5), lineWidth: 1))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture { controller.acceptMission() }
+    }
+
+    /// Placeholder for the avatar portrait: initials in a ring. Replaced by a rendered avatar later.
+    private func contactBadge(_ name: String) -> some View {
+        Text(String(name.prefix(2)))
+            .font(.system(size: 14, weight: .black, design: .monospaced))
+            .frame(width: 40, height: 40)
+            .background(Circle().fill(.cyan.opacity(0.15)))
+            .overlay(Circle().stroke(.cyan, lineWidth: 1.5))
+    }
+
     private func meter(_ label: String, _ value: Float, _ color: Color) -> some View {
         HStack(spacing: 6) {
             Text(label).frame(width: 44, alignment: .leading)
@@ -109,6 +186,7 @@ struct HUDView: View {
             Divider().overlay(.white.opacity(0.3))
             Text("ENVIRONMENT").bold().foregroundStyle(.cyan)
             picker("world", \.environment, ["neon city", "canyon", "the grid"])
+            toggle("missions (corridor)", \.missions)
             if isArena {
                 Divider().overlay(.white.opacity(0.3))
                 Text("THE GRID").bold().foregroundStyle(.cyan)
