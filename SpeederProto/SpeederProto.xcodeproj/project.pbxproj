@@ -15,6 +15,7 @@
 		0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
 		114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
 		147812546190B4325B27A09E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
+		18A4554AB853815327DB45F0 /* AvatarActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF5F98B937F71B03F109B71 /* AvatarActor.swift */; };
 		1B5F82B56A0874899A2867FA /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
 		2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
 		27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
@@ -23,6 +24,7 @@
 		38F466D3DC77436528A13440 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
 		39B55898EFD94C6D219D2273 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58455DAE604D8289457A1546 /* GameMode.swift */; };
 		3B54FAA079FB92CEB507CE1E /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
+		44D867CA914D3443D0E4B4EB /* AvatarActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF5F98B937F71B03F109B71 /* AvatarActor.swift */; };
 		49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
 		4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
 		4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */; };
@@ -32,6 +34,7 @@
 		59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
 		5B3A358007EC4F94020517ED /* TrackProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EC8E7CD387377F03E68669 /* TrackProgram.swift */; };
 		5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */; };
+		5CB9948783443B875CFE0E4B /* Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B36422554C4AD2CC76BF3BBE /* Avatar.usdz */; };
 		5F20EC056DE38F2E4417C878 /* LightCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */; };
 		60068708FF0A24190CD48367 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
 		621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
@@ -61,6 +64,7 @@
 		BFE2CA340C16BD0C8218EFA0 /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
 		D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
 		D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
+		DB49B1D8B243C8F5A4D3C3D9 /* Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B36422554C4AD2CC76BF3BBE /* Avatar.usdz */; };
 		DC41CBFF327A56F45112A39A /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
 		E4BA5063FAA37F1CB0887EBE /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
 		EA6E0C0F4AB2DC46D198DA28 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
@@ -94,6 +98,7 @@
 		9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaWorld.swift; sourceTree = "<group>"; };
 		AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameCapture.swift; sourceTree = "<group>"; };
+		B36422554C4AD2CC76BF3BBE /* Avatar.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Avatar.usdz; sourceTree = "<group>"; };
 		B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailRenderer.swift; sourceTree = "<group>"; };
 		BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meshes.swift; sourceTree = "<group>"; };
 		C9878B4DE09B4382EE413D42 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -105,6 +110,7 @@
 		F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "SpeederProto-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SpeederProto-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC6DBC66827CF202624BE7B3 /* Weapons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weapons.swift; sourceTree = "<group>"; };
+		FCF5F98B937F71B03F109B71 /* AvatarActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarActor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -176,6 +182,7 @@
 		58FAD8C39C416204195ADA96 /* Scene */ = {
 			isa = PBXGroup;
 			children = (
+				FCF5F98B937F71B03F109B71 /* AvatarActor.swift */,
 				44E74DD4583F19C94BE32E39 /* CameraRig.swift */,
 				5E0762ACC75D4CC67B23E329 /* GameController.swift */,
 				58455DAE604D8289457A1546 /* GameMode.swift */,
@@ -191,6 +198,7 @@
 		60DE0E2CE1A5F121C9BB663F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				B36422554C4AD2CC76BF3BBE /* Avatar.usdz */,
 				85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */,
 			);
 			path = Resources;
@@ -309,6 +317,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CB9948783443B875CFE0E4B /* Avatar.usdz in Resources */,
 				4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -317,6 +326,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DB49B1D8B243C8F5A4D3C3D9 /* Avatar.usdz in Resources */,
 				7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -332,6 +342,7 @@
 				A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */,
 				03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */,
 				1B5F82B56A0874899A2867FA /* ArenaWorld.swift in Sources */,
+				18A4554AB853815327DB45F0 /* AvatarActor.swift in Sources */,
 				59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */,
 				60068708FF0A24190CD48367 /* FXSettings.swift in Sources */,
 				49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */,
@@ -369,6 +380,7 @@
 				72A32373DFCD52235FAAC00E /* ArenaController.swift in Sources */,
 				A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */,
 				8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */,
+				44D867CA914D3443D0E4B4EB /* AvatarActor.swift in Sources */,
 				FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */,
 				D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */,
 				2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */,

@@ -56,6 +56,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Fog colour close to scene luminance is invisible; haze must be brighter than what it replaces.
 - Multi-file `swiftc` probes need the top-level file named `main.swift`.
 - Blender 5.0 (`/Applications/Blender.app`) converts GLB to USDZ; RealityKit cannot load GLB.
+  Rigged avatars: `bpy.ops.wm.usd_export(export_animation=True, export_armatures=True,
+  export_textures_mode='NEW')`; the result loads y-up, faces +Z, and `availableAnimations` has the
+  clip. Sibling project folders (e.g. `../kerb_skate_game/avatar.glb`) are reachable.
 - Arena: `LowLevelMesh.Part.indexOffset` is in bytes. Vertex colour and uv reach a `CustomMaterial`
   surface shader via `geometry().color()` / `uv0()`; per-frame material values go through
   `custom.value` and must be re-assigned to the model each frame (materials are values).

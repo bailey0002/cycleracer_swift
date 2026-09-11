@@ -153,6 +153,16 @@ Credits and the job index persist in UserDefaults (`SPEEDER_RESET_PROGRESS=1` cl
 scene; the HUD toggle *missions (corridor)* turns the loop off for free play. The Grid is free
 play for now (duels come later). The contact badge is a placeholder for the avatar portrait.
 
+### Avatars
+
+`Scene/AvatarActor.swift` loads a character USDZ, puts its feet at y = 0, faces a point and loops
+the first animation clip. The first test asset is `Resources/Avatar.usdz`, converted from
+`../kerb_skate_game/avatar.glb` (an Avaturn export: 54-bone Mixamo-named rig, one clip, 28
+textures) with the same Blender USD export as the speeder (`export_animation`,
+`export_armatures`, `export_textures_mode='NEW'`; a stray icosphere was dropped). It comes in
+y-up at 1.88 m, faces +Z, and RealityKit plays the clip. During a mission briefing the contact
+stands beside the parked bike. Character Creator 5 exports (GLB/FBX) go through the same script.
+
 ## The Grid (light-cycle arena, third world)
 
 The third world is a different game, not a theme: `Scene/GameMode.swift` splits the app into

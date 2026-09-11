@@ -28,6 +28,9 @@ final class GameController: ObservableObject {
     let missions = MissionRunner()
     @Published var mission = MissionState()
     private var missionFirePrev = false
+    /// The contact, standing by the parked bike during briefings (avatar pipeline test).
+    private var contactAvatar: AvatarActor?
+    private let holdBriefing = ProcessInfo.processInfo.environment["SPEEDER_HOLD_BRIEFING"] == "1"
     private var missionHitsSeen = 0
     #if os(macOS)
     @Published var panelVisible = true
@@ -161,7 +164,7 @@ final class GameController: ObservableObject {
     private func rebuildScene() async {
         guard !rebuilding else { return }
         rebuilding = true
-        world = nil; arena = nil; speeder = nil; cameraRig = nil; weapons = nil
+        world = nil; arena = nil; speeder = nil; cameraRig = nil; weapons = nil; contactAvatar = nil
         for child in worldAnchor.children.map({ $0 }) { child.removeFromParent() }
         entityCount = 0
         post.captureRequest = nil
@@ -197,6 +200,16 @@ final class GameController: ObservableObject {
                 let program = missionActive ? TrackProgram(blocks: missions.current.blocks) : TrackProgram()
                 let world = WorldScroller(materials: materials, settings: settings, program: program)
                 distance = 0; hits = 0; missionHitsSeen = 0; kills = 0
+                if missionActive {
+                    // the contact waits beside the bike; hidden once the job is live
+                    do {
+                        let avatar = try await AvatarActor.load()
+                        avatar.root.position = [2.6, 0, -1.5]
+                        avatar.face([0, 1.5, 6])
+                        worldAnchor.addChild(avatar.root)
+                        contactAvatar = avatar
+                    } catch { print("avatar load failed: \(error)") }
+                }
                 worldAnchor.addChild(world.root)
                 self.world = world
             }
@@ -338,7 +351,8 @@ final class GameController: ObservableObject {
             let bias = Float(ProcessInfo.processInfo.environment["SPEEDER_DEMO_BIAS"] ?? "0") ?? 0
             input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
             input.pointerClimb = max(-1, min(1, sin(time * 0.6 + 1.0) * 0.9))
-            input.fire = Int(time * 2) % 3 == 0 || (missionActive && missions.phase != .running && time > 1.5)
+            // weapons pulse during a run; while parked the only "fire" is the scripted accept
+            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing) : Int(time * 2) % 3 == 0
             input.pointerBoost = time > 6.5 && time < 11
         }
         handleCommonInput(input)
@@ -355,6 +369,8 @@ final class GameController: ObservableObject {
             missions.update(dt: dt, travel: speed * dt, newHits: hits - missionHitsSeen)
             missionHitsSeen = hits
             if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = missions.snapshot() }
+            contactAvatar?.root.isEnabled = missions.phase != .running
+            if demoMode && Int(time * 4) % 4 == 0 && statsAccumulator > 0.2, let a = contactAvatar { print("avatar \(a.debugBounds())") }
         }
         let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
         let target = moving ? settings.cruiseSpeed * (input.boosting ? 1.8 : 1.0) : 0
@@ -365,7 +381,8 @@ final class GameController: ObservableObject {
         world.advance(travel, playerX: speeder.x, time: time)
         distance += travel
         speeder.tube = world.tubeConstraint
-        speeder.update(dt: dt, time: time, steerInput: input.steering, climbInput: input.climb, speedNorm: speedNorm, roadShift: world.lastShift * world.tugFactor / 0.6)
+        let parked = missionActive && !missions.allowsMotion
+        speeder.update(dt: dt, time: time, steerInput: parked ? 0 : input.steering, climbInput: parked ? 0 : input.climb, speedNorm: speedNorm, roadShift: world.lastShift * world.tugFactor / 0.6)
 
         // barrier scraping: bleed speed, sparks, shake
         if speeder.scraping && speed > 5 {
