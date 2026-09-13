@@ -34,6 +34,8 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   shortlist item 2 done 13 Sep 2026: one HULL energy bar for the corridor jobs). The Grid plays
   in rounds and matches since 13 Sep 2026 (rival freeze-cam, breach, pads, tunnel grind, rival
   beam; `SpeederProto/docs/arena-next.md` lists what was added and the proposals not built).
+- Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md` (rival with a face and temper, match
+  result card, Armagetron accel curve, deck purpose, streak scoring with ranks).
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)
