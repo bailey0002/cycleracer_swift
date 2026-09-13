@@ -16,11 +16,20 @@ final class ArenaWorld {
     private var pylonTops: [ModelEntity] = []
     let pickupGroup = Entity()
     private(set) var pickupEntities: [Entity] = []
+    /// Floor pads: boost pads (cyan-white chevrons) surge the cycle, slow pads (red) cut its speed.
+    struct Pad { let pos: SIMD2<Float>; let boost: Bool; let entity: Entity }
+    private(set) var pads: [Pad] = []
+    static let padRadius: Float = 4.2
+    /// Orange locator column over the rival so it can be found across the arena.
+    let rivalBeam: ModelEntity
 
     init(materials: SceneMaterials, halfSize: Float) {
         self.halfSize = halfSize
         terrain = ArenaTerrain.garage(halfSize: halfSize)
         root.name = "Arena"
+        rivalBeam = ModelEntity(mesh: .generateBox(size: [0.22, 34, 0.22]), materials: [materials.glow(ArenaController.opponentColor, opacity: 0.32)])
+        rivalBeam.isEnabled = false
+        root.addChild(rivalBeam)
         let size = halfSize * 2
         // floor
         var floorMat = materials.gridFloor ?? materials.road
@@ -85,7 +94,60 @@ final class ArenaWorld {
         }
         root.addChild(towerGroup)
         buildDecks(materials: materials)
+        buildPads(materials: materials)
         root.addChild(pickupGroup)
+    }
+
+    /// Six pads on open ground (clear of the deck, ramps and hazard walls): four boost, two slow.
+    private func buildPads(materials: SceneMaterials) {
+        let layout: [(SIMD2<Float>, Bool)] = [([0, 62], true), ([-82, 10], true), ([82, 10], true), ([0, -100], true), ([-40, 85], false), ([40, 85], false)]
+        let boostColor = SIMD3<Float>(0.6, 0.95, 1.0), slowColor = SIMD3<Float>(1.0, 0.2, 0.25)
+        for (pos, boost) in layout {
+            let color = boost ? boostColor : slowColor
+            let e = Entity()
+            let y = terrain.height(at: pos)
+            e.position = [pos.x, y, pos.y]
+            let r = Self.padRadius
+            // pool + frame, tilted a hair so RealityKit never culls the flat quad
+            let pool = ModelEntity(mesh: .generatePlane(width: r * 2, depth: r * 2), materials: [materials.glow(color, opacity: 0.6)])
+            pool.position.y = 0.03
+            pool.orientation = simd_quatf(angle: 0.01, axis: [1, 0, 0])
+            e.addChild(pool)
+            let frameMat = materials.neon(color, intensity: 5)
+            for (dx, dz, sx, sz) in [(-r, 0, 0.25, r * 2), (r, 0, 0.25, r * 2), (0, -r, r * 2, 0.25), (0, r, r * 2, 0.25)] as [(Float, Float, Float, Float)] {
+                let bar = ModelEntity(mesh: .generateBox(size: [sx, 0.12, sz]), materials: [frameMat])
+                bar.position = [dx, 0.06, dz]
+                e.addChild(bar)
+            }
+            // corner posts so the pad reads from the chase camera before it is underfoot
+            for (dx, dz) in [(-r, -r), (r, -r), (-r, r), (r, r)] as [(Float, Float)] {
+                let post = ModelEntity(mesh: .generateBox(size: [0.2, 1.6, 0.2]), materials: [frameMat])
+                post.position = [dx, 0.8, dz]
+                e.addChild(post)
+            }
+            // chevrons: boost pads point every way (any approach works), slow pads carry an X
+            let mark = materials.neon(color, intensity: 5)
+            if boost {
+                for k in 0..<3 {
+                    let z = -r * 0.55 + Float(k) * r * 0.55
+                    for side in [-1, 1] as [Float] {
+                        let bar = ModelEntity(mesh: .generateBox(size: [r * 0.7, 0.1, 0.3]), materials: [mark])
+                        bar.position = [side * r * 0.3, 0.07, z]
+                        bar.orientation = simd_quatf(angle: side * 0.6, axis: [0, 1, 0])
+                        e.addChild(bar)
+                    }
+                }
+            } else {
+                for a in [Float.pi / 4, -Float.pi / 4] {
+                    let bar = ModelEntity(mesh: .generateBox(size: [r * 1.4, 0.1, 0.35]), materials: [mark])
+                    bar.position.y = 0.07
+                    bar.orientation = simd_quatf(angle: a, axis: [0, 1, 0])
+                    e.addChild(bar)
+                }
+            }
+            root.addChild(e)
+            pads.append(Pad(pos: pos, boost: boost, entity: e))
+        }
     }
 
     /// Parking-garage levels: deck floors with a dark slab underneath and an edge strip, inclined
@@ -166,5 +228,12 @@ final class ArenaWorld {
 
     func animate(time: Float) {
         for (i, t) in pylonTops.enumerated() { t.scale = SIMD3(repeating: 1 + 0.15 * sin(time * 3 + Float(i))) }
+        for (i, p) in pads.enumerated() { p.entity.children[0].scale = SIMD3(repeating: 1 + 0.06 * sin(time * 4 + Float(i) * 1.3)) }
+    }
+
+    /// Place the rival's locator beam (hidden when the rival is close enough to see anyway).
+    func placeRivalBeam(at p: SIMD3<Float>, visible: Bool) {
+        rivalBeam.isEnabled = visible
+        rivalBeam.position = [p.x, p.y + 17, p.z]
     }
 }

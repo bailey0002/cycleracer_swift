@@ -131,6 +131,13 @@ final class Trail {
         return died
     }
 
+    /// Kill one segment (a derez breach); the index stays valid, the wall becomes a gap.
+    func kill(global i: Int) {
+        let k = i - offset
+        guard k >= 0, k < segments.count else { return }
+        segments[k].live = false
+    }
+
     /// Drop dead segments at the front of the array once enough have accumulated.
     func compact(keep: Int = 512) -> Bool {
         let dead = firstAlive - offset
@@ -250,6 +257,26 @@ final class TrailSystem {
         for i in t.cutNewest(length: length) {
             if let seg = t.segment(global: i) { hash.remove(SegRef(trail: owner, index: i), seg) }
         }
+    }
+
+    /// A derez explosion breaches every dynamic wall within `radius` of `p` (Armagetron's
+    /// EXPLOSION_RADIUS). Returns the owners whose trails changed; their renderers must be
+    /// rewritten from `firstAlive` and the hash rebuilt by the caller.
+    func breach(at p: SIMD2<Float>, radius: Float) -> [Int] {
+        var owners: [Int] = []
+        for t in trails where !t.isStatic && t.newestIndex >= t.firstAlive && t.count > 0 {
+            var changed = false
+            for i in t.firstAlive...t.newestIndex {
+                guard let seg = t.segment(global: i), seg.live else { continue }
+                let a = SIMD2<Float>(seg.a.x, seg.a.z), b = SIMD2<Float>(seg.b.x, seg.b.z)
+                let ab = b - a
+                let len2 = simd_dot(ab, ab)
+                let u = len2 > 1e-6 ? max(0, min(1, simd_dot(p - a, ab) / len2)) : 0
+                if simd_length(p - (a + ab * u)) < radius { t.kill(global: i); changed = true }
+            }
+            if changed { owners.append(t.owner) }
+        }
+        return owners
     }
 
     func clearAll() {

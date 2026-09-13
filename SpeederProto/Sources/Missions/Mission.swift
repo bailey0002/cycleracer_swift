@@ -27,7 +27,7 @@ struct Mission: Identifiable {
     /// The goal line on the briefing card.
     var goalText: String {
         switch kind {
-        case .delivery: return "DROP \(distanceText)   WINDOW \(timeText)   CARGO 100%"
+        case .delivery: return "DROP \(distanceText)   WINDOW \(timeText)   HULL PAYS"
         case .search:   return "SWEEP \(distanceText)   WINDOW \(timeText)   BEACONS \(beaconsRequired) OF \(beacons)"
         case .escape:   return "RUN \(distanceText)   WINDOW \(timeText)   PURSUER AT \(Int(startGap)) m"
         case .duel:     return "THE GRID   FIRST TO \(duelTarget) DEREZZES"
@@ -44,7 +44,7 @@ struct Mission: Identifiable {
                                   .init(style: .branch, name: "branch"), .init(style: .branch, name: "branch")]
         return [
         Mission(id: 0, kind: .delivery, code: "RELAY 01", title: "DOWNTOWN", contact: "VESS",
-                brief: "Packet for the downtown relay. Straight run, light traffic. Impacts corrupt the cargo. Do not stop.",
+                brief: "Packet for the downtown relay. Straight run, light traffic. Impacts and boost burn the hull; what is left pays. Do not stop.",
                 theme: .neonCity,
                 blocks: [.city(0, rows: 0, "downtown"), .city(0, rows: 1, "downtown"), .city(3, rows: 1, "downtown - right bend"),
                          .city(2, rows: 1, "downtown"), .city(-3, rows: 1, "downtown - left bend"), .city(0, rows: 2, "downtown"),
@@ -64,14 +64,14 @@ struct Mission: Identifiable {
                         [.city(0, rows: 2, "merge"), .city(-3, rows: 2, "downtown - left bend"), .city(0, rows: 1, "relay ahead")],
                 distance: 3600, timeLimit: 95, basePay: 300),
         Mission(id: 3, kind: .escape, code: "RUN 01", title: "TAIL", contact: "KADE",
-                brief: "You picked up a tail. It is faster than your cruise. Boost opens the gap, boost overheats. Reach the relay with it still behind you.",
+                brief: "You picked up a tail. It is faster than your cruise. Boost opens the gap and burns hull. Reach the relay with it still behind you.",
                 theme: .neonCity,
                 blocks: [.city(0, rows: 1, "downtown"), .city(3, rows: 1, "downtown - right bend"), .city(0, rows: 2, "downtown"),
                          .city(-4, rows: 1, "downtown - left bend"), .city(0, rows: 2, "downtown"), .city(2, rows: 1, "downtown"),
                          .city(0, rows: 1, "relay ahead"), .city(0, rows: 0, "relay")],
                 distance: 2800, timeLimit: 80, basePay: 350, startGap: 70),
         Mission(id: 4, kind: .delivery, code: "RELAY 03", title: "DEEP CONDUIT", contact: "VESS",
-                brief: "The relay is below the city. Conduit section: fly the tube, thread the beams. Cargo does not like walls.",
+                brief: "The relay is below the city. Conduit section: fly the tube, thread the beams. The hull does not like walls.",
                 theme: .neonCity,
                 blocks: [.city(0, rows: 1, "downtown"), .city(2, rows: 2, "downtown"), .city(0, rows: 0, "conduit ahead"),
                          .tube(rows: 1), .tube(rows: 2), .tube(rows: 2), .tube(rows: 1),

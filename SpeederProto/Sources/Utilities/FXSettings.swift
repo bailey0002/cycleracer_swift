@@ -65,6 +65,9 @@ struct FrameStats {
     var wins = 0
     var losses = 0
     var trailSegments = 0
+    var round = 1
+    var rival = "RIVAL"
+    var matchTarget = 3
 }
 
 /// Same-frame acknowledgement of player actions for the HUD. Published only when it changes.

@@ -126,7 +126,12 @@ struct HUDView: View {
                 meter("ENERGY", s.energy, HUDStyle.accent)
                 meter("EDGE", s.edge, s.edge < 0.3 ? .red : .orange)
                 meter("GRIND", s.grind, .yellow)
-                Text("DEREZZED \(s.losses)   RIVAL \(s.wins)   WALLS \(s.trailSegments)").foregroundStyle(.white.opacity(0.75))
+                if s.matchTarget == Int.max {
+                    Text("YOU \(s.wins)  -  \(s.losses) \(s.rival)").font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced))
+                } else {
+                    Text("ROUND \(s.round)   FIRST TO \(s.matchTarget)").foregroundStyle(.white.opacity(0.75))
+                    Text("YOU \(s.wins)  -  \(s.losses) \(s.rival)").font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced))
+                }
                 Text("\(s.section.uppercased())   \(String(format: "%.1f", s.altitude)) m").foregroundStyle(HUDStyle.accent)
                 if let p = s.pickup { Text("PICKUP \(p)   A / F TO USE").foregroundStyle(HUDStyle.pickup) }
                 if let c = s.controller { Text("PAD \(c.uppercased())").foregroundStyle(.green.opacity(0.8)) }
@@ -167,16 +172,15 @@ struct HUDView: View {
                         Text(String(format: "%3.0f s", m.timeLeft)).font(.system(size: HUDStyle.bigSize, weight: .bold, design: .monospaced))
                             .foregroundStyle(m.timeLeft < 10 ? .red : .white)
                     }
+                    if m.kind != .duel { meter("HULL", m.energy, m.energy > 0.3 ? HUDStyle.accent : .red) }
                     switch m.kind {
                     case .delivery:
-                        meter("CARGO", m.cargo, m.cargo > 0.5 ? HUDStyle.accent : .red)
                         Text(String(format: "%4.0f m TO DROP", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .search:
                         Text("BEACONS \(m.beaconsHit)/\(m.beaconsTotal)   NEED \(m.beaconsRequired)").font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.pickup)
                         Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .escape:
                         Text(String(format: "PURSUER %3.0f m", m.gap)).font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(m.gap < 20 ? .red : .orange)
-                        meter("BOOST", m.boostMeter, m.boostMeter > 0.3 ? HUDStyle.accent : .red)
                         Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .duel:
                         Text("FIRST TO \(m.duelTarget)    YOU \(m.duelWins)  -  \(m.duelLosses) \(m.contact)").font(.system(size: HUDStyle.baseSize + 4, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
@@ -192,7 +196,7 @@ struct HUDView: View {
             missionCard {
                 Text(m.successTitle).font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                 Text("\(m.code)  //  \(m.title)").foregroundStyle(.white.opacity(0.8))
-                Text("PAYOUT +\(m.payout)   CREDITS \(m.credits)" + (m.kind == .delivery ? "   CARGO \(Int(m.cargo * 100))%" : m.kind == .search ? "   BEACONS \(m.beaconsHit)/\(m.beaconsTotal)" : "")).foregroundStyle(.white)
+                Text("PAYOUT +\(m.payout)   CREDITS \(m.credits)" + (m.kind == .duel ? "" : "   HULL \(Int(m.energy * 100))%") + (m.kind == .search ? "   BEACONS \(m.beaconsHit)/\(m.beaconsTotal)" : "")).foregroundStyle(.white)
                 prompt("NEXT JOB")
             }
         case .failed:

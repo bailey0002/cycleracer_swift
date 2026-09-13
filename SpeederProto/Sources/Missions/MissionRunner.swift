@@ -12,7 +12,7 @@ struct MissionState: Equatable {
     var timeText = ""
     var timeLeft: Float = 0
     var distanceLeft: Float = 0
-    var cargo: Float = 1          // 0...1 integrity
+    var energy: Float = 1         // 0...1 hull + boost fuel (one bar)
     var payout = 0
     var credits = 0
     var failReason = ""
@@ -27,14 +27,15 @@ struct MissionState: Equatable {
     var beaconsRequired = 0
     // escape
     var gap: Float = 0
-    var boostMeter: Float = 1
     // duel
     var duelWins = 0
     var duelLosses = 0
     var duelTarget = 0
 }
 
-/// The job loop: briefing -> running (timer, cargo, distance) -> success / failed -> next.
+/// The job loop: briefing -> running (timer, hull energy, distance) -> success / failed -> next.
+/// One energy bar is both hull and boost fuel (F-Zero / Wipeout): hits, scrapes and boost drain it,
+/// beacons and kills refill it, a trickle recharges it, and what is left at the drop pays out.
 /// Owned by `GameController`, which feeds it distance and hits and rebuilds the world when
 /// the mission changes.
 final class MissionRunner {
@@ -44,20 +45,22 @@ final class MissionRunner {
     private(set) var credits: Int
     private var elapsed: Float = 0
     private var travelled: Float = 0
-    private var cargo: Float = 1
+    private var energy: Float = 1
     private var payout = 0
     private var failReason = ""
     private var beaconsHit = 0
     private var gap: Float = 0
-    private var boostMeter: Float = 1
     private var duelWins = 0
     private var duelLosses = 0
     private let defaults = UserDefaults.standard
     static let hitDamage: Float = 0.25
-    /// Escape: the pursuer cruises a little faster than the player; boost outruns it but overheats.
+    static let scrapeDrain: Float = 0.08      // per second against a barrier
+    static let boostDrain: Float = 0.12       // per second of boost (about 8 s from full)
+    static let recharge: Float = 0.035        // per second when not boosting or scraping
+    static let beaconCharge: Float = 0.2
+    static let killCharge: Float = 0.05
+    /// Escape: the pursuer cruises a little faster than the player; boost outruns it but burns hull.
     static let pursuerSpeed: Float = 47
-    static let boostDrain: Float = 1 / 3.5
-    static let boostRecharge: Float = 0.28
 
     init(missions: [Mission] = Mission.deliveries) {
         self.missions = missions
@@ -79,8 +82,8 @@ final class MissionRunner {
         switch phase {
         case .briefing:
             phase = .running
-            elapsed = 0; travelled = 0; cargo = 1; payout = 0
-            beaconsHit = 0; gap = current.startGap; boostMeter = 1; duelWins = 0; duelLosses = 0
+            elapsed = 0; travelled = 0; energy = 1; payout = 0
+            beaconsHit = 0; gap = current.startGap; duelWins = 0; duelLosses = 0
             return false
         case .success:
             index = (index + 1) % missions.count
@@ -95,44 +98,43 @@ final class MissionRunner {
         }
     }
 
-    /// Boost is free except on an escape run, where it drains the meter.
-    var boostAllowed: Bool { current.kind != .escape || boostMeter > 0.02 }
+    /// Boost burns hull, so it needs some left.
+    var boostAllowed: Bool { phase != .running || energy > 0.02 }
 
     /// Advance a live corridor job. `travel` is metres moved this frame, `speed` the vehicle speed,
-    /// `newHits` collisions since last frame, `beaconsHitNow` rings flown through this frame.
-    func update(dt: Float, travel: Float, speed: Float, newHits: Int, boosting: Bool, beaconsHitNow: Int = 0) {
+    /// `newHits` collisions and `newKills` obstacle kills since last frame, `beaconsHitNow` rings
+    /// flown through this frame.
+    func update(dt: Float, travel: Float, speed: Float, newHits: Int, boosting: Bool, scraping: Bool = false, newKills: Int = 0, beaconsHitNow: Int = 0) {
         guard phase == .running else { return }
         let m = current
         elapsed += dt
         travelled += travel
         beaconsHit += beaconsHitNow
-        switch m.kind {
-        case .delivery:
-            if newHits > 0 {
-                cargo = max(0, cargo - Float(newHits) * Self.hitDamage)
-                if cargo <= 0 { fail("CARGO CORRUPTED"); return }
-            }
-        case .escape:
-            if boosting && boostMeter > 0 { boostMeter = max(0, boostMeter - dt * Self.boostDrain) }
-            else { boostMeter = min(1, boostMeter + dt * Self.boostRecharge) }
+        // the one bar
+        if newHits > 0 { energy -= Float(newHits) * Self.hitDamage }
+        if scraping { energy -= dt * Self.scrapeDrain }
+        if boosting { energy -= dt * Self.boostDrain }
+        else if !scraping { energy += dt * Self.recharge }
+        energy += Float(beaconsHitNow) * Self.beaconCharge + Float(newKills) * Self.killCharge
+        energy = max(0, min(1, energy))
+        if energy <= 0 { fail("HULL BREACHED"); return }
+        if m.kind == .escape {
             // the pursuer launches with you: its speed ramps up over the first seconds
             let pursuer = min(Self.pursuerSpeed, elapsed * 22)
             gap += (speed - pursuer) * dt
             if gap <= 4 { fail("CAUGHT"); return }
-        default:
-            break
         }
         if travelled >= m.distance {
             if m.kind == .search && beaconsHit < m.beaconsRequired { fail("SWEEP INCOMPLETE \(beaconsHit)/\(m.beaconsRequired)"); return }
             let timeBonus = Int(max(0, m.timeLimit - elapsed)) * 5
+            let hullBonus = Int(energy * 100) * 2
             var bonus = 0
             switch m.kind {
-            case .delivery: bonus = Int(cargo * 100) * 2
             case .search: bonus = beaconsHit * 40
             case .escape: bonus = Int(gap) * 2
-            case .duel: break
+            default: break
             }
-            succeed(m.basePay + timeBonus + bonus)
+            succeed(m.basePay + timeBonus + hullBonus + bonus)
             return
         }
         if elapsed >= m.timeLimit { fail("TIME OUT") }
@@ -164,9 +166,9 @@ final class MissionRunner {
         return MissionState(phase: phase, code: m.code, title: m.title, contact: m.contact, brief: m.brief,
                             distanceText: m.distanceText, timeText: m.timeText,
                             timeLeft: max(0, m.timeLimit - elapsed), distanceLeft: max(0, m.distance - travelled),
-                            cargo: cargo, payout: payout, credits: credits, failReason: failReason,
+                            energy: energy, payout: payout, credits: credits, failReason: failReason,
                             index: index, count: missions.count, kind: m.kind, goalText: m.goalText, successTitle: m.successTitle,
                             beaconsHit: beaconsHit, beaconsTotal: m.beacons, beaconsRequired: m.beaconsRequired,
-                            gap: gap, boostMeter: boostMeter, duelWins: duelWins, duelLosses: duelLosses, duelTarget: m.duelTarget)
+                            gap: gap, duelWins: duelWins, duelLosses: duelLosses, duelTarget: m.duelTarget)
     }
 }

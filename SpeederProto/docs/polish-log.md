@@ -67,6 +67,17 @@ decay in `publishAck`. The HUD's pip row and `stampOverlay` read it.
 | The diagnostic fps/entities block always sat top-left on the phone. | On iOS it shows only while the settings panel is open. |
 | No acknowledgement of actions. | Pip row bottom-right, centre stamps (see above). |
 
+## 13 Sep 2026: energy bar, arena rounds, arena depth
+
+| Was wrong | Changed | Capture |
+|---|---|---|
+| Three different resources in the corridor jobs: cargo integrity (delivery only), an escape-only boost meter, free boost elsewhere. | One `HULL` bar (`MissionRunner.energy`): hits, scrapes and boost drain it, beacons, kills and a trickle refill it, empty fails the run, the remainder pays on every kind. | `sim/hull-running`, `p4/hull/log.txt` (hull column) |
+| A rival crash on The Grid just respawned it after 4 s while play continued; nothing said who won, and free play never ended. | Rounds: either derez ends the round; the rival's derez is a 2.6 s freeze-orbit with a `<RIVAL> DEREZZED` stamp; `ROUND n` / `GO` on restart; free play is a match to three with `MATCH WON / LOST` over a longer orbit. Duel missions keep their own target and name the rival. | `p4/rival-derez/frame-3.6` .. `frame-6.4`, `sim/arena-rival-derez`, `sim/arena-next-round` |
+| Nothing marked where the rival was across a 220 m arena. | Orange locator beam over the rival beyond 22 m. | `p4/rival-derez/frame-3.2` |
+| A derez left the trails intact around the wreck. | Explosion breaches every dynamic wall within 4 m (`TrailSystem.breach`). | `p4/rival-derez/frame-6.4` |
+| The floor was uniform: no reason to route anywhere. | Four boost pads and two slow pads on open ground; `SURGE` stamp and a boost pip on a boost pad, hit feedback on a slow pad. | `p4/pads-over/frame-1.0`, `p4/pads/frame-1.7` |
+| Grinding was one flat surge. | Two-wall tunnel bonus x1.5 and a 10 m/s break-away kick when leaving a hard grind. | play test |
+
 ## Still open (noted, not done)
 
 - The camera up-vector stays world-up in the conduit; F-Zero-style surface-normal tracking would

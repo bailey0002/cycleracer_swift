@@ -26,7 +26,7 @@ final class GameController: ObservableObject {
     @Published var loadError: String? = nil
     /// Same-frame action acknowledgement for the HUD.
     @Published var ack = ActionAck()
-    private var ackTimers = (fire: Float(0), jump: Float(0), pickup: Float(0), snap: Float(0), beacon: Float(0), hit: Float(0), stamp: Float(0))
+    private var ackTimers = (fire: Float(0), jump: Float(0), pickup: Float(0), snap: Float(0), beacon: Float(0), hit: Float(0), stamp: Float(0), boost: Float(0))
     private var stampText = ""
     private var lastStyle: SegmentStyle? = nil
     private var boostPrev = false
@@ -47,6 +47,7 @@ final class GameController: ObservableObject {
     private var pursuer: PursuerActor?
     private let holdBriefing = ProcessInfo.processInfo.environment["SPEEDER_HOLD_BRIEFING"] == "1"
     private var missionHitsSeen = 0
+    private var missionKillsSeen = 0
     #if os(macOS)
     @Published var panelVisible = true
     #else
@@ -223,7 +224,7 @@ final class GameController: ObservableObject {
             } else {
                 let program = missionActive ? TrackProgram(blocks: missions.current.blocks) : TrackProgram()
                 let world = WorldScroller(materials: materials, settings: settings, program: program)
-                distance = 0; hits = 0; missionHitsSeen = 0; kills = 0
+                distance = 0; hits = 0; missionHitsSeen = 0; kills = 0; missionKillsSeen = 0
                 if missionActive {
                     let m = missions.current
                     if m.kind == .search {
@@ -412,8 +413,10 @@ final class GameController: ObservableObject {
                 beaconHits = beacons.update(distance: distance, roadX: { world.offset(atWorldZ: $0) - world.playerOffset }, playerX: speeder.x, playerY: speeder.altitude, time: time)
                 if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9) }
             }
-            missions.update(dt: simDt, travel: speed * simDt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed, beaconsHitNow: beaconHits)
+            missions.update(dt: simDt, travel: speed * simDt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed,
+                            scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits)
             missionHitsSeen = hits
+            missionKillsSeen = kills
             if let pursuer {
                 if missions.isRunning { pursuer.update(gap: missions.snapshot().gap, playerX: speeder.x, time: time) } else { pursuer.hide() }
             }
@@ -559,7 +562,7 @@ final class GameController: ObservableObject {
             statsAccumulator = 0
             if demoMode && Int(time * 4) % 4 == 0 {
                 let ms = missions.snapshot()
-                print(String(format: "t=%.1f fps=%.0f speed=%.0f m/s entities=%d dist=%.0f mission=%@ beacons=%d/%d gap=%.0f boost=%.2f cargo=%.2f", time, fpsSmoothed, speed, entityCount, distance, "\(ms.phase)", ms.beaconsHit, ms.beaconsTotal, ms.gap, ms.boostMeter, ms.cargo) + " beacon " + (beacons?.debugNearest ?? "-") + String(format: " player x=%.1f alt=%.1f", speeder.x, speeder.altitude) + " proj=\(beacons.flatMap { _ in arView.project(beaconProbe) }.map { "\($0)" } ?? "-") view=\(arView.bounds.size)")
+                print(String(format: "t=%.1f fps=%.0f speed=%.0f m/s entities=%d dist=%.0f mission=%@ beacons=%d/%d gap=%.0f hull=%.2f", time, fpsSmoothed, speed, entityCount, distance, "\(ms.phase)", ms.beaconsHit, ms.beaconsTotal, ms.gap, ms.energy) + " beacon " + (beacons?.debugNearest ?? "-") + String(format: " player x=%.1f alt=%.1f", speeder.x, speeder.altitude) + " proj=\(beacons.flatMap { _ in arView.project(beaconProbe) }.map { "\($0)" } ?? "-") view=\(arView.bounds.size)")
             }
             if entityCount == 0 { entityCount = count(worldAnchor) }
             stats = FrameStats(fps: fpsSmoothed, frameMs: Double(rawDt) * 1000, speed: speed,
@@ -594,8 +597,8 @@ final class GameController: ObservableObject {
         ackTimers.fire = max(0, ackTimers.fire - dt); ackTimers.jump = max(0, ackTimers.jump - dt)
         ackTimers.pickup = max(0, ackTimers.pickup - dt); ackTimers.snap = max(0, ackTimers.snap - dt)
         ackTimers.beacon = max(0, ackTimers.beacon - dt); ackTimers.hit = max(0, ackTimers.hit - dt)
-        ackTimers.stamp = max(0, ackTimers.stamp - dt)
-        let a = ActionAck(boost: ackBoost, fire: ackTimers.fire > 0, jump: ackTimers.jump > 0, pickup: ackTimers.pickup > 0,
+        ackTimers.stamp = max(0, ackTimers.stamp - dt); ackTimers.boost = max(0, ackTimers.boost - dt)
+        let a = ActionAck(boost: ackBoost || ackTimers.boost > 0, fire: ackTimers.fire > 0, jump: ackTimers.jump > 0, pickup: ackTimers.pickup > 0,
                           snap: ackTimers.snap > 0, beacon: ackTimers.beacon > 0, hit: ackTimers.hit > 0,
                           stamp: ackTimers.stamp > 0 ? stampText : "")
         if a != ack { ack = a }
@@ -734,6 +737,8 @@ final class GameController: ObservableObject {
             if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
             missionFirePrev = fire
             arena.paused = missions.phase != .running
+            arena.matchTarget = Int.max
+            arena.rivalName = missions.current.contact
             missions.updateDuel(dt: dt, wins: arena.wins, losses: arena.losses)
             if missions.phase != mission.phase || statsAccumulator > 0.2 { mission = missions.snapshot() }
             if missions.phase != .running { cmd = CycleInput() }
@@ -746,6 +751,15 @@ final class GameController: ObservableObject {
         if ev.jumped { ackTimers.jump = 0.35 }
         if ev.pickupUsed != nil { ackTimers.pickup = 0.4; stamp(ev.pickupUsed == .phase ? "PHASE" : "PULSE", seconds: 0.6) }
         if ev.pickupTaken { ackTimers.pickup = 0.3 }
+        if ev.padBoost { ackTimers.boost = 0.3; stamp("SURGE", seconds: 0.5) }
+        if ev.padSlow { ackTimers.hit = 0.4 }
+        // round and match beats: one stamp each, on the frame they happen
+        if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2) }
+        if ev.roundLost { stamp("DEREZZED", seconds: 2.2) }
+        if ev.matchWon { stamp("MATCH WON  \(arena.wins) - \(arena.losses)", seconds: 3.4) }
+        if ev.matchLost { stamp("MATCH LOST  \(arena.wins) - \(arena.losses)", seconds: 3.4) }
+        if ev.roundStart && !ev.matchWon && !ev.matchLost { stamp(arena.matchTarget == Int.max ? "READY" : "ROUND \(arena.roundNumber)", seconds: 1.0) }
+        if ev.go { stamp("GO", seconds: 0.5) }
         ackBoost = boostPrev
 
         let player = arena.player
@@ -791,6 +805,7 @@ final class GameController: ObservableObject {
             st.state = arena.phaseActive ? "PHASE ACTIVE" : arena.stateText
             st.pickup = arena.heldPickup?.rawValue
             st.wins = arena.wins; st.losses = arena.losses; st.trailSegments = arena.trailSegmentCount
+            st.round = arena.roundNumber; st.rival = arena.rivalName; st.matchTarget = arena.matchTarget
             stats = st
         }
     }

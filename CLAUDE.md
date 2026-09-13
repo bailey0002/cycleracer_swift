@@ -31,7 +31,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   divergence, portal frames at section mouths, enclosure fog, one camera rig with a boost kick,
   same-frame action acks (`ActionAck` -> HUD pips and stamps), curtain over rebuilds, HUD style
   unification. Research merged in `SpeederProto/docs/research-comparables.md` (ranked shortlist;
-  nothing from it implemented yet). The polish build is on the phone (installed 13 Sep 2026).
+  shortlist item 2 done 13 Sep 2026: one HULL energy bar for the corridor jobs). The Grid plays
+  in rounds and matches since 13 Sep 2026 (rival freeze-cam, breach, pads, tunnel grind, rival
+  beam; `SpeederProto/docs/arena-next.md` lists what was added and the proposals not built).
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)

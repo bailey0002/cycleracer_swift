@@ -7,7 +7,10 @@ import simd
 /// camera, post pass and HUD.
 @MainActor
 final class ArenaController {
-    enum Phase { case countdown(Float), running, crashed(Float) }
+    /// `crashed` is the player's derez (slow-motion orbit, then a new round); `rivalDerezzed` is the
+    /// rival's (freeze-orbit on the wreck, then a new round); `matchOver` holds the last orbit while
+    /// the match stamp shows, then resets the score.
+    enum Phase { case countdown(Float), running, crashed(Float), rivalDerezzed(Float), matchOver(Float, won: Bool) }
     enum Pickup: String { case phase = "PHASE", pulse = "PULSE" }
 
     let root = Entity()
@@ -53,8 +56,25 @@ final class ArenaController {
     private(set) var losses = 0
     private(set) var heldPickup: Pickup? = nil
     /// What the player did this frame (cleared every update), for the HUD and haptics.
-    struct Events { var snapped = false; var jumped = false; var landed = false; var pickupTaken = false; var pickupUsed: Pickup? = nil }
+    struct Events {
+        var snapped = false, jumped = false, landed = false, pickupTaken = false
+        var pickupUsed: Pickup? = nil
+        var roundStart = false, go = false, roundWon = false, roundLost = false
+        var matchWon = false, matchLost = false
+        var padBoost = false, padSlow = false
+    }
     private(set) var events = Events()
+    /// Match: first to `matchTarget` derezzes of the other cycle. A duel mission sets it out of
+    /// reach and decides the job itself from `wins` / `losses`.
+    var matchTarget = 3
+    private(set) var round = 1
+    var rivalName = "RIVAL"
+    /// Capture hook: SPEEDER_ARENA_KILL_RIVAL=<run seconds> force-derezzes the rival.
+    private let killRivalAt: Float? = ProcessInfo.processInfo.environment["SPEEDER_ARENA_KILL_RIVAL"].flatMap { Float($0) }
+    private var padCooldown: [Float] = []
+    private var padSurge: Float = 0
+    private var exitKick: Float = 0
+    private var prevGrind: Float = 0
     private var phaseTimer: Float = 0
     var rumble: ((Float, Float) -> Void)? = nil
     /// Held by a mission briefing: nothing moves, the countdown waits.
@@ -161,6 +181,7 @@ final class ArenaController {
             shards.append((s, .zero, simd_quatf(angle: 0, axis: [0, 1, 0])))
         }
         buildPickups()
+        padCooldown = Array(repeating: 0, count: world.pads.count)
         apply(settings)
     }
 
@@ -261,9 +282,16 @@ final class ArenaController {
         cameraOrbit = nil
         pulseOrigin = nil
         runTime = 0
+        padSurge = 0; exitKick = 0; prevGrind = 0
+        for i in padCooldown.indices { padCooldown[i] = 0 }
         for i in pickups.indices { pickups[i].active = false; pickups[i].entity.isEnabled = false; pickups[i].timer = 1.5 + Float(i) * 4 }
         phase = .countdown(demo ? 0.3 : 1.2)
         stateText = "READY"
+        events.roundStart = true
+    }
+
+    private func resetMatch() {
+        wins = 0; losses = 0; round = 1
     }
 
     /// SPEEDER_ARENA_START=x,z,heading positions the player for scripted captures.
@@ -292,14 +320,14 @@ final class ArenaController {
             let left = t - dt
             phase = left <= 0 ? .running : .countdown(left)
             stateText = left <= 0 ? "" : "READY"
-            if left <= 0 { player.speed = player.baseSpeed; opponent.speed = opponent.baseSpeed }
+            if left <= 0 { player.speed = player.baseSpeed; opponent.speed = opponent.baseSpeed; events.go = true }
             pose()
             return
         case .crashed(let t):
             let tt = t + dt
             dt *= 0.35                                            // slow-motion orbit
             cameraOrbit = (derez.position, clamp01(tt / 3.2))
-            if tt > 3.4 { startRound(); return }
+            if tt > 3.4 { endRound(); return }
             phase = .crashed(tt)
             // the opponent keeps riding in slow motion
             if settings.opponent && !opponentDead {
@@ -308,24 +336,43 @@ final class ArenaController {
             }
             pose()
             return
+        case .rivalDerezzed(let t):
+            // freeze-cam on the wreck: nothing moves but the debris and the trail pulse
+            let tt = t + dt
+            cameraOrbit = (derez.position, clamp01(tt / 2.4))
+            if tt > 2.6 { endRound(); return }
+            phase = .rivalDerezzed(tt)
+            pose()
+            return
+        case .matchOver(let t, let won):
+            let tt = t + dt
+            cameraOrbit = (derez.position, clamp01(tt / 3.6))
+            if tt > 3.8 { resetMatch(); startRound(); return }
+            phase = .matchOver(tt, won: won)
+            pose()
+            return
         case .running:
             break
         }
         runTime += dt
+        if let k = killRivalAt, runTime >= k, settings.opponent, !opponentDead {
+            crashOpponent(at: TrailHit(ref: SegRef(trail: 0, index: 0), t: 0, point: opponent.xz, wallDir: .zero, normal: .zero, boundary: false))
+            return
+        }
 
         // --- player
         var pin = input
         if pin.boost && energy <= 0.02 { pin.boost = false }
         if pin.boost { energy = max(0, energy - dt * 0.22) } else { energy = min(1, energy + dt * 0.03) }
         if pin.jump && player.airborne { pin.jump = false }
-        stepCycle(player, input: pin, dt: dt, bonus: settings.grinding ? speedBonus : 0)
+        updatePads(dt: dt)
+        padSurge = max(0, padSurge - dt * 14)
+        exitKick = max(0, exitKick - dt * 9)
+        stepCycle(player, input: pin, dt: dt, bonus: (settings.grinding ? speedBonus + exitKick : 0) + padSurge)
         // --- opponent
         if settings.opponent && !opponentDead {
             let ai = aiInput ?? self.ai.decide(dt: dt, cycle: opponent, trails: trails, player: player, snapMode: snapMode)
             stepCycle(opponent, input: ai, dt: dt, bonus: opponentBonus)
-        } else if opponentDead {
-            opponentRespawn -= dt
-            if opponentRespawn <= 0 { respawnOpponent() }
         }
 
         // --- collisions
@@ -363,6 +410,39 @@ final class ArenaController {
 
         speedNorm = clamp01((player.speed - 10) / 60)
         pose()
+    }
+
+    /// Floor pads: a boost pad surges the cycle (+22 m/s decaying) and charges energy; a slow pad
+    /// cuts speed by 40 %. One trigger per crossing.
+    private func updatePads(dt: Float) {
+        for (i, pad) in world.pads.enumerated() {
+            padCooldown[i] = max(0, padCooldown[i] - dt)
+            guard padCooldown[i] <= 0, !player.airborne, simd_length(player.xz - pad.pos) < ArenaWorld.padRadius,
+                  abs(pad.entity.position.y - player.position.y) < 1.5 else { continue }
+            padCooldown[i] = 1.5
+            if pad.boost {
+                padSurge = 22
+                energy = min(1, energy + 0.15)
+                flash = max(flash, 0.12)
+                shake = max(shake, 0.1)
+                events.padBoost = true
+                rumble?(0.5, 0.6)
+            } else {
+                player.speed *= 0.6
+                flash = max(flash, 0.15)
+                shake = max(shake, 0.2)
+                events.padSlow = true
+                rumble?(0.6, 0.3)
+            }
+        }
+    }
+
+    /// The round is over (either cycle derezzed): score the match or start the next round.
+    private func endRound() {
+        if wins >= matchTarget { phase = .matchOver(0, won: true); events.matchWon = true; stateText = "MATCH WON"; return }
+        if losses >= matchTarget { phase = .matchOver(0, won: false); events.matchLost = true; stateText = "MATCH LOST"; return }
+        round += 1
+        startRound()
     }
 
     private func stepCycle(_ c: LightCycle, input: CycleInput, dt: Float, bonus: Float) {
@@ -436,8 +516,10 @@ final class ArenaController {
 
     private func crashPlayer(at hit: TrailHit) {
         losses += 1
+        events.roundLost = true
         let p = player.position + [0, 0.9, 0]
         derezAt(p, color: Self.playerColor)
+        breachTrails(at: player.xz)
         playerVehicle.setVisible(false)
         player.alive = false
         flash = 1.0
@@ -451,15 +533,28 @@ final class ArenaController {
 
     private func crashOpponent(at hit: TrailHit) {
         wins += 1
+        events.roundWon = true
         opponentDead = true
-        opponentRespawn = 4.0
-        derezAt(opponent.position + [0, 0.9, 0], color: Self.opponentColor)
+        let p = opponent.position + [0, 0.9, 0]
+        derezAt(p, color: Self.opponentColor)
+        breachTrails(at: opponent.xz)
         opponentVehicle?.root.isEnabled = false
         pulseOrigin = (opponent.id, trails.trails[opponent.id].headS, time)
-        shake = max(shake, 0.3)
-        flash = max(flash, 0.3)
-        stateText = "OPPONENT DEREZZED"
-        rumble?(0.6, 0.6)
+        shake = max(shake, 0.5)
+        flash = max(flash, 0.5)
+        stateText = "\(rivalName) DEREZZED"
+        rumble?(0.8, 0.6)
+        cameraOrbit = (p, 0)
+        phase = .rivalDerezzed(0)
+    }
+
+    /// A derez explosion opens every dynamic trail within 4 m (Armagetron's breach), so the
+    /// wreck leaves a gap you can ride through.
+    private func breachTrails(at p: SIMD2<Float>) {
+        let changed = trails.breach(at: p, radius: 4)
+        guard !changed.isEmpty else { return }
+        rebuildHash()
+        for owner in changed where owner < renderers.count { renderers[owner].invalidate(from: trails.trails[owner].firstAlive) }
     }
 
     private func respawnOpponent() {
@@ -540,7 +635,14 @@ final class ArenaController {
             edge = min(1, edge + dt * 0.15)
             arc.isEnabled = false
         }
-        grind = damp(grind, g, 6, dt)
+        // Armagetron's tunnel: a wall on the other side too multiplies the surge
+        if g > 0.05, let near, trails.nearest(to: player.xz - (near.point - player.xz), radius: 4.0, yBand: player.yBand, ignoreOwner: player.id, ignoreNewest: 6) != nil {
+            g = min(1.2, g * 1.5)
+        }
+        // break-away kick: leaving a hard grind gives a short extra surge
+        if prevGrind > 0.45 && g < 0.1 { exitKick = 10 }
+        prevGrind = g
+        grind = damp(grind, min(1, g), 6, dt)
         speedBonus = damp(speedBonus, g * 20, 2.5, dt)
         if g > 0.1 { energy = min(1, energy + dt * g * 0.35) }
     }
@@ -657,6 +759,7 @@ final class ArenaController {
     }
 
     private func pose() {
+        world.placeRivalBeam(at: opponent.position, visible: settings.opponent && !opponentDead && simd_length(opponent.xz - player.xz) > 22)
         let sp = clamp01((player.speed - 10) / 60)
         var pos = player.position
         if phaseTimer > 0 { pos.y += sin(time * 60) * 0.02 }
@@ -687,6 +790,7 @@ final class ArenaController {
     }
 
     var runSeconds: Float { runTime }
+    var roundNumber: Int { round }
     var groundHeight: (SIMD2<Float>, Float) -> Float { ground }
     var levelName: String { world.terrain.deckName(at: player.xz, y: player.position.y) }
     var trailSegmentCount: Int { trails.trails.reduce(0) { $0 + max(0, $1.newestIndex - $1.firstAlive + 1) } }

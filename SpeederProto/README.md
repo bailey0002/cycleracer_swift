@@ -151,12 +151,12 @@ blocks, goal, time window and pay; `Missions/MissionRunner.swift` is the loop: b
 parked, the contact avatar beside it) -> running -> a result card with payout -> next job or
 retry. A / F / tap accepts.
 
-- **Delivery** (RELAY 01-04): reach the drop inside the window; cargo integrity loses 25 % per
-  impact and an empty bar fails the run. Pay: base + 5 per second left + 2 per cargo percent.
+- **Delivery** (RELAY 01-04): reach the drop inside the window; the hull bar loses 25 % per
+  impact and an empty bar fails the run. Pay: base + 5 per second left + 2 per hull percent.
 - **Search** (SWEEP 01-02): fly through beacon rings placed along the track (`BeaconLayer`,
   some at altitude), N of M required by the end of the sweep. Pay adds 40 per beacon.
 - **Escape** (RUN 01): a pursuer sits behind you at a gap shown on the HUD; it cruises 2 m/s
-  faster than you, so boost (which now drains a meter and recharges) is how you keep it back.
+  faster than you, so boost (which burns the hull bar) is how you keep it back.
   Under ~18 m it pulls alongside on the right with a red searchlight; at 4 m you are caught.
 - **Duel** (DUEL 01): The Grid with a named rival; first to two derezzes. The briefing holds the
   arena; the arena's score decides the job.
@@ -306,6 +306,18 @@ of what to build next. The pieces the code now has:
   base), diagnostics only with the settings panel on iOS.
 - Capture aids: `Captures/polish/capture.sh <dir> <seconds> ENV=...`, `SPEEDER_CAMERA=overview`
   for a high corridor camera, `SIMCTL_CHILD_*` env vars for simulator HUD screenshots.
+
+## Hull energy and arena rounds (13 Sep 2026)
+
+- **One bar for the corridor jobs**: `MissionRunner.energy` is hull and boost fuel at once. Hits
+  cost 25 %, scraping 8 %/s, boost 12 %/s; it trickles back at 3.5 %/s, beacons give 20 % and
+  kills 5 %. Empty means `HULL BREACHED`; what is left at the drop pays 2 credits per percent on
+  every kind. The strip shows `HULL` for every job; the escape kind no longer has its own boost
+  meter and deliveries no longer track cargo separately.
+- **The Grid** now plays in rounds with a match (see `docs/arena-next.md`): a rival derez is a
+  freeze-cam with a stamp, a match is first to three in free play, derez explosions breach
+  nearby trails, six floor pads (four boost, two slow) sit on open ground, grinding between two
+  walls surges harder and leaving a grind gives a kick, and an orange beam marks a distant rival.
 
 ## Next steps (brief milestones 7–8)
 
