@@ -31,6 +31,17 @@ struct MissionState: Equatable {
     var duelWins = 0
     var duelLosses = 0
     var duelTarget = 0
+    var rivalName = ""
+    var rivalTemper = ""
+    var rivalLine = ""
+    // streak scoring
+    var score = 0
+    var streak = 1
+    var rank: Mission.Rank = .none
+    var bestRank: Mission.Rank = .none
+    var silverScore = 0
+    var goldScore = 0
+    var respawnsLeft = 0
 }
 
 /// The job loop: briefing -> running (timer, hull energy, distance) -> success / failed -> next.
@@ -52,6 +63,17 @@ final class MissionRunner {
     private var gap: Float = 0
     private var duelWins = 0
     private var duelLosses = 0
+    private var score = 0
+    private var streak = 1
+    private var nextGate: Float = 0
+    private var rank: Mission.Rank = .none
+    /// Checkpoint respawns: a breached hull restores in place (speed kept) at a time cost, twice per job.
+    static let respawnsPerJob = 2
+    static let respawnPenalty: Float = 4
+    private var respawnsLeft = 0
+    private(set) var respawnedNow = false
+    /// Set on the frame a gate or beacon scores (HUD stamp), cleared next update.
+    private(set) var scoredNow: (value: Int, streak: Int)? = nil
     private let defaults = UserDefaults.standard
     static let hitDamage: Float = 0.25
     static let scrapeDrain: Float = 0.08      // per second against a barrier
@@ -84,6 +106,8 @@ final class MissionRunner {
             phase = .running
             elapsed = 0; travelled = 0; energy = 1; payout = 0
             beaconsHit = 0; gap = current.startGap; duelWins = 0; duelLosses = 0
+            score = 0; streak = 1; nextGate = Mission.gateSpacing; rank = .none; scoredNow = nil
+            respawnsLeft = Self.respawnsPerJob; respawnedNow = false
             return false
         case .success:
             index = (index + 1) % missions.count
@@ -98,6 +122,26 @@ final class MissionRunner {
         }
     }
 
+    /// Best rank per job, remembered across launches.
+    func bestRank(for m: Mission) -> Mission.Rank { Mission.Rank(rawValue: defaults.integer(forKey: "rank.\(m.id)")) ?? .none }
+    private func remember(_ r: Mission.Rank, for m: Mission) {
+        if r > bestRank(for: m) { defaults.set(r.rawValue, forKey: "rank.\(m.id)") }
+    }
+
+    /// One scored event: worth its base times the streak, then the streak climbs (to a cap).
+    private func scoreEvent(base: Int, climbs: Bool = true) {
+        let v = base * streak
+        score += v
+        scoredNow = (v, streak)
+        if climbs { streak = min(Mission.maxStreak, streak + 1) }
+    }
+
+    /// Free play on The Grid pays into the same purse.
+    func award(_ amount: Int) {
+        credits += amount
+        defaults.set(credits, forKey: "credits")
+    }
+
     /// Boost burns hull, so it needs some left.
     var boostAllowed: Bool { phase != .running || energy > 0.02 }
 
@@ -110,6 +154,12 @@ final class MissionRunner {
         elapsed += dt
         travelled += travel
         beaconsHit += beaconsHitNow
+        // streak scoring: a hit resets the ladder; gates, beacons and kills climb it
+        scoredNow = nil
+        if newHits > 0 { streak = 1 }
+        while travelled >= nextGate && nextGate <= m.distance { scoreEvent(base: Mission.gateValue); nextGate += Mission.gateSpacing }
+        for _ in 0..<beaconsHitNow { scoreEvent(base: Mission.beaconValue) }
+        for _ in 0..<newKills { scoreEvent(base: Mission.killValue, climbs: false) }
         // the one bar
         if newHits > 0 { energy -= Float(newHits) * Self.hitDamage }
         if scraping { energy -= dt * Self.scrapeDrain }
@@ -117,7 +167,20 @@ final class MissionRunner {
         else if !scraping { energy += dt * Self.recharge }
         energy += Float(beaconsHitNow) * Self.beaconCharge + Float(newKills) * Self.killCharge
         energy = max(0, min(1, energy))
-        if energy <= 0 { fail("HULL BREACHED"); return }
+        respawnedNow = false
+        if energy <= 0 {
+            // checkpoint respawn (Trackmania / Thumper): the run goes on from here with the hull restored,
+            // the streak reset and a time penalty, until the respawns are spent
+            if respawnsLeft > 0 {
+                respawnsLeft -= 1
+                energy = 0.5
+                streak = 1
+                elapsed += Self.respawnPenalty
+                respawnedNow = true
+            } else {
+                fail("HULL BREACHED"); return
+            }
+        }
         if m.kind == .escape {
             // the pursuer launches with you: its speed ramps up over the first seconds
             let pursuer = min(Self.pursuerSpeed, elapsed * 22)
@@ -134,7 +197,7 @@ final class MissionRunner {
             case .escape: bonus = Int(gap) * 2
             default: break
             }
-            succeed(m.basePay + timeBonus + hullBonus + bonus)
+            succeed(m.basePay + timeBonus + hullBonus + bonus + score / 5)
             return
         }
         if elapsed >= m.timeLimit { fail("TIME OUT") }
@@ -145,7 +208,7 @@ final class MissionRunner {
         guard phase == .running, current.kind == .duel else { return }
         elapsed += dt
         duelWins = wins; duelLosses = losses
-        if wins >= current.duelTarget { succeed(current.basePay + max(0, wins - losses) * 100); return }
+        if wins >= current.duelTarget { score = (wins - losses) * 100; succeed(current.basePay + max(0, wins - losses) * 100); return }
         if losses >= current.duelTarget { fail("DEREZZED \(losses) TIMES") }
     }
 
@@ -153,6 +216,8 @@ final class MissionRunner {
         payout = pay
         credits += payout
         defaults.set(credits, forKey: "credits")
+        rank = current.rank(for: score, success: true)
+        remember(rank, for: current)
         phase = .success
     }
 
@@ -169,6 +234,9 @@ final class MissionRunner {
                             energy: energy, payout: payout, credits: credits, failReason: failReason,
                             index: index, count: missions.count, kind: m.kind, goalText: m.goalText, successTitle: m.successTitle,
                             beaconsHit: beaconsHit, beaconsTotal: m.beacons, beaconsRequired: m.beaconsRequired,
-                            gap: gap, duelWins: duelWins, duelLosses: duelLosses, duelTarget: m.duelTarget)
+                            gap: gap, duelWins: duelWins, duelLosses: duelLosses, duelTarget: m.duelTarget,
+                            rivalName: m.rival?.name ?? "", rivalTemper: m.rival?.temper.rawValue ?? "", rivalLine: m.rival?.temper.line ?? "",
+                            score: score, streak: streak, rank: rank, bestRank: bestRank(for: m), silverScore: m.silverScore, goldScore: m.goldScore,
+                            respawnsLeft: respawnsLeft)
     }
 }

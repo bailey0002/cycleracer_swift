@@ -151,14 +151,27 @@ struct HUDView: View {
 
     @ViewBuilder private var missionOverlay: some View {
         let m = controller.mission
+        if let r = controller.matchResult {
+            matchCard(r, credits: m.credits)
+        }
         switch m.phase {
         case .briefing:
             missionCard {
                 HStack(spacing: 10) {
-                    contactBadge(m.contact)
+                    portrait(m.contact)
+                    if m.kind == .duel && !m.rivalName.isEmpty {
+                        Text("VS").font(.system(size: 12, weight: .black, design: .monospaced)).foregroundStyle(.red)
+                        portrait(m.rivalName)
+                    }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(m.code)  //  \(m.title)").font(.system(size: 16, weight: .black, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                         Text("CONTACT \(m.contact)   JOB \(m.index + 1)/\(m.count)   CREDITS \(m.credits)").foregroundStyle(.white.opacity(0.7))
+                        if m.kind != .duel {
+                            Text("BEST RANK \(m.bestRank.text)   SILVER \(m.silverScore)   GOLD \(m.goldScore)").foregroundStyle(rankColor(m.bestRank))
+                        }
+                        if m.kind == .duel && !m.rivalName.isEmpty {
+                            Text("RIVAL \(m.rivalName)  //  \(m.rivalTemper): \(m.rivalLine)").foregroundStyle(.orange)
+                        }
                     }
                 }
                 Text(m.brief).font(.system(size: HUDStyle.baseSize + 1, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
@@ -173,6 +186,10 @@ struct HUDView: View {
                             .foregroundStyle(m.timeLeft < 10 ? .red : .white)
                     }
                     if m.kind != .duel { meter("HULL", m.energy, m.energy > 0.3 ? HUDStyle.accent : .red) }
+                    if m.kind != .duel {
+                        Text("\(m.score)  x\(m.streak)").font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(m.streak >= 4 ? .yellow : .white)
+                        Text("RESPAWN \(m.respawnsLeft)").foregroundStyle(m.respawnsLeft > 0 ? .white.opacity(0.6) : .red)
+                    }
                     switch m.kind {
                     case .delivery:
                         Text(String(format: "%4.0f m TO DROP", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
@@ -183,7 +200,7 @@ struct HUDView: View {
                         Text(String(format: "PURSUER %3.0f m", m.gap)).font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(m.gap < 20 ? .red : .orange)
                         Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .duel:
-                        Text("FIRST TO \(m.duelTarget)    YOU \(m.duelWins)  -  \(m.duelLosses) \(m.contact)").font(.system(size: HUDStyle.baseSize + 4, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
+                        Text("FIRST TO \(m.duelTarget)    YOU \(m.duelWins)  -  \(m.duelLosses) \(m.rivalName)").font(.system(size: HUDStyle.baseSize + 4, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     }
                 }
                 .padding(.horizontal, 4)
@@ -197,6 +214,9 @@ struct HUDView: View {
                 Text(m.successTitle).font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                 Text("\(m.code)  //  \(m.title)").foregroundStyle(.white.opacity(0.8))
                 Text("PAYOUT +\(m.payout)   CREDITS \(m.credits)" + (m.kind == .duel ? "" : "   HULL \(Int(m.energy * 100))%") + (m.kind == .search ? "   BEACONS \(m.beaconsHit)/\(m.beaconsTotal)" : "")).foregroundStyle(.white)
+                if m.kind != .duel {
+                    Text("SCORE \(m.score)   RANK \(m.rank.text)" + (m.rank > .none && m.rank >= m.bestRank ? "   NEW BEST" : "")).font(.system(size: 14, weight: .black, design: .monospaced)).foregroundStyle(rankColor(m.rank))
+                }
                 prompt("NEXT JOB")
             }
         case .failed:
@@ -207,6 +227,24 @@ struct HUDView: View {
             }
         case .freePlay:
             EmptyView()
+        }
+    }
+
+    /// Free-play match result on The Grid, in the mission card style: the score line, what the
+    /// match was made of, and the credits it paid into the same purse as the jobs.
+    private func matchCard(_ r: ArenaController.MatchResult, credits: Int) -> some View {
+        missionCard {
+            Text(r.won ? "MATCH WON" : "MATCH LOST").font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(r.won ? HUDStyle.accent : .red)
+            HStack(spacing: 10) {
+                portrait(r.rival)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("YOU \(r.wins)  -  \(r.losses) \(r.rival)").font(.system(size: 16, weight: .black, design: .monospaced))
+                    Text("ROUNDS \(r.rounds)").foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            Text(String(format: "BEST GRIND %.1f s   LONGEST TRAIL %.0f m   ENERGY %d%%", r.bestGrind, r.longestTrail, Int(r.energyLeft * 100))).foregroundStyle(.white.opacity(0.85))
+            Text("CREDITS +\(r.credits)   TOTAL \(credits)").foregroundStyle(HUDStyle.accent)
+            prompt("NEXT MATCH")
         }
     }
 
@@ -231,13 +269,23 @@ struct HUDView: View {
             .onTapGesture { controller.acceptMission() }
     }
 
-    /// Placeholder for the avatar portrait: initials in a ring. Replaced by a rendered avatar later.
-    private func contactBadge(_ name: String) -> some View {
-        Text(String(name.prefix(2)))
-            .font(.system(size: 14, weight: .black, design: .monospaced))
-            .frame(width: 40, height: 40)
-            .background(Circle().fill(HUDStyle.accent.opacity(0.15)))
-            .overlay(Circle().stroke(HUDStyle.accent, lineWidth: 1.5))
+    private func rankColor(_ r: Mission.Rank) -> Color {
+        switch r {
+        case .gold: return Color(red: 1.0, green: 0.85, blue: 0.3)
+        case .silver: return Color(red: 0.85, green: 0.9, blue: 1.0)
+        case .bronze: return Color(red: 0.9, green: 0.6, blue: 0.35)
+        case .none: return .white.opacity(0.6)
+        }
+    }
+
+    /// Portrait badge rendered through the sign pipeline (Core Text to a texture, cached per name):
+    /// a helmet with a visor in the character's colour, the temper glyph for rivals.
+    private func portrait(_ name: String) -> some View {
+        Image(decorative: Rival.portrait(for: name), scale: 1)
+            .resizable()
+            .interpolation(.high)
+            .frame(width: 48, height: 48)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
     /// The one meter used everywhere: label, 110 x 6 bar, coloured fill.

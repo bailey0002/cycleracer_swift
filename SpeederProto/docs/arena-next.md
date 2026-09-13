@@ -26,9 +26,11 @@ and a match had no end. This note records what was added and the proposals that 
 Capture hooks: `SPEEDER_ARENA_KILL_RIVAL=<run seconds>` force-derezzes the rival for round
 captures; the `garage` script from `SPEEDER_ARENA_START=-82,60,0` crosses the west boost pad.
 
-## Proposed next (not built)
+## Proposed next
 
-Ordered by how much play they add per day of work.
+Ordered by how much play they add per day of work. Items 1, 2, 4 and 5 were built on 13 Sep 2026
+(second pass; see `polish-log.md`): the rival roster with tempers and portraits, the accel curve,
+the deck pads and CHARGE pickup, and the match result card. Items 3 and 6-10 are still open.
 
 1. **Rival with a face and a temper.** Name tag rendered through the sign pipeline (Core Text
    to texture) as a billboard over the rival; three AI temperaments (boxer, runner, hunter)

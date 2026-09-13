@@ -28,10 +28,19 @@ final class LightCycle {
     private(set) var pitch: Float = 0
     private(set) var steer: Float = 0
     private var groundPitch: Float = 0
-    // handling
+    // handling (Armagetron-style: speed is a line the player draws)
     var baseSpeed: Float = 36
-    var boostSpeed: Float = 60
+    /// Boost is a burst: it accelerates at `boostAccel` up to `boostSpeed`, then decays back to base.
+    var boostSpeed: Float = 68
+    var boostAccel: Float = 34
     var brakeSpeed: Float = 15
+    /// Hard ceiling for grind + boost stacking.
+    var maxSpeed: Float = 96
+    /// Exponential decay toward base speed: slow from above (a grind's gain is kept for a while), fast from below.
+    var decayAbove: Float = 0.30
+    var decayBelow: Float = 5.0
+    /// Every quarter turn costs this much speed (Armagetron's turn tax).
+    var turnTax: Float = 0.95
     var turnRate: Float = 2.1            // rad/s at full analog steer
     var snapCooldown: Float = 0
     private var snapTarget: Float? = nil
@@ -61,16 +70,25 @@ final class LightCycle {
     var yBand: ClosedRange<Float> { (position.y + 0.15)...(position.y + 1.9) }
     var isSnapping: Bool { snapTarget != nil }
 
-    /// Advance one step. `speedBonus` is the grinding surge. Returns true when a hard
-    /// corner was made (the trail should sample immediately).
+    /// Advance one step. `accel` is the proximity acceleration from grinding (m/s^2). Returns true
+    /// when a hard corner was made (the trail should sample immediately).
     @discardableResult
-    func step(dt: Float, input: CycleInput, snapMode: Bool, speedBonus: Float, ground: (SIMD2<Float>, Float) -> Float = { _, _ in 0 }) -> Bool {
+    func step(dt: Float, input: CycleInput, snapMode: Bool, accel: Float, ground: (SIMD2<Float>, Float) -> Float = { _, _ in 0 }) -> Bool {
         var corner = false
-        // speed: brake < cruise < boost, plus the grind surge
-        let target = (input.brake ? brakeSpeed : (input.boost ? boostSpeed : baseSpeed)) + speedBonus
-        let rate: Float = target > speed ? (input.boost ? 3.2 : 2.0) : 4.5
-        speed = damp(speed, target, rate, dt)
+        // speed: brake pulls down hard; boost is a burst up to boostSpeed; grinding adds acceleration;
+        // everything else decays toward base, slowly from above and quickly from below
+        if input.brake {
+            speed = damp(speed, brakeSpeed, 4.5, dt)
+        } else {
+            if input.boost && speed < boostSpeed { speed = min(boostSpeed, speed + boostAccel * dt) }
+            speed += accel * dt
+            let holding = input.boost || accel > 0.5
+            let rate = speed > baseSpeed ? (holding ? 0 : decayAbove) : decayBelow
+            speed = damp(speed, baseSpeed, rate, dt)
+            speed = min(speed, maxSpeed)
+        }
         // heading
+        let headingBefore = heading
         snapCooldown = max(0, snapCooldown - dt)
         if snapMode {
             steer = damp(steer, 0, 10, dt)
@@ -83,6 +101,9 @@ final class LightCycle {
             let rate = turnRate * (1.0 - 0.25 * clamp01((speed - baseSpeed) / (boostSpeed - baseSpeed)))
             heading -= steer * rate * dt
         }
+        // turn tax: a corner bleeds speed, so a straight line is the fast line
+        let turned = abs(heading - headingBefore)
+        if turned > 0 { speed = max(min(speed, brakeSpeed), speed * pow(turnTax, turned / (.pi / 2))) }
         // jump
         if input.jump && !airborne {
             airborne = true

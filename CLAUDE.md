@@ -34,8 +34,13 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   shortlist item 2 done 13 Sep 2026: one HULL energy bar for the corridor jobs). The Grid plays
   in rounds and matches since 13 Sep 2026 (rival freeze-cam, breach, pads, tunnel grind, rival
   beam; `SpeederProto/docs/arena-next.md` lists what was added and the proposals not built).
-- Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md` (rival with a face and temper, match
-  result card, Armagetron accel curve, deck purpose, streak scoring with ranks).
+- Second pass 13 Sep 2026 (`docs/polish-log.md`, captures in `Captures/polish/p5/`): rival roster
+  with tempers, name tag and portraits (`Sources/Arena/Rival.swift`, `ArenaAI.temper`), free-play
+  match result card paying credits, Armagetron accel curve in `LightCycle.step` (accel term, boost
+  burst, decay to base, turn tax), deck pad chain + CHARGE pickup, streak scoring with ranks
+  (`Mission.maxScore`, `rank.<id>` in UserDefaults), checkpoint respawn (two per job). Not built:
+  sumo zone. Feel tuning on the phone with the Backbone is still owed (`LightCycle` constants).
+- Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)
@@ -98,7 +103,15 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   `WorldScroller`; the vehicle mixes two clamp results. Scene rebuilds go through
   `GameController.requestRebuild()` (curtain first), never `rebuildScene()` directly.
 - Mission captures: `SPEEDER_MISSION=<n>`, `SPEEDER_RESET_PROGRESS=1`, `SPEEDER_HOLD_BRIEFING=1`,
-  `SPEEDER_DEMO_BOOST=0`; the HUD is SwiftUI so only simulator screenshots show the cards.
+  `SPEEDER_HOLD_RESULT=1` (accept the briefing, hold the result card), `SPEEDER_DEMO_BOOST=0|always`;
+  the HUD is SwiftUI so only simulator screenshots show the cards.
+- Arena AI: it decides every 0.16 s, so anything that lets the rival hold 60+ m/s (unbounded boost)
+  makes it box itself into its own trail in snap mode. Its boost is energy-budgeted and capped at
+  54 m/s; keep it that way. `SPEEDER_ARENA_RIVAL=KADE|ORIN|SABLE` picks the rival; the demo log
+  line prints the rival position, speed and derez cause. The `ramp` demo script needs
+  `SPEEDER_VARIANT=grid-snap` (snap turns).
+- Phone: `devicectl install` succeeds on a locked phone as long as it is paired and awake enough,
+  but `process launch` is refused (FBSOpenApplicationServiceErrorDomain error 1) until unlocked.
 - Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view, `side` a side elevation; the chase camera cannot
   show elevated trails or trail cuts. Capture times with decimals are allowed (`frame-1.5.png`).
 - The MCP iOS simulator panel crashed in this session; `xcrun simctl io <udid> screenshot` works

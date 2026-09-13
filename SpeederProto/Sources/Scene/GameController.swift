@@ -39,6 +39,8 @@ final class GameController: ObservableObject {
     /// Job loop (delivery missions) for the corridor worlds.
     let missions = MissionRunner()
     @Published var mission = MissionState()
+    /// Free-play match result card on The Grid (nil while playing).
+    @Published var matchResult: ArenaController.MatchResult? = nil
     private var missionFirePrev = false
     /// The contact, standing by the parked bike during briefings (avatar pipeline test).
     private var contactAvatar: AvatarActor?
@@ -46,6 +48,8 @@ final class GameController: ObservableObject {
     private var beaconProbe: SIMD3<Float> { beacons?.nearestWorldPosition ?? .zero }
     private var pursuer: PursuerActor?
     private let holdBriefing = ProcessInfo.processInfo.environment["SPEEDER_HOLD_BRIEFING"] == "1"
+    /// SPEEDER_HOLD_RESULT=1: the demo accepts the briefing but leaves the result card up (screenshots).
+    private let holdResult = ProcessInfo.processInfo.environment["SPEEDER_HOLD_RESULT"] == "1"
     private var missionHitsSeen = 0
     private var missionKillsSeen = 0
     #if os(macOS)
@@ -394,8 +398,9 @@ final class GameController: ObservableObject {
             input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
             input.pointerClimb = max(-1, min(1, sin(time * 0.6 + 1.0) * 0.9))
             // weapons pulse during a run; while parked the only "fire" is the scripted accept
-            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing) : Int(time * 2) % 3 == 0
-            input.pointerBoost = time > 6.5 && time < 11 && ProcessInfo.processInfo.environment["SPEEDER_DEMO_BOOST"] != "0"
+            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing)) : Int(time * 2) % 3 == 0
+            let demoBoost = ProcessInfo.processInfo.environment["SPEEDER_DEMO_BOOST"]
+            input.pointerBoost = demoBoost == "always" || (time > 6.5 && time < 11 && demoBoost != "0")
         }
         handleCommonInput(input)
         handleCaptures()
@@ -417,6 +422,13 @@ final class GameController: ObservableObject {
                             scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits)
             missionHitsSeen = hits
             missionKillsSeen = kills
+            if missions.isRunning, let s = missions.scoredNow { stamp(s.streak > 1 ? "+\(s.value)  x\(s.streak)" : "+\(s.value)", seconds: 0.6) }
+            if missions.respawnedNow {
+                let left = missions.snapshot().respawnsLeft
+                stamp("HULL RESTORED  \(left) LEFT", seconds: 1.4)
+                flash = 1.0; invulnerable = 1.5
+                gamepad.rumble(intensity: 0.8, sharpness: 0.3)
+            }
             if let pursuer {
                 if missions.isRunning { pursuer.update(gap: missions.snapshot().gap, playerX: speeder.x, time: time) } else { pursuer.hide() }
             }
@@ -648,8 +660,16 @@ final class GameController: ObservableObject {
     /// Missions run in the corridor worlds when the toggle is on.
     private var missionActive: Bool { settings.missions && missions.current.theme.rawValue == settings.environment }
 
+    /// Free play: the result card's A / F / tap restarts the match against the next rival.
+    private func restartArenaMatch(_ arena: ArenaController) {
+        matchResult = nil
+        arena.restartMatch()
+        cameraRig?.resetArena()
+    }
+
     /// Accept the briefing or continue past a result (also called by the HUD tap).
     func acceptMission() {
+        if let arena, arena.awaitingRestart, !missionActive { restartArenaMatch(arena); return }
         guard missionActive else { return }
         let wasBriefing = missions.phase == .briefing
         let rebuild = missions.accept()
@@ -738,11 +758,12 @@ final class GameController: ObservableObject {
             missionFirePrev = fire
             arena.paused = missions.phase != .running
             arena.matchTarget = Int.max
-            arena.rivalName = missions.current.contact
+            if let r = missions.current.rival { arena.rival = r }
             missions.updateDuel(dt: dt, wins: arena.wins, losses: arena.losses)
             if missions.phase != mission.phase || statsAccumulator > 0.2 { mission = missions.snapshot() }
             if missions.phase != .running { cmd = CycleInput() }
         }
+        if arena.awaitingRestart && cmd.action && !missionActive { restartArenaMatch(arena) }
         if cmd.boost && !boostPrev && arena.energy > 0.02 { cameraRig.punch(1.0); gamepad.rumble(intensity: 0.5, sharpness: 0.5) }
         boostPrev = cmd.boost && arena.energy > 0.02
         arena.update(dt: dt, time: time, input: cmd, aiInput: aiCmd)
@@ -753,6 +774,7 @@ final class GameController: ObservableObject {
         if ev.pickupTaken { ackTimers.pickup = 0.3 }
         if ev.padBoost { ackTimers.boost = 0.3; stamp("SURGE", seconds: 0.5) }
         if ev.padSlow { ackTimers.hit = 0.4 }
+        if ev.charged { ackTimers.boost = 0.4; stamp("CHARGE", seconds: 0.6) }
         // round and match beats: one stamp each, on the frame they happen
         if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2) }
         if ev.roundLost { stamp("DEREZZED", seconds: 2.2) }
@@ -760,6 +782,11 @@ final class GameController: ObservableObject {
         if ev.matchLost { stamp("MATCH LOST  \(arena.wins) - \(arena.losses)", seconds: 3.4) }
         if ev.roundStart && !ev.matchWon && !ev.matchLost { stamp(arena.matchTarget == Int.max ? "READY" : "ROUND \(arena.roundNumber)", seconds: 1.0) }
         if ev.go { stamp("GO", seconds: 0.5) }
+        if ev.matchResult, let r = arena.matchResult {
+            missions.award(r.credits)
+            matchResult = r
+            mission.credits = missions.credits      // free play: only the purse changes, no job card
+        }
         ackBoost = boostPrev
 
         let player = arena.player
@@ -773,6 +800,7 @@ final class GameController: ObservableObject {
         cameraRig.followArena(dt: dt, time: time, position: player.position + [0, 1.05, 0], forward: player.forward, lean: player.lean,
                               speedNorm: speedNorm, shake: settings.cameraShake, extraShake: shakeBurst, orbit: arena.cameraOrbit,
                               overview: overviewCamera, ground: arena.groundHeight, side: sideCamera)
+        arena.placeRivalTag(camera: cameraRig.position)
         if settings.particles, var e = speedParticles.components[ParticleEmitterComponent.self] {
             e.speed = 20 + player.speed * 0.9
             e.mainEmitter.birthRate = 40 + speedNorm * 300
@@ -793,7 +821,8 @@ final class GameController: ObservableObject {
         if statsAccumulator > 0.25 {
             statsAccumulator = 0
             if demoMode && Int(time * 4) % 2 == 0 {
-                print(String(format: "t=%.2f fps=%.0f speed=%.0f m/s pos=(%.1f,%.1f) y=%.2f grind=%.2f edge=%.2f energy=%.2f segs=%d state=%@", time, fpsSmoothed, player.speed, player.position.x, player.position.z, player.position.y, arena.grind, arena.edge, arena.energy, arena.trailSegmentCount, arena.stateText))
+                let o = arena.opponent
+                print(String(format: "t=%.2f fps=%.0f speed=%.0f m/s pos=(%.1f,%.1f) y=%.2f grind=%.2f edge=%.2f energy=%.2f segs=%d rival=(%.1f,%.1f) ry=%.1f rspeed=%.0f state=%@ %@", time, fpsSmoothed, player.speed, player.position.x, player.position.z, player.position.y, arena.grind, arena.edge, arena.energy, arena.trailSegmentCount, o.position.x, o.position.z, o.position.y, o.speed, arena.stateText, arena.lastRivalCause))
             }
             if entityCount == 0 { entityCount = count(worldAnchor) }
             var st = FrameStats(fps: fpsSmoothed, frameMs: Double(rawDt) * 1000, speed: player.speed,

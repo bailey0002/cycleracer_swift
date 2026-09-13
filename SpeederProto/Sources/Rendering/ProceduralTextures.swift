@@ -272,6 +272,88 @@ enum ProceduralTextures {
         }
     }
 
+    /// Floating name tag over a rival: transparent background, the name in its colour with a glow,
+    /// a thin frame and a small temper line. Alpha carries the shape, so it needs a transparent material.
+    static func nameTag(name: String, temper: String, color: SIMD3<Float>, width: Int = 512, height: Int = 160) -> CGImage {
+        draw(width: width, height: height) { ctx in
+            let w = CGFloat(width), h = CGFloat(height)
+            ctx.clear(CGRect(x: 0, y: 0, width: w, height: h))
+            // dark backing plate so the text reads over bright walls
+            ctx.setFillColor(CGColor(colorSpace: CGColorSpaceCreateDeviceRGB(), components: [0.01, 0.01, 0.03, 0.72])!)
+            ctx.fill(CGRect(x: 12, y: 14, width: w - 24, height: h - 28))
+            ctx.saveGState()
+            ctx.setShadow(offset: .zero, blur: 10, color: cg(color, 1))
+            ctx.setStrokeColor(cg(color)); ctx.setLineWidth(5)
+            ctx.stroke(CGRect(x: 12, y: 14, width: w - 24, height: h - 28))
+            ctx.restoreGState()
+            // pointer notch at the bottom centre
+            ctx.setFillColor(cg(color))
+            ctx.move(to: CGPoint(x: w / 2 - 14, y: 14)); ctx.addLine(to: CGPoint(x: w / 2 + 14, y: 14)); ctx.addLine(to: CGPoint(x: w / 2, y: 0)); ctx.closePath(); ctx.fillPath()
+            drawText(name, in: ctx, rect: CGRect(x: 0, y: h * 0.30, width: w, height: h * 0.62), color: color, maxSize: h * 0.66)
+            drawText(temper, in: ctx, rect: CGRect(x: 0, y: h * 0.11, width: w, height: h * 0.20), color: SIMD3(0.9, 0.92, 0.95), maxSize: h * 0.16)
+        }
+    }
+
+    /// Portrait badge for the briefing card: a helmet silhouette with a glowing visor in the
+    /// character's colour, the name underneath and, for rivals, a temper glyph on the shoulder.
+    static func portrait(name: String, temper: Rival.Temper?, color: SIMD3<Float>, size: Int = 256) -> CGImage {
+        draw(width: size, height: size) { ctx in
+            let s = CGFloat(size)
+            let cs = CGColorSpaceCreateDeviceRGB()
+            ctx.setFillColor(cg(SIMD3(0.02, 0.02, 0.05)))
+            ctx.fill(CGRect(x: 0, y: 0, width: s, height: s))
+            let grad = CGGradient(colorsSpace: cs, colors: [cg(color, 0.30), cg(color, 0.0)] as CFArray, locations: [0, 1])!
+            ctx.drawRadialGradient(grad, startCenter: CGPoint(x: s * 0.5, y: s * 0.62), startRadius: 0, endCenter: CGPoint(x: s * 0.5, y: s * 0.62), endRadius: s * 0.55, options: [])
+            // shoulders
+            ctx.setFillColor(cg(SIMD3(0.10, 0.12, 0.16)))
+            let sh = CGMutablePath()
+            sh.move(to: CGPoint(x: s * 0.08, y: s * 0.18))
+            sh.addQuadCurve(to: CGPoint(x: s * 0.92, y: s * 0.18), control: CGPoint(x: s * 0.5, y: s * 0.62))
+            sh.addLine(to: CGPoint(x: s * 0.92, y: s * 0.18)); sh.closeSubpath()
+            ctx.addPath(sh); ctx.fillPath()
+            // helmet
+            ctx.setFillColor(cg(SIMD3(0.14, 0.16, 0.20)))
+            ctx.fillEllipse(in: CGRect(x: s * 0.28, y: s * 0.40, width: s * 0.44, height: s * 0.50))
+            ctx.fill(CGRect(x: s * 0.30, y: s * 0.40, width: s * 0.40, height: s * 0.22))
+            // visor
+            ctx.saveGState()
+            ctx.setShadow(offset: .zero, blur: 14, color: cg(color, 1))
+            ctx.setFillColor(cg(color))
+            let visor = CGPath(roundedRect: CGRect(x: s * 0.33, y: s * 0.60, width: s * 0.34, height: s * 0.10), cornerWidth: s * 0.04, cornerHeight: s * 0.04, transform: nil)
+            ctx.addPath(visor); ctx.fillPath()
+            ctx.restoreGState()
+            // helmet seam
+            ctx.setStrokeColor(cg(color, 0.8)); ctx.setLineWidth(3)
+            ctx.move(to: CGPoint(x: s * 0.5, y: s * 0.72)); ctx.addLine(to: CGPoint(x: s * 0.5, y: s * 0.88)); ctx.strokePath()
+            // temper glyph on the right shoulder
+            if let temper {
+                ctx.setStrokeColor(cg(color)); ctx.setLineWidth(4)
+                let gx = s * 0.80, gy = s * 0.30, r = s * 0.06
+                switch temper {
+                case .boxer:   // two bars crossing: the cut-off
+                    ctx.move(to: CGPoint(x: gx - r, y: gy - r)); ctx.addLine(to: CGPoint(x: gx + r, y: gy + r))
+                    ctx.move(to: CGPoint(x: gx - r, y: gy + r)); ctx.addLine(to: CGPoint(x: gx + r, y: gy - r)); ctx.strokePath()
+                case .runner:  // chevrons: forward
+                    for k in 0..<2 {
+                        let ox = CGFloat(k) * r * 0.9 - r * 0.45
+                        ctx.move(to: CGPoint(x: gx + ox - r * 0.5, y: gy + r)); ctx.addLine(to: CGPoint(x: gx + ox + r * 0.3, y: gy)); ctx.addLine(to: CGPoint(x: gx + ox - r * 0.5, y: gy - r))
+                    }
+                    ctx.strokePath()
+                case .hunter:  // ring with a dot: the lock
+                    ctx.strokeEllipse(in: CGRect(x: gx - r, y: gy - r, width: r * 2, height: r * 2))
+                    ctx.setFillColor(cg(color)); ctx.fillEllipse(in: CGRect(x: gx - r * 0.3, y: gy - r * 0.3, width: r * 0.6, height: r * 0.6))
+                }
+            }
+            // frame + name
+            ctx.setStrokeColor(cg(color, 0.9)); ctx.setLineWidth(4)
+            ctx.stroke(CGRect(x: 6, y: 6, width: s - 12, height: s - 12))
+            ctx.setFillColor(CGColor(colorSpace: cs, components: [0, 0, 0, 0.6])!)
+            ctx.fill(CGRect(x: 8, y: 8, width: s - 16, height: s * 0.19))
+            drawText(name, in: ctx, rect: CGRect(x: 0, y: s * 0.05, width: s, height: s * 0.16), color: color, maxSize: s * 0.13)
+            scanlines(ctx, width: size, height: size)
+        }
+    }
+
     /// Tall vertical sign with abstract glyph blocks (reads like distant foreign lettering).
     static func glyphStrip(color: SIMD3<Float>, seed: Int, width: Int = 256, height: Int = 1024) -> CGImage {
         draw(width: width, height: height) { ctx in

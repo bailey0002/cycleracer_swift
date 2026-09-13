@@ -21,6 +21,33 @@ struct Mission: Identifiable {
     var startGap: Float = 70
     // duel
     var duelTarget: Int = 2
+    var rival: Rival? = nil
+
+    /// Streak scoring: a gate every `gateSpacing` metres, beacons and kills, each worth its base
+    /// times the streak; a hit resets the streak. Rank thresholds are fractions of the job's
+    /// theoretical maximum, so they are per job without hand tuning.
+    static let gateSpacing: Float = 200
+    static let gateValue = 50, beaconValue = 150, killValue = 25, maxStreak = 8
+    var gates: Int { kind == .duel ? 0 : Int(distance / Mission.gateSpacing) }
+    /// The best possible streak score: every gate and beacon clean, streak climbing to the cap.
+    var maxScore: Int {
+        var s = 0, streak = 1
+        for _ in 0..<(gates + beacons) { s += Mission.gateValue * streak; streak = min(Mission.maxStreak, streak + 1) }
+        s += beacons * (Mission.beaconValue - Mission.gateValue) * Mission.maxStreak / 2
+        return s
+    }
+    var silverScore: Int { Int(Float(maxScore) * 0.40) }
+    var goldScore: Int { Int(Float(maxScore) * 0.70) }
+    func rank(for score: Int, success: Bool) -> Rank {
+        guard success, kind != .duel else { return success ? .gold : .none }
+        return score >= goldScore ? .gold : (score >= silverScore ? .silver : .bronze)
+    }
+
+    enum Rank: Int, Comparable {
+        case none = 0, bronze, silver, gold
+        static func < (a: Rank, b: Rank) -> Bool { a.rawValue < b.rawValue }
+        var text: String { switch self { case .none: return "-"; case .bronze: return "BRONZE"; case .silver: return "SILVER"; case .gold: return "GOLD" } }
+    }
 
     var timeText: String { "\(Int(timeLimit)) s" }
     var distanceText: String { String(format: "%.1f km", distance / 1000) }
@@ -30,7 +57,7 @@ struct Mission: Identifiable {
         case .delivery: return "DROP \(distanceText)   WINDOW \(timeText)   HULL PAYS"
         case .search:   return "SWEEP \(distanceText)   WINDOW \(timeText)   BEACONS \(beaconsRequired) OF \(beacons)"
         case .escape:   return "RUN \(distanceText)   WINDOW \(timeText)   PURSUER AT \(Int(startGap)) m"
-        case .duel:     return "THE GRID   FIRST TO \(duelTarget) DEREZZES"
+        case .duel:     return "THE GRID   FIRST TO \(duelTarget) DEREZZES   VS \(rival?.name ?? "RIVAL") // \(rival?.temper.rawValue ?? "")"
         }
     }
     var successTitle: String {
@@ -77,9 +104,9 @@ struct Mission: Identifiable {
                          .tube(rows: 1), .tube(rows: 2), .tube(rows: 2), .tube(rows: 1),
                          .city(0, rows: 2, "downtown"), .city(0, rows: 1, "relay ahead")],
                 distance: 3000, timeLimit: 80, basePay: 400),
-        Mission(id: 5, kind: .duel, code: "DUEL 01", title: "KADE", contact: "KADE",
-                brief: "Kade wants the packet and will not ask twice. Settle it on the Grid. Light cycles, first to two derezzes.",
-                theme: .theGrid, blocks: [], distance: 0, timeLimit: 0, basePay: 500, duelTarget: 2),
+        Mission(id: 5, kind: .duel, code: "DUEL 01", title: "KADE", contact: "VESS",
+                brief: "Kade wants the packet and will not ask twice. Settle it on the Grid. Light cycles, first to two derezzes. Kade hunts: expect a wheel on your tail.",
+                theme: .theGrid, blocks: [], distance: 0, timeLimit: 0, basePay: 500, duelTarget: 2, rival: .kade),
         Mission(id: 6, kind: .delivery, code: "RELAY 04", title: "OUTLANDS", contact: "KADE",
                 brief: "Carry it out of the city. Canyon road, long bends, a rock-cut tunnel. Daylight. Nobody is watching out there.",
                 theme: .sunsetCanyon,
@@ -94,6 +121,9 @@ struct Mission: Identifiable {
                          .city(0, rows: 1, "canyon road"), .city(5, rows: 1, "canyon - right bend"), .city(0, rows: 1, "canyon road"),
                          .city(-4, rows: 1, "canyon - left bend"), .city(0, rows: 0, "sweep end")],
                 distance: 3400, timeLimit: 95, basePay: 350, beacons: 8, beaconsRequired: 6),
+        Mission(id: 8, kind: .duel, code: "DUEL 02", title: "ORIN", contact: "KADE",
+                brief: "Orin runs the canyon relays and wants them back. Kade owes you one: the Grid is booked. Orin boxes: it will cut across your line and close the door.",
+                theme: .theGrid, blocks: [], distance: 0, timeLimit: 0, basePay: 650, duelTarget: 2, rival: .orin),
         ]
     }()
 }

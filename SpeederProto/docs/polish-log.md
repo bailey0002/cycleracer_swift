@@ -78,6 +78,28 @@ decay in `publishAck`. The HUD's pip row and `stampOverlay` read it.
 | The floor was uniform: no reason to route anywhere. | Four boost pads and two slow pads on open ground; `SURGE` stamp and a boost pip on a boost pad, hit feedback on a slow pad. | `p4/pads-over/frame-1.0`, `p4/pads/frame-1.7` |
 | Grinding was one flat surge. | Two-wall tunnel bonus x1.5 and a 10 m/s break-away kick when leaving a hard grind. | play test |
 
+## 13 Sep 2026 (second pass): a rival you know, the match card, the accel curve, the deck, streak ranks
+
+Captures in `Captures/polish/p5/` (Mac frames) and `p5/sim/` (simulator, for the SwiftUI cards).
+
+| Was wrong | Changed | Capture |
+|---|---|---|
+| The opponent was an unnamed orange cycle with one behaviour; the duel briefing showed initials in a ring. | `Arena/Rival.swift`: a roster (KADE hunter, ORIN boxer, SABLE runner) with a colour and a temper. A name tag over the rival goes through the sign pipeline (`ProceduralTextures.nameTag`, Core Text to a texture with alpha) on a thin box that turns to the camera each frame at a constant apparent size. Portraits (`ProceduralTextures.portrait`: helmet, glowing visor, temper glyph, name band) are rendered once per name and shown on the briefing card as contact VS rival, with the temper line. | `p5/sim/arena-tag`, `p5/sim/duel-briefing-kade`, `p5/sim/duel-briefing-orin`, `p5/rival-tag/frame-2.8` |
+| One AI. | `ArenaAI.temper`: the boxer steers for a point ahead of the player's nose, the runner for the nearest same-level boost pad and the far open side, the hunter for a point behind the player's tail with a bonus for headings that grind the player's trail, and the ramp (bottom, then top) when the player is on the deck. Boost per temper, gated by the rival's own energy budget and by clear ground; the rival's burst tops out at 54 m/s so its 0.16 s decisions can keep up. | `p5/temper-KADE`, `p5/temper-ORIN`, `p5/temper-SABLE` (overview); `p5/hunter-ramp/frame-7` (the hunter's orange trail up the east ramp and along the deck: its log shows y 0 -> 7.7 -> 9.0 between 3.7 and 4.5 s; capture logs are not in git) |
+| Only KADE ever duelled. | `DUEL 02 // ORIN` (job 9, contact KADE); DUEL 01's contact is now VESS with KADE as the rival; free play meets the roster in turn (`SPEEDER_ARENA_RIVAL=<name>` picks one). | `p5/sim/duel-briefing-orin` |
+| MATCH WON / LOST was a stamp, then the score reset. | The last orbit holds with a result card in the `missionCard` style: score line with the rival's portrait, rounds, best grind, longest trail, energy left, credits (40 per round won, 150 for the match, 10 per second of best grind) paid into the same purse as the jobs. A / F / tap restarts against the next rival. | `p5/sim/match-result`, `p5/match-result/frame-19` (the hold) |
+| The grind was a threshold surge damped toward a target. | Armagetron's curve: `accel = 22 / (1.2 + d) - 22 / (1.2 + 5)` against the nearest wall, x1.5 with a wall on the other side, applied as acceleration; boost is a burst (34 m/s^2 up to 68) that decays back to base at 0.3/s; below base it recovers at 5/s; every quarter turn costs 5 %; pads and the break-away kick are impulses on the same curve. Speed is a line the player draws. | `p5/grind-curve/log.txt` (36 -> 45 m/s along a 28 m wall, then 44, 43, 42 over the next seconds) |
+| The deck was scenery. | A chain of four boost pads along the deck's north edge and a CHARGE pickup (amber, taller pillar) that only spawns on the deck: taken on contact, it fills energy and gives a burst. The hunter takes the nearest ramp when the player is up there. | `p5/deck-route/frame-4` (pads and charge on the deck), `p5/deck-route/frame-8` |
+| A corridor run had no score and no rank. | Streak scoring (Sayonara Wild Hearts): a gate every 200 m (50), a beacon (150) and a kill (25, no climb) are worth base x streak; the streak climbs to x8 and a hit resets it. The strip shows `score xN`, the stamp `+400 x8` on the frame. Rank per job from fractions of the job's maximum (silver 40 %, gold 70 %), remembered in UserDefaults (`rank.<id>`) and shown on the briefing (`BEST RANK GOLD  SILVER 1,360  GOLD 2,380`) and on the result card (`SCORE  RANK  NEW BEST`). The score also pays credits (score / 5). | `p5/sim/streak-running`, `p5/sim/streak-result`, `p5/sim/streak-briefing-best` |
+| HULL BREACHED ended 90 s of play. | Checkpoint respawn: twice per job the hull restores to 50 % in place (speed kept), the streak resets, 4 s go on the clock, `HULL RESTORED n LEFT` stamps, 1.5 s invulnerable. The strip shows `RESPAWN n`. The third breach fails the job. | `p5/hull-respawn` log: hull 0.12 -> 0.44 at 9.1 s and again later, third breach fails; `p5/sim/hull-respawn` |
+
+Capture hooks added: `SPEEDER_ARENA_RIVAL=KADE|ORIN|SABLE`, `SPEEDER_HOLD_RESULT=1` (the demo accepts the
+briefing but leaves the result card up), `SPEEDER_DEMO_BOOST=always`; the arena log line now carries
+the rival's position, speed and its derez cause.
+
+Not built from the list: the sumo zone (arena item 3). The rival's trail keeps the orange opponent role
+colour; only the tag, portrait and badge carry the rival's own colour.
+
 ## Still open (noted, not done)
 
 - The camera up-vector stays world-up in the conduit; F-Zero-style surface-normal tracking would

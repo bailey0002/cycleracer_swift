@@ -10,8 +10,21 @@ final class ArenaController {
     /// `crashed` is the player's derez (slow-motion orbit, then a new round); `rivalDerezzed` is the
     /// rival's (freeze-orbit on the wreck, then a new round); `matchOver` holds the last orbit while
     /// the match stamp shows, then resets the score.
-    enum Phase { case countdown(Float), running, crashed(Float), rivalDerezzed(Float), matchOver(Float, won: Bool) }
-    enum Pickup: String { case phase = "PHASE", pulse = "PULSE" }
+    enum Phase { case countdown(Float), running, crashed(Float), rivalDerezzed(Float), matchOver(Float, won: Bool), result }
+
+    /// What a match was, for the result card. Credits are paid into the same purse as the jobs.
+    struct MatchResult: Equatable {
+        var won = false
+        var wins = 0, losses = 0, rounds = 0
+        var bestGrind: Float = 0        // longest continuous grind, seconds
+        var longestTrail: Float = 0     // longest alive trail, metres
+        var energyLeft: Float = 0
+        var credits = 0
+        var rival = ""
+    }
+    /// Phase and pulse are held and used with A / F; charge is taken on contact (full energy and a
+    /// burst) and only ever spawns on the upper deck.
+    enum Pickup: String { case phase = "PHASE", pulse = "PULSE", charge = "CHARGE" }
 
     let root = Entity()
     let world: ArenaWorld
@@ -38,13 +51,22 @@ final class ArenaController {
     private(set) var energy: Float = 0.6
     private(set) var edge: Float = 1
     private(set) var grind: Float = 0
-    private var speedBonus: Float = 0
-    private var opponentBonus: Float = 0
+    private var grindAccel: Float = 0
+    private var opponentAccel: Float = 0
+    /// Armagetron's proximity term: accel / (offset + d) - accel / (offset + near), zero beyond `near`.
+    static let grindGain: Float = 22, grindOffset: Float = 1.2, grindNear: Float = 5.0
+    static func proximityAccel(_ clearance: Float) -> Float {
+        guard clearance < grindNear else { return 0 }
+        return grindGain / (grindOffset + clearance) - grindGain / (grindOffset + grindNear)
+    }
     private var lastNose: [SIMD2<Float>] = [.zero, .zero]
     private var emitBlock: [SIMD3<Float>?] = [nil, nil]     // pivot while the tail has not passed it yet
     private var wasAirborne = [false, false]
     private var opponentRespawn: Float = 0
     private var opponentDead = false
+    /// The rival spends the same energy budget on boost as the player, so a burst is a burst.
+    private var opponentEnergy: Float = 0.6
+    private(set) var lastRivalCause = ""
 
     // outputs
     private(set) var flash: Float = 0
@@ -62,18 +84,33 @@ final class ArenaController {
         var roundStart = false, go = false, roundWon = false, roundLost = false
         var matchWon = false, matchLost = false
         var padBoost = false, padSlow = false
+        var matchResult = false
+        var charged = false
     }
     private(set) var events = Events()
     /// Match: first to `matchTarget` derezzes of the other cycle. A duel mission sets it out of
     /// reach and decides the job itself from `wins` / `losses`.
     var matchTarget = 3
     private(set) var round = 1
-    var rivalName = "RIVAL"
+    /// The named opponent: its temper drives the AI, its name and colour the tag and the stamps.
+    var rival: Rival = .kade {
+        didSet { if rival != oldValue { applyRival() } }
+    }
+    var rivalName: String { rival.name }
+    private var rosterIndex = 0
+    /// Set when a free-play match ends; cleared by `restartMatch()`.
+    private(set) var matchResult: MatchResult? = nil
+    private var grindRun: Float = 0
+    private var bestGrind: Float = 0
+    private var longestTrail: Float = 0
+    var awaitingRestart: Bool { if case .result = phase { return true } else { return false } }
+    /// Name tag over the rival: a thin box (flat quads on moving entities get culled) with the
+    /// tag texture, turned to face the camera every frame.
+    private let rivalTag: ModelEntity
+    private let rivalTagHolder = Entity()
     /// Capture hook: SPEEDER_ARENA_KILL_RIVAL=<run seconds> force-derezzes the rival.
     private let killRivalAt: Float? = ProcessInfo.processInfo.environment["SPEEDER_ARENA_KILL_RIVAL"].flatMap { Float($0) }
     private var padCooldown: [Float] = []
-    private var padSurge: Float = 0
-    private var exitKick: Float = 0
     private var prevGrind: Float = 0
     private var phaseTimer: Float = 0
     var rumble: ((Float, Float) -> Void)? = nil
@@ -117,8 +154,15 @@ final class ArenaController {
         let start = Self.startOverride() ?? (SIMD3<Float>(-world.halfSize * 0.25, 0, world.halfSize * 0.6), 0)
         player = LightCycle(id: 1, position: start.0, heading: start.1, speed: 0)
         opponent = LightCycle(id: 2, position: [world.halfSize * 0.25, 0, -world.halfSize * 0.6], heading: .pi, speed: 0)
+        // the rival's burst is shorter than the player's: its 0.16 s decisions cannot handle more
+        opponent.boostSpeed = 54
+        opponent.boostAccel = 24
         ai = ArenaAI(cycleID: 2, heading: .pi)
         lastNose = [player.nose, opponent.nose]
+        rivalTag = ModelEntity(mesh: .generateBox(size: [3.4, 1.06, 0.02]), materials: [materials.glow(Self.opponentColor, opacity: 0.0)])
+        rivalTagHolder.addChild(rivalTag)
+        rivalTagHolder.isEnabled = false
+        root.addChild(rivalTagHolder)
 
         // sparks + arc for grinding
         var e = ParticleEmitterComponent()
@@ -183,6 +227,41 @@ final class ArenaController {
         buildPickups()
         padCooldown = Array(repeating: 0, count: world.pads.count)
         apply(settings)
+        ai.pads = world.pads.filter { $0.boost }.map { $0.entity.position }
+        ai.ramps = world.terrain.ramps.map { r in
+            let cx = (r.xMin + r.xMax) / 2
+            let (bz, tz) = r.h0 < r.h1 ? (r.z0, r.z1) : (r.z1, r.z0)
+            let dir: Float = tz > bz ? 1 : -1
+            return (bottom: SIMD3<Float>(cx, min(r.h0, r.h1), bz - dir * 6), top: SIMD3<Float>(cx, max(r.h0, r.h1), tz + dir * 8))
+        }
+        if let name = ProcessInfo.processInfo.environment["SPEEDER_ARENA_RIVAL"], let r = Rival.named(name.uppercased()) { rival = r }
+        applyRival()
+    }
+
+    /// Rebuild what depends on the rival: the AI temper and the tag texture.
+    private func applyRival() {
+        ai.temper = rival.temper
+        let tex = try? SceneMaterials.texture(ProceduralTextures.nameTag(name: rival.name, temper: rival.temper.rawValue, color: rival.color), .color)
+        if let tex {
+            var m = UnlitMaterial()
+            m.color = .init(tint: .white, texture: .init(tex))
+            m.blending = .transparent(opacity: .init(texture: .init(tex)))
+            rivalTag.model?.materials = [m]
+        }
+    }
+
+    /// Turn the tag toward the camera and hang it over the rival (hidden while the rival is dead).
+    func placeRivalTag(camera: SIMD3<Float>) {
+        let visible = settings.opponent && !opponentDead
+        rivalTagHolder.isEnabled = visible
+        guard visible else { return }
+        let p = opponent.position + [0, 3.3, 0]
+        rivalTagHolder.position = p
+        let d = camera - p
+        rivalTagHolder.orientation = simd_quatf(angle: atan2(d.x, d.z), axis: [0, 1, 0])
+        // constant apparent size (like a screen-space label), within limits
+        let dist = simd_length(d)
+        rivalTagHolder.scale = SIMD3<Float>(repeating: max(0.7, min(4.0, dist / 18)))
     }
 
     func attachOpponent(_ v: SpeederController) {
@@ -208,9 +287,10 @@ final class ArenaController {
 
     private func buildPickups() {
         let m = materials.neon(Self.pickupColor, intensity: 4)
-        for i in 0..<2 {
+        let chargeMat = materials.neon(SIMD3(1.0, 0.70, 0.22), intensity: 5)
+        for i in 0..<3 {
             let e = Entity()
-            let core = ModelEntity(mesh: .generateBox(size: [0.9, 0.9, 0.9]), materials: [m])
+            let core = ModelEntity(mesh: .generateBox(size: i == 2 ? [1.2, 1.2, 1.2] : [0.9, 0.9, 0.9]), materials: [i == 2 ? chargeMat : m])
             core.orientation = simd_quatf(angle: .pi / 4, axis: [1, 0, 0]) * simd_quatf(angle: .pi / 4, axis: [0, 0, 1])
             core.position = [0, 1.6, 0]
             e.addChild(core)
@@ -223,22 +303,30 @@ final class ArenaController {
             pool.position = [0, 0.04, 0]
             pool.orientation = simd_quatf(angle: 0.01, axis: [1, 0, 0])
             e.addChild(pool)
-            let pillar = ModelEntity(mesh: .generateBox(size: [0.12, 8, 0.12]), materials: [materials.neon(Self.pickupColor, intensity: 2)])
-            pillar.position = [0, 4, 0]
+            // the charge's pillar is taller and warm so it reads from the ground through the deck edge
+            let pillar = ModelEntity(mesh: .generateBox(size: [0.12, i == 2 ? 16 : 8, 0.12]), materials: [i == 2 ? chargeMat : materials.neon(Self.pickupColor, intensity: 2)])
+            pillar.position = [0, i == 2 ? 8 : 4, 0]
             e.addChild(pillar)
             world.pickupGroup.addChild(e)
-            pickups.append(PickupSlot(entity: e, kind: i == 0 ? .phase : .pulse, pos: .zero, active: false, timer: 0.5 + Float(i) * 3))
+            pickups.append(PickupSlot(entity: e, kind: [.phase, .pulse, .charge][i], pos: .zero, active: false, timer: 0.5 + Float(i) * 3))
         }
     }
 
     private func spawnPickup(_ i: Int) {
         let h = world.halfSize * 0.7
-        var p = SIMD2<Float>(rng.float(-h, h), rng.float(-h, h))
+        // the charge only ever spawns on the upper deck (inside its rails), the others anywhere open
+        func candidate() -> SIMD2<Float> {
+            if pickups[i].kind == .charge, let d = world.terrain.decks.first {
+                return SIMD2<Float>(rng.float(d.min.x + 8, d.max.x - 8), rng.float(d.min.y + 8, d.max.y - 8))
+            }
+            return SIMD2<Float>(rng.float(-h, h), rng.float(-h, h))
+        }
+        var p = candidate()
         // keep clear of walls
         for _ in 0..<8 {
             let g = topSurface(p)
             if trails.nearest(to: p, radius: 6, yBand: g...(g + 3), ignoreOwner: nil) == nil && simd_length(p - player.xz) > 25 { break }
-            p = SIMD2<Float>(rng.float(-h, h), rng.float(-h, h))
+            p = candidate()
         }
         pickups[i].pos = p
         pickups[i].active = true
@@ -274,7 +362,7 @@ final class ArenaController {
         lastNose = [player.nose, opponent.nose]
         emitBlock = [nil, nil]
         wasAirborne = [false, false]
-        energy = 0.6; edge = 1; grind = 0; speedBonus = 0; opponentBonus = 0
+        energy = 0.6; edge = 1; grind = 0; grindAccel = 0; opponentAccel = 0; opponentEnergy = 0.6
         heldPickup = ProcessInfo.processInfo.environment["SPEEDER_ARENA_GIVE"].flatMap { Pickup(rawValue: $0.uppercased()) }; phaseTimer = 0
         opponentDead = false
         opponentVehicle?.root.isEnabled = settings.opponent
@@ -282,7 +370,7 @@ final class ArenaController {
         cameraOrbit = nil
         pulseOrigin = nil
         runTime = 0
-        padSurge = 0; exitKick = 0; prevGrind = 0
+        prevGrind = 0
         for i in padCooldown.indices { padCooldown[i] = 0 }
         for i in pickups.indices { pickups[i].active = false; pickups[i].entity.isEnabled = false; pickups[i].timer = 1.5 + Float(i) * 4 }
         phase = .countdown(demo ? 0.3 : 1.2)
@@ -290,8 +378,22 @@ final class ArenaController {
         events.roundStart = true
     }
 
+    /// A / F / tap on the result card: next match (next rival in free play).
+    func restartMatch() {
+        guard awaitingRestart else { return }
+        matchResult = nil
+        resetMatch()
+        startRound()
+    }
+
     private func resetMatch() {
         wins = 0; losses = 0; round = 1
+        bestGrind = 0; longestTrail = 0; grindRun = 0
+        // free play meets the roster in turn: the next match brings the next rival
+        if matchTarget != Int.max {
+            rosterIndex = (rosterIndex + 1) % Rival.roster.count
+            rival = Rival.roster[rosterIndex]
+        }
     }
 
     /// SPEEDER_ARENA_START=x,z,heading positions the player for scripted captures.
@@ -330,10 +432,7 @@ final class ArenaController {
             if tt > 3.4 { endRound(); return }
             phase = .crashed(tt)
             // the opponent keeps riding in slow motion
-            if settings.opponent && !opponentDead {
-                let ai = aiInput ?? self.ai.decide(dt: dt, cycle: opponent, trails: trails, player: player, snapMode: snapMode)
-                stepCycle(opponent, input: ai, dt: dt, bonus: 0)
-            }
+            if settings.opponent && !opponentDead { stepOpponent(dt: dt, aiInput: aiInput) }
             pose()
             return
         case .rivalDerezzed(let t):
@@ -347,8 +446,20 @@ final class ArenaController {
         case .matchOver(let t, let won):
             let tt = t + dt
             cameraOrbit = (derez.position, clamp01(tt / 3.6))
-            if tt > 3.8 { resetMatch(); startRound(); return }
+            if tt > 3.8 {
+                // hold on the wreck with the result card up until the player restarts
+                let pay = wins * 40 + (won ? 150 : 0) + Int(bestGrind * 10)
+                matchResult = MatchResult(won: won, wins: wins, losses: losses, rounds: wins + losses, bestGrind: bestGrind,
+                                          longestTrail: longestTrail, energyLeft: energy, credits: pay, rival: rival.name)
+                events.matchResult = true
+                phase = .result
+                return
+            }
             phase = .matchOver(tt, won: won)
+            pose()
+            return
+        case .result:
+            cameraOrbit = (derez.position, 1)
             pose()
             return
         case .running:
@@ -366,14 +477,9 @@ final class ArenaController {
         if pin.boost { energy = max(0, energy - dt * 0.22) } else { energy = min(1, energy + dt * 0.03) }
         if pin.jump && player.airborne { pin.jump = false }
         updatePads(dt: dt)
-        padSurge = max(0, padSurge - dt * 14)
-        exitKick = max(0, exitKick - dt * 9)
-        stepCycle(player, input: pin, dt: dt, bonus: (settings.grinding ? speedBonus + exitKick : 0) + padSurge)
+        stepCycle(player, input: pin, dt: dt, accel: settings.grinding ? grindAccel : 0)
         // --- opponent
-        if settings.opponent && !opponentDead {
-            let ai = aiInput ?? self.ai.decide(dt: dt, cycle: opponent, trails: trails, player: player, snapMode: snapMode)
-            stepCycle(opponent, input: ai, dt: dt, bonus: opponentBonus)
-        }
+        if settings.opponent && !opponentDead { stepOpponent(dt: dt, aiInput: aiInput) }
 
         // --- collisions
         if let hit = collide(player) {
@@ -395,9 +501,10 @@ final class ArenaController {
         // --- grinding / edge (player only; the AI has no rubber)
         updateGrinding(dt: dt)
         if settings.grinding {
-            let near = trails.nearest(to: opponent.xz, radius: 3.5, yBand: opponent.yBand, ignoreOwner: opponent.id)
-            let g = near.map { clamp01(1 - max(0, $0.distance - opponent.halfWidth) / 3.0) * (abs(simd_dot($0.dir, opponent.forward2)) > 0.92 ? 1 : 0) } ?? 0
-            opponentBonus = damp(opponentBonus, g * 16, 3, dt)
+            // the rival rides the same curve (a little weaker) so its grinds read the same way
+            let near = trails.nearest(to: opponent.xz, radius: 5.5, yBand: opponent.yBand, ignoreOwner: opponent.id)
+            let a = near.map { Self.proximityAccel(max(0, $0.distance - opponent.halfWidth)) * clamp01((abs(simd_dot($0.dir, opponent.forward2)) - 0.85) / 0.1) } ?? 0
+            opponentAccel = damp(opponentAccel, a * 0.8, 6, dt)
         }
 
         // --- trails
@@ -408,12 +515,25 @@ final class ArenaController {
         updatePickups(dt: dt, action: input.action)
         phaseTimer = max(0, phaseTimer - dt)
 
-        speedNorm = clamp01((player.speed - 10) / 60)
+        speedNorm = clamp01((player.speed - 10) / 75)
+        // match stats for the result card
+        if grind > 0.3 { grindRun += dt; bestGrind = max(bestGrind, grindRun) } else { grindRun = 0 }
+        longestTrail = max(longestTrail, trails.trails[player.id].aliveLength)
         pose()
     }
 
-    /// Floor pads: a boost pad surges the cycle (+22 m/s decaying) and charges energy; a slow pad
-    /// cuts speed by 40 %. One trigger per crossing.
+    /// The rival's step: the AI decides, boost is gated by its own energy budget (so a burst is a
+    /// burst, in every phase), then the same kinematics as the player.
+    private func stepOpponent(dt: Float, aiInput: CycleInput?) {
+        var ai = aiInput ?? self.ai.decide(dt: dt, cycle: opponent, trails: trails, player: player, snapMode: snapMode)
+        if ai.boost && opponentEnergy <= 0.02 { ai.boost = false }
+        if ai.boost { opponentEnergy = max(0, opponentEnergy - dt * 0.22) }
+        else { opponentEnergy = min(1, opponentEnergy + dt * 0.03 + max(0, opponentAccel) * dt * 0.02) }
+        stepCycle(opponent, input: ai, dt: dt, accel: opponentAccel)
+    }
+
+    /// Floor pads: a boost pad kicks the cycle (+22 m/s, then the decay curve) and charges energy; a
+    /// slow pad cuts speed by 40 %. One trigger per crossing.
     private func updatePads(dt: Float) {
         for (i, pad) in world.pads.enumerated() {
             padCooldown[i] = max(0, padCooldown[i] - dt)
@@ -421,7 +541,7 @@ final class ArenaController {
                   abs(pad.entity.position.y - player.position.y) < 1.5 else { continue }
             padCooldown[i] = 1.5
             if pad.boost {
-                padSurge = 22
+                player.speed = min(player.maxSpeed, player.speed + 22)
                 energy = min(1, energy + 0.15)
                 flash = max(flash, 0.12)
                 shake = max(shake, 0.1)
@@ -445,11 +565,11 @@ final class ArenaController {
         startRound()
     }
 
-    private func stepCycle(_ c: LightCycle, input: CycleInput, dt: Float, bonus: Float) {
+    private func stepCycle(_ c: LightCycle, input: CycleInput, dt: Float, accel: Float) {
         let k = c.id - 1
         let pivot = c.position
         let wasAir = c.airborne
-        let corner = c.step(dt: dt, input: input, snapMode: snapMode, speedBonus: bonus, ground: ground)
+        let corner = c.step(dt: dt, input: input, snapMode: snapMode, accel: accel, ground: ground)
         if c === player {
             // every action answers on the same frame: shake, haptic, HUD
             if corner { events.snapped = true; shake = max(shake, 0.12); rumble?(0.35, 1.0) }
@@ -543,6 +663,7 @@ final class ArenaController {
         shake = max(shake, 0.5)
         flash = max(flash, 0.5)
         stateText = "\(rivalName) DEREZZED"
+        lastRivalCause = hit.boundary ? "boundary" : (hit.ref.trail == opponent.id ? "own trail" : (hit.ref.trail == 0 ? "hazard" : "player trail"))
         rumble?(0.8, 0.6)
         cameraOrbit = (p, 0)
         phase = .rivalDerezzed(0)
@@ -596,15 +717,16 @@ final class ArenaController {
     // MARK: - Grinding
 
     private func updateGrinding(dt: Float) {
-        guard settings.grinding else { grind = 0; speedBonus = 0; arc.isEnabled = false; return }
-        let near = trails.nearest(to: player.xz, radius: 4.5, yBand: player.yBand, ignoreOwner: player.id, ignoreNewest: 6)
-        var g: Float = 0
+        guard settings.grinding else { grind = 0; grindAccel = 0; arc.isEnabled = false; return }
+        let near = trails.nearest(to: player.xz, radius: Self.grindNear + 1.5, yBand: player.yBand, ignoreOwner: player.id, ignoreNewest: 6)
+        var g: Float = 0          // 0...1 grind meter (the acceleration, normalised)
+        var accel: Float = 0
         if let near {
             let clearance = max(0, near.distance - player.halfWidth)
             let parallel = abs(simd_dot(near.dir, player.forward2))
-            if parallel > 0.90 {
-                g = pow(clamp01(1 - clearance / 3.2), 1.4) * clamp01((parallel - 0.90) / 0.06)
-            }
+            // continuous proximity term, faded in over the last few degrees of alignment
+            accel = Self.proximityAccel(clearance) * clamp01((parallel - 0.85) / 0.10)
+            g = clamp01(accel / 14)
             // edge: nearly touching drains, distance recharges
             if clearance < 0.45 {
                 edge = max(0, edge - dt * 1.4 * (1 - clearance / 0.45))
@@ -635,15 +757,16 @@ final class ArenaController {
             edge = min(1, edge + dt * 0.15)
             arc.isEnabled = false
         }
-        // Armagetron's tunnel: a wall on the other side too multiplies the surge
+        // Armagetron's tunnel: a wall on the other side too multiplies the term
         if g > 0.05, let near, trails.nearest(to: player.xz - (near.point - player.xz), radius: 4.0, yBand: player.yBand, ignoreOwner: player.id, ignoreNewest: 6) != nil {
-            g = min(1.2, g * 1.5)
+            accel *= 1.5
+            g = min(1, g * 1.5)
         }
-        // break-away kick: leaving a hard grind gives a short extra surge
-        if prevGrind > 0.45 && g < 0.1 { exitKick = 10 }
+        // break-away kick: leaving a hard grind gives a burst that the decay curve then bleeds off
+        if prevGrind > 0.45 && g < 0.1 { player.speed = min(player.maxSpeed, player.speed + 10) }
         prevGrind = g
-        grind = damp(grind, min(1, g), 6, dt)
-        speedBonus = damp(speedBonus, g * 20, 2.5, dt)
+        grind = damp(grind, g, 8, dt)
+        grindAccel = accel
         if g > 0.1 { energy = min(1, energy + dt * g * 0.35) }
     }
 
@@ -658,14 +781,27 @@ final class ArenaController {
             }
             pickups[i].entity.children[0].orientation = simd_quatf(angle: time * 1.6, axis: [0, 1, 0]) * simd_quatf(angle: .pi / 4, axis: [1, 0, 0])
             pickups[i].entity.children[0].position.y = 1.6 + sin(time * 2.5 + Float(i)) * 0.25
-            if simd_length(pickups[i].pos - player.xz) < 2.6 && abs(pickups[i].entity.position.y - player.position.y) < 3 && heldPickup == nil {
-                heldPickup = pickups[i].kind
-                pickups[i].active = false
-                pickups[i].entity.isEnabled = false
-                pickups[i].timer = 9
-                flash = max(flash, 0.15)
-                events.pickupTaken = true
-                rumble?(0.4, 0.8)
+            if simd_length(pickups[i].pos - player.xz) < 2.6 && abs(pickups[i].entity.position.y - player.position.y) < 3 {
+                if pickups[i].kind == .charge {
+                    // taken on contact: the deck pays in energy and a burst
+                    energy = 1
+                    player.speed = min(player.maxSpeed, player.speed + 20)
+                    pickups[i].active = false
+                    pickups[i].entity.isEnabled = false
+                    pickups[i].timer = 14
+                    flash = max(flash, 0.25)
+                    shake = max(shake, 0.15)
+                    events.charged = true
+                    rumble?(0.7, 0.7)
+                } else if heldPickup == nil {
+                    heldPickup = pickups[i].kind
+                    pickups[i].active = false
+                    pickups[i].entity.isEnabled = false
+                    pickups[i].timer = 9
+                    flash = max(flash, 0.15)
+                    events.pickupTaken = true
+                    rumble?(0.4, 0.8)
+                }
             }
         }
         if action, let held = heldPickup {
@@ -676,6 +812,8 @@ final class ArenaController {
             case .phase:
                 phaseTimer = 5.0
                 flash = max(flash, 0.15)
+            case .charge:
+                break
             case .pulse:
                 flash = max(flash, 0.2)
                 let s = trails.trails[player.id].headS

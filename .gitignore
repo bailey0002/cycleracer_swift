@@ -6,3 +6,4 @@ SpeederProto/build-device/
 **/*.xcuserstate
 .DS_Store
 SpeederProto/Captures/**/log.txt
+SpeederProto/build-sim/

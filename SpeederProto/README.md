@@ -146,7 +146,7 @@ atmosphere and grade. The HUD's *world* picker rebuilds the scene for the select
 ## Missions (the job loop)
 
 The game direction is a **mission runner** (see `docs/game-direction.md`): every run is a job.
-`Missions/Mission.swift` is the catalogue of eight jobs in four kinds, each with its own track
+`Missions/Mission.swift` is the catalogue of nine jobs in four kinds, each with its own track
 blocks, goal, time window and pay; `Missions/MissionRunner.swift` is the loop: briefing (vehicle
 parked, the contact avatar beside it) -> running -> a result card with payout -> next job or
 retry. A / F / tap accepts.
@@ -158,8 +158,8 @@ retry. A / F / tap accepts.
 - **Escape** (RUN 01): a pursuer sits behind you at a gap shown on the HUD; it cruises 2 m/s
   faster than you, so boost (which burns the hull bar) is how you keep it back.
   Under ~18 m it pulls alongside on the right with a red searchlight; at 4 m you are caught.
-- **Duel** (DUEL 01): The Grid with a named rival; first to two derezzes. The briefing holds the
-  arena; the arena's score decides the job.
+- **Duel** (DUEL 01 vs KADE, DUEL 02 vs ORIN): The Grid with a named rival whose temper is on the
+  card; first to two derezzes. The briefing holds the arena; the arena's score decides the job.
 Credits and the job index persist in UserDefaults (`SPEEDER_RESET_PROGRESS=1` clears them,
 `SPEEDER_MISSION=<n>` picks a job). The mission decides the world, so job changes rebuild the
 scene; the HUD toggle *missions (corridor)* turns the loop off for free play. The Grid is free
@@ -318,6 +318,30 @@ of what to build next. The pieces the code now has:
   freeze-cam with a stamp, a match is first to three in free play, derez explosions breach
   nearby trails, six floor pads (four boost, two slow) sit on open ground, grinding between two
   walls surges harder and leaving a grind gives a kick, and an orange beam marks a distant rival.
+
+## Rival, match card, accel curve, deck, streak ranks (13 Sep 2026, second pass)
+
+- **A rival with a face and a temper** (`Arena/Rival.swift`): KADE (hunter: shadows you and grinds
+  your trail, takes the ramp after you), ORIN (boxer: cuts across your line), SABLE (runner: open
+  ground and the pads). A name tag billboard over the rival and portrait badges on the briefing
+  card come from the sign pipeline (Core Text to texture). Duels name the rival and its temper;
+  free play meets the roster in turn. `DUEL 02 // ORIN` is job 9.
+- **Match result card** after MATCH WON / LOST in free play: rounds, best grind, longest trail,
+  energy left, credits into the same purse as the jobs; A / F / tap starts the next match.
+- **Armagetron acceleration curve**: grinding is a continuous `22 / (1.2 + d)` acceleration against
+  the nearest wall (x1.5 in a tunnel), boost a burst to 68 m/s that decays to base at 0.3/s, every
+  quarter turn costs 5 %, pads and the break-away kick are impulses. Ceiling 96 m/s. The rival rides
+  the same curve with a 54 m/s burst and its own energy budget. Tune on the phone: `LightCycle`
+  `boostAccel`, `decayAbove`, `turnTax`; `ArenaController.grindGain / grindOffset / grindNear`.
+- **The deck has a purpose**: four boost pads along its north edge and the CHARGE pickup (amber)
+  that only spawns up there (full energy plus a burst on contact).
+- **Streak scoring for the corridor jobs**: gates every 200 m, beacons and kills are worth base x
+  streak (to x8), a hit resets it; rank bronze / silver / gold from per-job thresholds (40 % / 70 %
+  of the job's maximum), remembered per job and shown on the briefing and result cards.
+- **Checkpoint respawn**: two per job; a breached hull restores to 50 % in place with a 4 s penalty.
+
+Capture hooks: `SPEEDER_ARENA_RIVAL=<name>`, `SPEEDER_HOLD_RESULT=1`, `SPEEDER_DEMO_BOOST=always`.
+Captures: `Captures/polish/p5/`.
 
 ## Next steps (brief milestones 7–8)
 

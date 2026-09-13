@@ -98,9 +98,11 @@ final class ArenaWorld {
         root.addChild(pickupGroup)
     }
 
-    /// Six pads on open ground (clear of the deck, ramps and hazard walls): four boost, two slow.
+    /// Six pads on open ground (clear of the deck, ramps and hazard walls): four boost, two slow;
+    /// plus a chain of four boost pads along the upper deck's north edge, so the ramps are a route.
     private func buildPads(materials: SceneMaterials) {
-        let layout: [(SIMD2<Float>, Bool)] = [([0, 62], true), ([-82, 10], true), ([82, 10], true), ([0, -100], true), ([-40, 85], false), ([40, 85], false)]
+        let layout: [(SIMD2<Float>, Bool)] = [([0, 62], true), ([-82, 10], true), ([82, 10], true), ([0, -100], true), ([-40, 85], false), ([40, 85], false),
+                                              ([-45, -78], true), ([-15, -78], true), ([15, -78], true), ([45, -78], true)]
         let boostColor = SIMD3<Float>(0.6, 0.95, 1.0), slowColor = SIMD3<Float>(1.0, 0.2, 0.25)
         for (pos, boost) in layout {
             let color = boost ? boostColor : slowColor
