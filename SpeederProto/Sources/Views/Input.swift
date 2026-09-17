@@ -23,6 +23,7 @@ final class InputState {
     var padBoost = false
     var padFire = false
     var screenshotRequested = false
+    var recordToggleRequested = false
     var panelToggleRequested = false
     var menuWasDown = false
 
@@ -120,7 +121,7 @@ final class GamepadInput {
 
 #if os(macOS)
 /// Non-AR RealityKit view with keyboard + mouse. Arrows/WASD steer & climb,
-/// [ ] cruise speed, shift/space boost, F or return fires, P screenshot.
+/// [ ] cruise speed, shift/space boost, F or return fires, P screenshot, R record toggle.
 final class GameARView: ARView {
     let input = InputState()
 
@@ -161,6 +162,7 @@ final class GameARView: ARView {
         case 30:      input.speedUp = down       // ]
         case 33:      input.speedDown = down     // [
         case 35:      if down { input.screenshotRequested = true }
+        case 15:      if down { input.recordToggleRequested = true }   // R
         default: return false
         }
         return true
@@ -255,6 +257,7 @@ final class GameARView: ARView {
             case .keyboardCloseBracket: input.speedUp = down; handled = true
             case .keyboardOpenBracket: input.speedDown = down; handled = true
             case .keyboardP: if down { input.screenshotRequested = true }; handled = true
+            case .keyboardR: if down { input.recordToggleRequested = true }; handled = true
             default: break
             }
         }

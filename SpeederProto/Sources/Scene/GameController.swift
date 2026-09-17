@@ -97,6 +97,19 @@ final class GameController: ObservableObject {
     private var captureTimes: [Float] = (ProcessInfo.processInfo.environment["SPEEDER_CAPTURE_TIMES"] ?? "4,7,10").split(separator: ",").compactMap { Float($0) }
     /// SPEEDER_SWEEP=1: capture a frame per disabled technique for A/B comparison.
     private let sweepMode = ProcessInfo.processInfo.environment["SPEEDER_SWEEP"] == "1"
+    /// SPEEDER_RECORD=<start>,<end> (scene seconds): record every post-processed frame between
+    /// the two times into <capture dir>/<SPEEDER_RECORD_NAME or clip>.mov. The R key (Mac) and the
+    /// HUD's REC button toggle a hand-played recording to the Desktop / Documents instead.
+    private let recordRange: (start: Float, end: Float)? = {
+        let parts = (ProcessInfo.processInfo.environment["SPEEDER_RECORD"] ?? "")
+            .split(separator: ",").compactMap { Float($0.trimmingCharacters(in: .whitespaces)) }
+        return parts.count == 2 && parts[1] > parts[0] ? (parts[0], parts[1]) : nil
+    }()
+    private var recorder: VideoRecorder?
+    private var recordDone = false
+    /// Recording clock: fixed 1/60 s per frame in demo mode, wall-clock otherwise.
+    private var recordClock: Double = 0
+    @Published var recording = false
     /// SPEEDER_ARENA_CAMERA=overview: fixed high view for layout captures.
     private let overviewCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "overview"
     private let sideCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "side"
@@ -381,6 +394,8 @@ final class GameController: ObservableObject {
         guard let speeder, let cameraRig else { return }
         let dt: Float = demoMode ? 1.0 / 60.0 : min(max(rawDt, 1.0 / 240.0), 1.0 / 20.0)
         time += dt
+        recordClock += Double(demoMode ? dt : min(rawDt, 0.25))
+        recorder?.clock = recordClock
         updateCurtain(dt: dt)
         let input = arView.input
         gamepad.poll(into: input)
@@ -702,9 +717,56 @@ final class GameController: ObservableObject {
             input.screenshotRequested = false
             saveScreenshot(to: FrameCapture.defaultURL())
         }
+        if input.recordToggleRequested {
+            input.recordToggleRequested = false
+            toggleRecording()
+        }
+    }
+
+    /// R key / HUD button: start a hand-played recording, or stop the one running.
+    func toggleRecording() {
+        if recorder == nil {
+            startRecording(to: FrameCapture.defaultURL(ext: "mov"))
+            stamp("REC", seconds: 0.8)
+        } else {
+            stopRecording()
+            stamp("SAVED", seconds: 0.8)
+        }
+    }
+
+    private func startRecording(to url: URL) {
+        let rec = VideoRecorder(url: url, fps: 60)
+        rec.clock = recordClock
+        recorder = rec
+        post.recorder = rec
+        recording = true
+        print("video recording to \(url.path)")
+    }
+
+    private func stopRecording() {
+        guard let rec = recorder else { return }
+        post.recorder = nil
+        recorder = nil
+        recording = false
+        rec.finish()
+    }
+
+    /// SPEEDER_RECORD: open the file at the start time, close it at the end time.
+    private func handleScriptedRecording() {
+        guard let range = recordRange, !recordDone else { return }
+        if recorder == nil, time >= range.start {
+            let name = ProcessInfo.processInfo.environment["SPEEDER_RECORD_NAME"] ?? "clip"
+            let url = captureDir.map { URL(fileURLWithPath: $0).appendingPathComponent("\(name).mov") }
+                ?? FrameCapture.defaultURL(ext: "mov")
+            startRecording(to: url)
+        } else if recorder != nil, time >= range.end {
+            recordDone = true
+            stopRecording()
+        }
     }
 
     private func handleCaptures() {
+        handleScriptedRecording()
         if let captureDir {
             if sweepMode {
                 if let step = sweepSteps.first, time >= step.0 {

@@ -39,6 +39,8 @@ final class PostProcessor {
     var captureRequest: ((CGImage?) -> Void)? = nil
     /// Like captureRequest but reads the un-processed scene render.
     var captureSourceRequest: ((CGImage?) -> Void)? = nil
+    /// While set, every finished frame is appended to this recorder (see `VideoRecorder`).
+    var recorder: VideoRecorder? = nil
 
     private var device: MTLDevice?
     private var brightPipeline: MTLComputePipelineState?
@@ -185,6 +187,9 @@ final class PostProcessor {
         if let capture = captureRequest {
             captureRequest = nil
             FrameCapture.schedule(dst, on: cb, device: ctx.device, completion: capture)
+        }
+        if let recorder {
+            recorder.schedule(dst, on: cb, device: ctx.device)
         }
     }
 

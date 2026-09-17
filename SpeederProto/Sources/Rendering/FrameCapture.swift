@@ -64,9 +64,9 @@ enum FrameCapture {
         return CGImageDestinationFinalize(dest)
     }
 
-    static func defaultURL() -> URL {
+    static func defaultURL(ext: String = "png") -> URL {
         let f = DateFormatter(); f.dateFormat = "yyyyMMdd-HHmmss"
-        let name = "Speeder-\(f.string(from: Date())).png"
+        let name = "Speeder-\(f.string(from: Date())).\(ext)"
         #if os(macOS)
         let dir = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
         #else

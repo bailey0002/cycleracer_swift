@@ -94,6 +94,11 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   <seconds> ENV=VAL ...` (20-24 s for frames up to t=9). Rebuilding the app while a capture is
   running kills that run (the binary is replaced): build into another `-derivedDataPath` and swap.
   `SPEEDER_CAMERA=overview` gives a high corridor camera for layout checks (fork, portals).
+- Video clips: `SPEEDER_RECORD=<start>,<end>` (with `SPEEDER_DEMO=1` and a capture dir) writes
+  every frame between the two scene times to `clip.mov` at exact 60 fps (the fixed demo step
+  makes the readback slowdown harmless); `Captures/video/record.sh <dir> <start> <end> ENV=...`
+  waits for the `video saved` line. R key / HUD REC button record hand play. `SPEEDER_WINDOW=WxH`
+  fixes the Mac window size. Shot list and interlude notes in `SpeederProto/docs/video-clips.md`.
 - Simulator HUD screenshots without the MCP panel: `xcrun simctl install/launch` with
   `SIMCTL_CHILD_SPEEDER_*` env vars, sleep ~16 s, `xcrun simctl io <udid> screenshot`.
 - Fork geometry: the branch roads slide 7 m (fork) + 3 m (first branch segment) sideways, the V
