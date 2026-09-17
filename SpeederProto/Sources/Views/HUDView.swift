@@ -368,6 +368,12 @@ struct HUDView: View {
                 Slider(value: $controller.settings.cruiseSpeed, in: 15...110)
                 Text(String(format: "%3.0f", controller.settings.cruiseSpeed))
             }
+            Divider().overlay(.white.opacity(0.3))
+            HStack {
+                Button(controller.recording ? "STOP REC" : "REC") { controller.toggleRecording() }
+                    .foregroundStyle(controller.recording ? Color.red : Color.primary)
+                Text(controller.recording ? "recording .mov" : "video clip (R key)").font(.caption)
+            }
             }
             }
             #if os(iOS)
@@ -412,7 +418,7 @@ struct HUDView: View {
                 #endif
             } else {
                 #if os(macOS)
-                Text("pad: L-stick steer/climb, R2 boost, A fire  •  keys: arrows/WASD steer+climb, [ ] cruise, shift boost, F fire, P screenshot")
+                Text("pad: L-stick steer/climb, R2 boost, A fire  •  keys: arrows/WASD steer+climb, [ ] cruise, shift boost, F fire, P screenshot, R record")
                 #else
                 Text("pad: L-stick steer/climb, R2 boost, A fire, Menu = settings  •  touch: position steers/climbs, two fingers boost, tap top-right corner = settings")
                 #endif

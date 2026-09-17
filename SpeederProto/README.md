@@ -40,8 +40,8 @@ as the Mac build with working touch steering and two-finger boost.
 | Input | Steer / climb | Boost | Fire | Cruise speed | Screenshot |
 |---|---|---|---|---|---|
 | Gamepad (Backbone, PS, Xbox) | left stick or d-pad | R2 or R1 | A, X or L2 | Y / B | – |
-| macOS keyboard | ← → ↑ ↓ or WASD, or drag the mouse | Shift or Space | F or Return | ] / [ | P (PNG to Desktop) |
-| iOS touch | position left/right and up/down | two fingers | – | HUD slider | – |
+| macOS keyboard | ← → ↑ ↓ or WASD, or drag the mouse | Shift or Space | F or Return | ] / [ | P (PNG to Desktop), R (start/stop a .mov) |
+| iOS touch | position left/right and up/down | two fingers | – | HUD slider | REC button in the settings panel (.mov to Documents) |
 
 The vehicle climbs while you push up and settles back toward hover height when you let go.
 Inside a conduit there is no floor pull: you fly anywhere in the cross-section.
@@ -60,6 +60,13 @@ judged in isolation. On iOS the RealityKit view does not take touches at all: Sw
   `Captures/polish/capture.sh <dir> <seconds> ENV=VAL ...` runs and kills it.
 - `SPEEDER_CAMERA=overview` — high camera behind the vehicle (corridor layout captures).
 - `SPEEDER_SWEEP=1` (with capture dir) — one frame per disabled technique, plus `source.png`, the raw render before the post pass.
+- `SPEEDER_RECORD=<start>,<end>` — records every post-processed frame between the two scene
+  times into `<capture dir>/clip.mov` (H.264, 60 fps; `SPEEDER_RECORD_NAME=<name>` renames it).
+  The demo's fixed 1/60 s step means the clip runs at exact speed however slowly the per-frame
+  readback makes the app render. `Captures/video/record.sh <dir> <start> <end> ENV=VAL ...`
+  launches, waits for the `video saved` log line and kills the app. See `docs/video-clips.md`.
+- `SPEEDER_WINDOW=1920x1080` — fixes the Mac window size, so clips come out at a known resolution
+  (the render size is what the `PostProcessor: source` log line prints).
 
 ## What is in the scene
 

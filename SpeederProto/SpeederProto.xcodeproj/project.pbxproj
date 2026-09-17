@@ -77,6 +77,8 @@
 		F4CA0144019743170E987786 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
 		F7F866353C2595C4A553AFFA /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
 		FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
+		7A1C3E5D9B2F4A6C8E0D1F3C /* VideoRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C3E5D9B2F4A6C8E0D1F3B /* VideoRecorder.swift */; };
+		7A1C3E5D9B2F4A6C8E0D1F3D /* VideoRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C3E5D9B2F4A6C8E0D1F3B /* VideoRecorder.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -117,6 +119,7 @@
 		FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SpeederProto-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC6DBC66827CF202624BE7B3 /* Weapons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weapons.swift; sourceTree = "<group>"; };
 		FCF5F98B937F71B03F109B71 /* AvatarActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarActor.swift; sourceTree = "<group>"; };
+		7A1C3E5D9B2F4A6C8E0D1F3B /* VideoRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRecorder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -130,6 +133,7 @@
 				95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */,
 				96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */,
 				E59AAB31C250E0E039642DF5 /* Shaders.metal */,
+				7A1C3E5D9B2F4A6C8E0D1F3B /* VideoRecorder.swift */,
 			);
 			path = Rendering;
 			sourceTree = "<group>";
@@ -354,6 +358,7 @@
 				59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */,
 				60068708FF0A24190CD48367 /* FXSettings.swift in Sources */,
 				49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */,
+				7A1C3E5D9B2F4A6C8E0D1F3C /* VideoRecorder.swift in Sources */,
 				08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */,
 				39B55898EFD94C6D219D2273 /* GameMode.swift in Sources */,
 				A975139BC959AB5AC5F0212B /* GameView.swift in Sources */,
@@ -394,6 +399,7 @@
 				FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */,
 				D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */,
 				2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */,
+				7A1C3E5D9B2F4A6C8E0D1F3D /* VideoRecorder.swift in Sources */,
 				EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */,
 				6AFE4AE2948BF12FA8344AF9 /* GameMode.swift in Sources */,
 				DC41CBFF327A56F45112A39A /* GameView.swift in Sources */,
