@@ -339,8 +339,11 @@ of what to build next. The pieces the code now has:
   streak (to x8), a hit resets it; rank bronze / silver / gold from per-job thresholds (40 % / 70 %
   of the job's maximum), remembered per job and shown on the briefing and result cards.
 - **Checkpoint respawn**: two per job; a breached hull restores to 50 % in place with a 4 s penalty.
+- **Sumo zone**: 25 s into an arena round a ring appears and shrinks over 20 s; inside charges energy,
+  outside drains it and an empty bar derezzes (rival included). The AI heads for the zone.
 
-Capture hooks: `SPEEDER_ARENA_RIVAL=<name>`, `SPEEDER_HOLD_RESULT=1`, `SPEEDER_DEMO_BOOST=always`.
+Capture hooks: `SPEEDER_ARENA_RIVAL=<name>`, `SPEEDER_HOLD_RESULT=1`, `SPEEDER_DEMO_BOOST=always`,
+`SPEEDER_ARENA_ZONE_AT=<s>`.
 Captures: `Captures/polish/p5/`.
 
 ## Next steps (brief milestones 7–8)

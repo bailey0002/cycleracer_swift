@@ -68,6 +68,7 @@ struct FrameStats {
     var round = 1
     var rival = "RIVAL"
     var matchTarget = 3
+    var zone: String? = nil
 }
 
 /// Same-frame acknowledgement of player actions for the HUD. Published only when it changes.

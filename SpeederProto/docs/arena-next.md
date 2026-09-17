@@ -28,9 +28,9 @@ captures; the `garage` script from `SPEEDER_ARENA_START=-82,60,0` crosses the we
 
 ## Proposed next
 
-Ordered by how much play they add per day of work. Items 1, 2, 4 and 5 were built on 13 Sep 2026
+Ordered by how much play they add per day of work. Items 1 to 5 were built on 13-16 Sep 2026
 (second pass; see `polish-log.md`): the rival roster with tempers and portraits, the accel curve,
-the deck pads and CHARGE pickup, and the match result card. Items 3 and 6-10 are still open.
+the sumo zone, the deck pads and CHARGE pickup, and the match result card. Items 6-10 are still open.
 
 1. **Rival with a face and a temper.** Name tag rendered through the sign pipeline (Core Text
    to texture) as a billboard over the rival; three AI temperaments (boxer, runner, hunter)

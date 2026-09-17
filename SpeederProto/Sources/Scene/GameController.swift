@@ -775,6 +775,7 @@ final class GameController: ObservableObject {
         if ev.padBoost { ackTimers.boost = 0.3; stamp("SURGE", seconds: 0.5) }
         if ev.padSlow { ackTimers.hit = 0.4 }
         if ev.charged { ackTimers.boost = 0.4; stamp("CHARGE", seconds: 0.6) }
+        if ev.zoneOpened { stamp("ZONE", seconds: 1.2) }
         // round and match beats: one stamp each, on the frame they happen
         if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2) }
         if ev.roundLost { stamp("DEREZZED", seconds: 2.2) }
@@ -832,6 +833,7 @@ final class GameController: ObservableObject {
                                 kills: arena.wins, altitude: player.position.y, controller: gamepad.connectedName)
             st.energy = arena.energy; st.edge = arena.edge; st.grind = arena.grind
             st.state = arena.phaseActive ? "PHASE ACTIVE" : arena.stateText
+            st.zone = arena.zoneText
             st.pickup = arena.heldPickup?.rawValue
             st.wins = arena.wins; st.losses = arena.losses; st.trailSegments = arena.trailSegmentCount
             st.round = arena.roundNumber; st.rival = arena.rivalName; st.matchTarget = arena.matchTarget

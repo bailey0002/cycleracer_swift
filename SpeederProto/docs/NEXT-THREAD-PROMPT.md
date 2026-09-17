@@ -5,8 +5,8 @@ Paste the block below as the first message of a new Claude Code thread opened in
 mission runner, the polish pass (`docs/polish-log.md`), the HULL energy bar, the arena's rounds and
 match (`docs/arena-next.md`), and the second pass of 13 Sep 2026: a rival roster with tempers and
 portraits, the free-play match result card, the Armagetron acceleration curve, the deck pads and
-CHARGE pickup, streak scoring with ranks, and checkpoint respawn. Everything is on GitHub and on the
-phone (installed while locked; the user opens it).
+CHARGE pickup, streak scoring with ranks, checkpoint respawn and the sumo zone. Everything is on
+GitHub and on the phone.
 
 ---
 
@@ -26,7 +26,8 @@ State: three worlds; nine jobs (delivery, search, escape, two duels) with one HU
 UserDefaults, two checkpoint respawns per job; The Grid with a rival roster (KADE hunter, ORIN boxer,
 SABLE runner) that has a name tag, a portrait and a temper, rounds and a match to three with a result
 card that pays credits, the Armagetron accel curve (`LightCycle.step`), the deck with a pad chain and
-the CHARGE pickup. Tron-clean tone, single player, phone + Backbone.
+the CHARGE pickup, and a sumo zone that opens 25 s into a round. Tron-clean tone, single player,
+phone + Backbone.
 
 The feel of the accel curve has not been tuned by hand yet: the constants are `LightCycle.boostAccel /
 boostSpeed / decayAbove / turnTax` and `ArenaController.grindGain / grindOffset / grindNear`. Ask the
@@ -47,9 +48,9 @@ renderer only). A derezzed cycle's trail stays as a dim ghost for 8 s instead of
 round reset; add the vertical white-to-colour ramp, the top curl and a strip every 10 m in
 `trailSurface`.
 
-**3. Sumo zone** (item 3). After 25 s of a round with no derez, a circle appears at the arena centre
-and shrinks over 20 s; outside it energy drains, inside it charges; the AI's goal becomes the circle.
-Stamp `ZONE` on the frame it appears. Ends the stalemate rounds.
+**3. Zone as a level tool.** The sumo zone exists (`ArenaController.updateZone`); make it move: pick
+its centre from the open ground away from both cycles, and let a level place two zones in turn.
+Add the collapse pay-out (Armagetron: survivors inside when it closes get energy).
 
 **4. The hub as an inbox** (research shortlist item 10, NFS Underground 2). Replace "next job" with an
 inbox card: contacts text jobs in, colour-coded by kind, the portrait on each message; the player

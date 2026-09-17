@@ -86,6 +86,7 @@ final class ArenaController {
         var padBoost = false, padSlow = false
         var matchResult = false
         var charged = false
+        var zoneOpened = false
     }
     private(set) var events = Events()
     /// Match: first to `matchTarget` derezzes of the other cycle. A duel mission sets it out of
@@ -98,6 +99,15 @@ final class ArenaController {
     }
     var rivalName: String { rival.name }
     private var rosterIndex = 0
+    /// Sumo zone (Armagetron): after a quiet stretch a circle appears at the arena centre and
+    /// shrinks; outside it energy drains and an empty bar derezzes, inside it charges. Ends the
+    /// stalemate rounds and gives the AI a target.
+    private(set) var zoneRadius: Float? = nil
+    static let zoneCenter = SIMD2<Float>(0, 30)
+    static let zoneStart: Float = 70, zoneEnd: Float = 16, zoneShrink: Float = 20
+    private let zoneAt: Float = ProcessInfo.processInfo.environment["SPEEDER_ARENA_ZONE_AT"].flatMap { Float($0) } ?? 25
+    private let zoneRing = Entity()
+    private let zoneDisc: ModelEntity
     /// Set when a free-play match ends; cleared by `restartMatch()`.
     private(set) var matchResult: MatchResult? = nil
     private var grindRun: Float = 0
@@ -159,6 +169,27 @@ final class ArenaController {
         opponent.boostAccel = 24
         ai = ArenaAI(cycleID: 2, heading: .pi)
         lastNose = [player.nose, opponent.nose]
+        // sumo zone ring: 64 box segments on a unit circle (a scaled thin shell gets culled; boxes draw),
+        // the holder is scaled to the radius per frame; plus a faint disc. Hidden until the zone opens.
+        let zoneColor = SIMD3<Float>(0.95, 0.95, 1.0)
+        let zoneMat = materials.neon(zoneColor, intensity: 2.8)
+        let n = 64
+        for i in 0..<n {
+            let a = Float(i) / Float(n) * 2 * .pi
+            let seg = ModelEntity(mesh: .generateBox(size: [2 * .pi / Float(n) * 1.03, 1.1, 0.004]), materials: [zoneMat])
+            seg.position = [cos(a), 0.55, sin(a)]
+            // the box's long axis must run along the tangent (-sin a, cos a)
+            seg.orientation = simd_quatf(angle: -a - .pi / 2, axis: [0, 1, 0])
+            zoneRing.addChild(seg)
+        }
+        zoneDisc = ModelEntity(mesh: .generatePlane(width: 2, depth: 2), materials: [materials.glow(zoneColor, opacity: 0.12)])
+        zoneDisc.orientation = simd_quatf(angle: 0.01, axis: [1, 0, 0])
+        zoneDisc.position.y = 0.05
+        zoneRing.position = [Self.zoneCenter.x, 0, Self.zoneCenter.y]
+        zoneRing.isEnabled = false
+        root.addChild(zoneRing)
+        root.addChild(zoneDisc)
+        zoneDisc.isEnabled = false
         rivalTag = ModelEntity(mesh: .generateBox(size: [3.4, 1.06, 0.02]), materials: [materials.glow(Self.opponentColor, opacity: 0.0)])
         rivalTagHolder.addChild(rivalTag)
         rivalTagHolder.isEnabled = false
@@ -373,6 +404,7 @@ final class ArenaController {
         prevGrind = 0
         for i in padCooldown.indices { padCooldown[i] = 0 }
         for i in pickups.indices { pickups[i].active = false; pickups[i].entity.isEnabled = false; pickups[i].timer = 1.5 + Float(i) * 4 }
+        zoneRadius = nil; ai.zone = nil; zoneRing.isEnabled = false; zoneDisc.isEnabled = false
         phase = .countdown(demo ? 0.3 : 1.2)
         stateText = "READY"
         events.roundStart = true
@@ -507,6 +539,9 @@ final class ArenaController {
             opponentAccel = damp(opponentAccel, a * 0.8, 6, dt)
         }
 
+        // --- sumo zone
+        updateZone(dt: dt)
+        if !player.alive { return }
         // --- trails
         trails.decay(maxLength: trailMaxLength)
         if let cut = pulseCut, time - cut.t > 1.2 { pulseCut = nil }
@@ -520,6 +555,43 @@ final class ArenaController {
         if grind > 0.3 { grindRun += dt; bestGrind = max(bestGrind, grindRun) } else { grindRun = 0 }
         longestTrail = max(longestTrail, trails.trails[player.id].aliveLength)
         pose()
+    }
+
+    /// Open the zone after the quiet period, shrink it, and settle energy in and out of it.
+    private func updateZone(dt: Float) {
+        guard runTime >= zoneAt else { return }
+        if zoneRadius == nil {
+            zoneRadius = Self.zoneStart
+            events.zoneOpened = true
+            flash = max(flash, 0.2)
+            rumble?(0.6, 0.5)
+            zoneRing.isEnabled = true
+            zoneDisc.isEnabled = true
+        }
+        let r = max(Self.zoneEnd, Self.zoneStart - (runTime - zoneAt) / Self.zoneShrink * (Self.zoneStart - Self.zoneEnd))
+        zoneRadius = r
+        ai.zone = (Self.zoneCenter, r)
+        // player
+        if simd_length(player.xz - Self.zoneCenter) < r {
+            energy = min(1, energy + dt * 0.08)
+        } else {
+            energy = max(0, energy - dt * 0.07)
+            if energy <= 0 {
+                crashPlayer(at: TrailHit(ref: SegRef(trail: -2, index: 0), t: 0, point: player.xz, wallDir: .zero, normal: .zero, boundary: false))
+                return
+            }
+        }
+        // rival
+        if settings.opponent && !opponentDead {
+            if simd_length(opponent.xz - Self.zoneCenter) < r {
+                opponentEnergy = min(1, opponentEnergy + dt * 0.08)
+            } else {
+                opponentEnergy = max(0, opponentEnergy - dt * 0.07)
+                if opponentEnergy <= 0 {
+                    crashOpponent(at: TrailHit(ref: SegRef(trail: -2, index: 0), t: 0, point: opponent.xz, wallDir: .zero, normal: .zero, boundary: false))
+                }
+            }
+        }
     }
 
     /// The rival's step: the AI decides, boost is gated by its own energy budget (so a burst is a
@@ -648,7 +720,7 @@ final class ArenaController {
         pulseOrigin = (player.id, trails.trails[player.id].headS, time)
         cameraOrbit = (p, 0)
         phase = .crashed(0)
-        stateText = hit.boundary ? "DEREZZED - BOUNDARY" : (hit.ref.trail == player.id ? "DEREZZED - OWN TRAIL" : (hit.ref.trail == 0 ? "DEREZZED - HAZARD" : "DEREZZED - OPPONENT TRAIL"))
+        stateText = hit.boundary ? "DEREZZED - BOUNDARY" : (hit.ref.trail == -2 ? "DEREZZED - OUTSIDE THE ZONE" : (hit.ref.trail == player.id ? "DEREZZED - OWN TRAIL" : (hit.ref.trail == 0 ? "DEREZZED - HAZARD" : "DEREZZED - OPPONENT TRAIL")))
     }
 
     private func crashOpponent(at hit: TrailHit) {
@@ -663,7 +735,7 @@ final class ArenaController {
         shake = max(shake, 0.5)
         flash = max(flash, 0.5)
         stateText = "\(rivalName) DEREZZED"
-        lastRivalCause = hit.boundary ? "boundary" : (hit.ref.trail == opponent.id ? "own trail" : (hit.ref.trail == 0 ? "hazard" : "player trail"))
+        lastRivalCause = hit.boundary ? "boundary" : (hit.ref.trail == -2 ? "zone" : (hit.ref.trail == opponent.id ? "own trail" : (hit.ref.trail == 0 ? "hazard" : "player trail")))
         rumble?(0.8, 0.6)
         cameraOrbit = (p, 0)
         phase = .rivalDerezzed(0)
@@ -897,6 +969,13 @@ final class ArenaController {
     }
 
     private func pose() {
+        if let r = zoneRadius {
+            // the ring pulses a little faster as it closes
+            let pulse = 1 + 0.02 * sin(time * (4 + (Self.zoneStart - r) * 0.1))
+            zoneRing.scale = [r * pulse, 1, r * pulse]
+            zoneDisc.position = [Self.zoneCenter.x, 0.05, Self.zoneCenter.y]
+            zoneDisc.scale = [r, 1, r]
+        }
         world.placeRivalBeam(at: opponent.position, visible: settings.opponent && !opponentDead && simd_length(opponent.xz - player.xz) > 22)
         let sp = clamp01((player.speed - 10) / 60)
         var pos = player.position
@@ -933,4 +1012,5 @@ final class ArenaController {
     var levelName: String { world.terrain.deckName(at: player.xz, y: player.position.y) }
     var trailSegmentCount: Int { trails.trails.reduce(0) { $0 + max(0, $1.newestIndex - $1.firstAlive + 1) } }
     var phaseActive: Bool { phaseTimer > 0 }
+    var zoneText: String? { zoneRadius.map { "ZONE \(Int($0)) m" } }
 }

@@ -38,8 +38,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   with tempers, name tag and portraits (`Sources/Arena/Rival.swift`, `ArenaAI.temper`), free-play
   match result card paying credits, Armagetron accel curve in `LightCycle.step` (accel term, boost
   burst, decay to base, turn tax), deck pad chain + CHARGE pickup, streak scoring with ranks
-  (`Mission.maxScore`, `rank.<id>` in UserDefaults), checkpoint respawn (two per job). Not built:
-  sumo zone. Feel tuning on the phone with the Backbone is still owed (`LightCycle` constants).
+  (`Mission.maxScore`, `rank.<id>` in UserDefaults), checkpoint respawn (two per job), sumo zone
+  (16 Sep 2026, `ArenaController.updateZone`, `SPEEDER_ARENA_ZONE_AT`). Feel tuning on the phone
+  with the Backbone is still owed (`LightCycle` constants).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

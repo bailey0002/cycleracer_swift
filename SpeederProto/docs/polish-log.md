@@ -93,12 +93,14 @@ Captures in `Captures/polish/p5/` (Mac frames) and `p5/sim/` (simulator, for the
 | A corridor run had no score and no rank. | Streak scoring (Sayonara Wild Hearts): a gate every 200 m (50), a beacon (150) and a kill (25, no climb) are worth base x streak; the streak climbs to x8 and a hit resets it. The strip shows `score xN`, the stamp `+400 x8` on the frame. Rank per job from fractions of the job's maximum (silver 40 %, gold 70 %), remembered in UserDefaults (`rank.<id>`) and shown on the briefing (`BEST RANK GOLD  SILVER 1,360  GOLD 2,380`) and on the result card (`SCORE  RANK  NEW BEST`). The score also pays credits (score / 5). | `p5/sim/streak-running`, `p5/sim/streak-result`, `p5/sim/streak-briefing-best` |
 | HULL BREACHED ended 90 s of play. | Checkpoint respawn: twice per job the hull restores to 50 % in place (speed kept), the streak resets, 4 s go on the clock, `HULL RESTORED n LEFT` stamps, 1.5 s invulnerable. The strip shows `RESPAWN n`. The third breach fails the job. | `p5/hull-respawn` log: hull 0.12 -> 0.44 at 9.1 s and again later, third breach fails; `p5/sim/hull-respawn` |
 
-Capture hooks added: `SPEEDER_ARENA_RIVAL=KADE|ORIN|SABLE`, `SPEEDER_HOLD_RESULT=1` (the demo accepts the
-briefing but leaves the result card up), `SPEEDER_DEMO_BOOST=always`; the arena log line now carries
-the rival's position, speed and its derez cause.
+| Long rounds stalled: two careful riders could circle for a minute. | Sumo zone (Armagetron): 25 s into a round a white ring appears at (0, 30) at 70 m radius and shrinks to 16 m over 20 s; inside it energy charges 8 %/s, outside it drains 7 %/s and an empty bar derezzes (`DEREZZED - OUTSIDE THE ZONE`; the rival too). The ring is a unit tube band scaled per frame plus a faint disc; `ZONE` stamps when it opens and the arena block reads `ZONE 42 m  STAY INSIDE`. The zone is every temper's goal once it is within 12 m of the edge. `SPEEDER_ARENA_ZONE_AT=<s>` brings it forward for captures. | `p5/sumo-zone/frame-3` (overview, ring at 63 m), `p5/sumo-zone-chase/frame-2`, `p5/sumo-zone-drain` log (energy 0.60 -> 0.40 outside, 0.60 -> 0.82 inside), `p5/sim/sumo-zone` (strip) |
 
-Not built from the list: the sumo zone (arena item 3). The rival's trail keeps the orange opponent role
-colour; only the tag, portrait and badge carry the rival's own colour.
+Capture hooks added: `SPEEDER_ARENA_RIVAL=KADE|ORIN|SABLE`, `SPEEDER_HOLD_RESULT=1` (the demo accepts the
+briefing but leaves the result card up), `SPEEDER_DEMO_BOOST=always`, `SPEEDER_ARENA_ZONE_AT=<s>`; the
+arena log line now carries the rival's position, speed and its derez cause.
+
+The rival's trail keeps the orange opponent role colour; only the tag, portrait and badge carry the
+rival's own colour. Not done: feel tuning of the accel constants on the phone (the user's call).
 
 ## Still open (noted, not done)
 

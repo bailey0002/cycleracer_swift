@@ -134,6 +134,7 @@ struct HUDView: View {
                 }
                 Text("\(s.section.uppercased())   \(String(format: "%.1f", s.altitude)) m").foregroundStyle(HUDStyle.accent)
                 if let p = s.pickup { Text("PICKUP \(p)   A / F TO USE").foregroundStyle(HUDStyle.pickup) }
+                if let z = s.zone { Text("\(z)   STAY INSIDE").foregroundStyle(.white).bold() }
                 if let c = s.controller { Text("PAD \(c.uppercased())").foregroundStyle(.green.opacity(0.8)) }
                 if !s.state.isEmpty { Text(s.state).foregroundStyle(s.state.hasPrefix("DEREZZED") ? .red : HUDStyle.accent).bold() }
             } else {

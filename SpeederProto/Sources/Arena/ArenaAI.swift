@@ -18,6 +18,8 @@ final class ArenaAI {
     /// Ramps (bottom point, top point) the hunter takes when the player is on the deck.
     var ramps: [(bottom: SIMD3<Float>, top: SIMD3<Float>)] = []
     private var rampLeg: Int = 0
+    /// Sumo zone (centre, radius): outside or near the edge, the zone is the goal for every temper.
+    var zone: (center: SIMD2<Float>, radius: Float)? = nil
     private(set) var goal: SIMD2<Float>? = nil
     private var wantBoost = false
 
@@ -109,13 +111,17 @@ final class ArenaAI {
         let toPlayer = player.xz - cycle.xz
         let dist = simd_length(toPlayer)
         goal = goalPoint(cycle: cycle, player: player)
-        let toGoal = goal.map { $0 - cycle.xz }
-        let goalWeight: Float
+        var goalWeight: Float
         switch temper {
         case .boxer: goalWeight = 9
         case .runner: goalWeight = 8
         case .hunter: goalWeight = dist > 30 ? 10 : 6
         }
+        if let zone, simd_length(cycle.xz - zone.center) > zone.radius - 12 {
+            goal = zone.center
+            goalWeight = 14
+        }
+        let toGoal = goal.map { $0 - cycle.xz }
         var bestOpen: Float = 0
         for opt in options {
             let h = cycle.heading + opt
