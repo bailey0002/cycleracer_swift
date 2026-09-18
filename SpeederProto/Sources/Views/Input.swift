@@ -17,6 +17,8 @@ final class InputState {
     var pointerSteer: Float? = nil
     var pointerClimb: Float? = nil
     var pointerBoost = false
+    /// A quick tap (touch) fires / uses the pickup / accepts; set by the touch handler, cleared each frame.
+    var tapFire = false
     // gamepad (polled each frame)
     var padSteer: Float? = nil
     var padClimb: Float = 0
@@ -38,7 +40,7 @@ final class InputState {
         return (up ? 1 : 0) - (down ? 1 : 0)
     }
     var boosting: Bool { boost || pointerBoost || padBoost }
-    var firing: Bool { fire || padFire }
+    var firing: Bool { fire || padFire || tapFire }
 }
 
 /// Polls the first connected extended gamepad (Backbone, PlayStation, Xbox...) and
@@ -77,7 +79,8 @@ final class GamepadInput {
         if gp.dpad.right.isPressed { steer = 1 }
         if gp.dpad.up.isPressed { climb = 1 }
         if gp.dpad.down.isPressed { climb = -1 }
-        input.padSteer = steer
+        // an idle pad does not own the steering: touch and keyboard still work with a pad connected
+        input.padSteer = (steer == 0 && climb == 0) ? nil : steer
         input.padClimb = climb
         input.padBoost = gp.rightTrigger.value > 0.3 || gp.rightShoulder.isPressed
         input.padFire = gp.buttonA.isPressed || gp.leftTrigger.value > 0.3 || gp.buttonX.isPressed

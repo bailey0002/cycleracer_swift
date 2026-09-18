@@ -102,6 +102,19 @@ arena log line now carries the rival's position, speed and its derez cause.
 The rival's trail keeps the orange opponent role colour; only the tag, portrait and badge carry the
 rival's own colour. Not done: feel tuning of the accel constants on the phone (the user's call).
 
+## 18 Sep 2026: assessment pass (unbuilt; see `assessment-2026-09-18.md`)
+
+| Was wrong | Changed | Verify with |
+|---|---|---|
+| Every corridor job authored 8-14 blocks (320-560 m) and repeated its last block for the rest: RELAY 01 had no obstacles for its last 2 km, all beacons sat on the empty "sweep end" block, and a scripted demo earned gold. | `TrackComposer` composes the whole distance from a per-job recipe (bends kept centred, fields, split, conduit, undercity, skyway, landmarks) plus a two-block finish. | `SPEEDER_MISSION=0 SPEEDER_CAMERA=overview` at 9 / 20 / 40 s |
+| Only the fork could reach the tunnel and skyway; the canyon jobs had no landmarks. | `.undercity` and `.skyway` phrases place those blocks directly; `TrackBlock.dressing` adds the overpass (rock arch in the canyon) and the gateway on city blocks. | `SPEEDER_MISSION=6` at 12 / 30 s |
+| No audio. | `SoundEngine`: synthesised cues and loops, wired on the same frame as the acks. | phone, sound toggle |
+| Meters two-state, timer red-only, pursuer a number, no speed, no lead on sections. | Three-state pulsing meters, timer amber / red / pulse + ticks, GAP bar, km/h, "IN n m" chip with an approach tone. | simulator HUD screenshots |
+| Touch could not fire or use a pickup; cards blocked the gear; a stale card stayed up in free play; an idle pad disabled touch. | Quick tap = A; tap target is the card; state cleared when the loop is off; idle pad yields. | simulator |
+| Theme change from The Grid never rebuilt (`world != nil` guard), so the loop dead-ended after a duel. | Guard on world or arena. | play DUEL 01 to the end |
+| Boost flickered at an empty hull; cruise adjustable mid-job; reset kept ranks; payout replayable; respawn stamped on a time-out; negative mission env crashed. | Hysteresis, cruise lock, full reset, payout banked with the index, order fixed, `abs`. | headless reasoning; play |
+| Arena: PHASE lost on a second pickup, farmable kick, tunnel grind out-earned boost, rival ceiling 96, double derez. | Fixed in `ArenaController`. | `grind` and `wall` demo scripts |
+
 ## Still open (noted, not done)
 
 - The camera up-vector stays world-up in the conduit; F-Zero-style surface-normal tracking would

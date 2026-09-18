@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A0D10E5E01000000000000B1 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D10E5E01000000000000F1 /* SoundEngine.swift */; };
+		A0D10E5E01000000000000B2 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D10E5E01000000000000F1 /* SoundEngine.swift */; };
 		02D3D56823114D66FCF57FEF /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
 		03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		070BB31D4D19848AA63BFC0C /* Rival.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CB4715E79FFE27B9C57F3 /* Rival.swift */; };
@@ -80,6 +82,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A0D10E5E01000000000000F1 /* SoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEngine.swift; sourceTree = "<group>"; };
 		0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialFactory.swift; sourceTree = "<group>"; };
 		1362513C3D8ABE25AC8315B7 /* Mission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mission.swift; sourceTree = "<group>"; };
 		196B1573C8FB9CC7F731E150 /* WorldScroller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldScroller.swift; sourceTree = "<group>"; };
@@ -158,6 +161,7 @@
 			children = (
 				8D77DD23F54D80E39174AFD9 /* App */,
 				E87E23EDACC0C849C6E4598B /* Arena */,
+				A0D10E5E010000000000009A /* Audio */,
 				41A26131AA380A7C955A557C /* Missions */,
 				14456DB4C36B752427D5A0E6 /* Rendering */,
 				58FAD8C39C416204195ADA96 /* Scene */,
@@ -217,6 +221,14 @@
 				9D1146D252113EB8417E5731 /* SpeederApp.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		A0D10E5E010000000000009A /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				A0D10E5E01000000000000F1 /* SoundEngine.swift */,
+			);
+			path = Audio;
 			sourceTree = "<group>";
 		};
 		E87E23EDACC0C849C6E4598B /* Arena */ = {
@@ -370,6 +382,7 @@
 				4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */,
 				6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */,
 				5E2B35048AA4E66F36171C9A /* Rival.swift in Sources */,
+				A0D10E5E01000000000000B1 /* SoundEngine.swift in Sources */,
 				BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */,
 				F4CA0144019743170E987786 /* SpeederApp.swift in Sources */,
 				621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */,
@@ -410,6 +423,7 @@
 				5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */,
 				27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */,
 				070BB31D4D19848AA63BFC0C /* Rival.swift in Sources */,
+				A0D10E5E01000000000000B2 /* SoundEngine.swift in Sources */,
 				38F466D3DC77436528A13440 /* Shaders.metal in Sources */,
 				92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */,
 				9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */,

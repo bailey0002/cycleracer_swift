@@ -1,69 +1,55 @@
-# Kickoff prompt for the next thread: make the rival smarter and the hub a place, then the arena's late game
+# Kickoff prompt for the next thread: build the assessment pass, then the shop, the rival's space sense and the inbox
 
 Paste the block below as the first message of a new Claude Code thread opened in
 `/Users/markbailey/Desktop/GS - GamenCtr/GS - Racer`. The previous threads built the three worlds, the
-mission runner, the polish pass (`docs/polish-log.md`), the HULL energy bar, the arena's rounds and
-match (`docs/arena-next.md`), and the second pass of 13 Sep 2026: a rival roster with tempers and
-portraits, the free-play match result card, the Armagetron acceleration curve, the deck pads and
-CHARGE pickup, streak scoring with ranks, checkpoint respawn and the sumo zone. Everything is on
-GitHub and on the phone.
+mission runner, the polish passes, the arena's rounds and rivals, and on 18 Sep 2026 an assessment
+pass (`docs/assessment-2026-09-18.md`) that was written on a Linux machine **without Xcode**: full-
+length composed tracks, landmark dressings, a synthesised sound layer, HUD states, tap-to-fire and
+a batch of review fixes are all on the branch and on GitHub but have never been compiled.
 
 ---
 
-Read `CLAUDE.md` in this workspace first, then `SpeederProto/README.md`, the last section of
-`SpeederProto/docs/polish-log.md` (13 Sep 2026, second pass), `SpeederProto/docs/arena-next.md` and
-the ranked shortlist at the top of `SpeederProto/docs/research-comparables.md`. Build the Mac app and
-run one capture per world plus these two arena captures so you have seen the current state:
-`SPEEDER_VARIANT=grid-snap SPEEDER_DEMO_SCRIPT=ramp SPEEDER_ARENA_START=-52,70,0
-SPEEDER_ARENA_RIVAL=KADE SPEEDER_ARENA_CAMERA=overview` (times 5, 7, 9: the hunter takes the ramp) and
-`SPEEDER_VARIANT=grid SPEEDER_ARENA_RIVAL=ORIN SPEEDER_ARENA_START=-40,40,0 SPEEDER_ARENA_CAMERA=overview`
-(times 5, 9, 13: the boxer). Read the demo log lines (rival position, speed, derez cause). Use
-`Captures/polish/capture.sh` for every Mac capture and the simulator (`SIMCTL_CHILD_*`) for HUD
-screenshots; build the device binary early and install it whenever the phone is available.
+Read `CLAUDE.md` in this workspace first, then `SpeederProto/README.md` ("Assessment pass" section),
+`SpeederProto/docs/assessment-2026-09-18.md` in full, and the round-2 reports at the end of
+`SpeederProto/docs/research-comparables.md`.
 
-State: three worlds; nine jobs (delivery, search, escape, two duels) with one HULL bar, streak scoring
-(gates every 200 m, beacons, kills; a hit resets), bronze/silver/gold per job remembered in
-UserDefaults, two checkpoint respawns per job; The Grid with a rival roster (KADE hunter, ORIN boxer,
-SABLE runner) that has a name tag, a portrait and a temper, rounds and a match to three with a result
-card that pays credits, the Armagetron accel curve (`LightCycle.step`), the deck with a pad chain and
-the CHARGE pickup, and a sumo zone that opens 25 s into a round. Tron-clean tone, single player,
-phone + Backbone.
+**0. Build it.** `xcodegen generate` (a new `Sources/Audio/` folder exists; the pbxproj was edited by
+hand), then the Mac build. Expect compiler errors: the pass was written blind. Fix them with the
+smallest change that keeps the intent. Then the phone build and install.
 
-The feel of the accel curve has not been tuned by hand yet: the constants are `LightCycle.boostAccel /
-boostSpeed / decayAbove / turnTax` and `ArenaController.grindGain / grindOffset / grindNear`. Ask the
-user for a verdict from the phone before touching them.
+**1. Verify the pass with captures**, one job at a time, before any new work:
+- `SPEEDER_MISSION=0 SPEEDER_CAMERA=overview` at 9, 20, 40 s: bends, a field and an overpass must
+  still be arriving at 1.5 km. `SPEEDER_MISSION=4` for two conduits; `SPEEDER_MISSION=6` for the
+  canyon undercity, the split and the rock-arch overpass; `SPEEDER_MISSION=7` for the skyway.
+- Simulator HUD screenshots (`SIMCTL_CHILD_*`): the running strip under 5 s, hull under 25 %, the
+  escape GAP bar, a "CONDUIT IN n m" chip, a briefing with flags, a result with NEW flags.
+- Play DUEL 01 to the end on the phone and confirm RELAY 04 rebuilds into the canyon (the old
+  dead end). Free play on The Grid must still be first to three after a duel.
+- Sound on the phone with the Backbone: engine under the cues, hit / kill / gate / tick audible,
+  the alarm loop only when hull is low or the pursuer is close. If it is buried under music,
+  switch the session category to `.soloAmbient`. Tune the `gain` constants in `synthesise()`.
+- Log the verified captures in `docs/polish-log.md` (18 Sep section), fix what the captures show.
 
-Do these in order, each one built, captured, committed, pushed and on the phone before the next:
+**2. Give credits a use** (research E, Alto's workshop): a four-item shop on the briefing card,
+bought with the purse: a helmet (one free hit per job), +20 % hull, +10 s window, +1 respawn.
+Persist in UserDefaults; `SPEEDER_RESET_PROGRESS` clears it. Keep it Tron-clean: four lines and a
+price, no art.
 
-**1. Arc-aware AI probes.** The AI scores straight-line probes but drives arcs of 17-21 m radius in
-analog mode, and it still dies on its own trail or a hazard when the goal pulls it into a turn (see
-`p5/temper-ORIN/log.txt`, `p5/hunter-ramp/log.txt`: `own trail`, `hazard`). Sweep the actual arc
-(sample the turning circle for the option's heading change, then the straight) through
-`TrailSystem.sweep`, and give the boxer a "commit" rule: once it has crossed the player's line it
-runs open for two seconds before the next intercept. Measure: rounds a rival survives against the
-scripted `drive` from `-40,40,0` should go from about one to several.
+**3. The rival's space sense** (research G, item 1-3): a 6 m occupancy grid in `TrailSystem`
+rasterised from the segments; per candidate heading a flood fill from one tick ahead adds a
+reachable-area term and rejects pockets under ~8 s of travel; a loop guard after three same-
+direction snaps; skill tiers by reaction time (0.40 / 0.25 / 0.16 / 0.10 s tick, probe range and
+noise per tier) on `Rival`, KADE easy in DUEL 01, ORIN medium, free play climbing per match won.
+Measure with the scripted `drive` from `-40,40,0`: rounds survived per rival before and after.
 
-**2. Lingering dead tail and trail wall shading** (`docs/arena-next.md` items 8 and 6, shader and
-renderer only). A derezzed cycle's trail stays as a dim ghost for 8 s instead of clearing on the
-round reset; add the vertical white-to-colour ramp, the top curl and a strip every 10 m in
-`trailSurface`.
+**4. The inbox** (research E, Data Wing; shortlist 10): replace "next job" with a message thread per
+contact; a job is a message with the portrait; a job unlocks when the previous one of its contact
+has a flag; the briefing card stays. Keep `SPEEDER_MISSION`.
 
-**3. Zone as a level tool.** The sumo zone exists (`ArenaController.updateZone`); make it move: pick
-its centre from the open ground away from both cycles, and let a level place two zones in turn.
-Add the collapse pay-out (Armagetron: survivors inside when it closes get energy).
+**5. If there is time**: one-tap retry from the failed state; time as a refillable resource on
+deliveries (Crazy Taxi: a checkpoint adds seconds, SPEEDY / NORMAL stamp); controller glyph chips
+from `sfSymbolsName` on first relevance; a void round on a simultaneous derez.
 
-**4. The hub as an inbox** (research shortlist item 10, NFS Underground 2). Replace "next job" with an
-inbox card: contacts text jobs in, colour-coded by kind, the portrait on each message; the player
-picks any unlocked job, and a job unlocks when the previous one of its contact is bronze or better.
-The briefing card stays; the inbox is where it is chosen from. Keep the `SPEEDER_MISSION` hook.
-
-**5. Takedown boost extension** (arena item 10). A round won within 2 s of the rival's last corner
-(the cause is in `lastRivalCause` plus a corner timestamp) extends the energy bar for the next round
-(`energy` starts at 1.0 instead of 0.6) with a `TAKEDOWN` stamp.
-
-**6. If there is time**: speed lanes as level tools (item 7), and the result card coast-down in the
-corridor (the run ends on the frame the distance is reached; let the drop marker come into view).
-
-Keep the two corridor looks unchanged unless a change is clearly a fix. Log what changed and the
-capture that shows it in `docs/polish-log.md` (new dated section), keep `README.md` and `CLAUDE.md`
-current, update the memory files, and finish by writing the next kickoff prompt into this file.
+Keep the two corridor looks unchanged unless a change is clearly a fix. Push every meaningful build
+to the phone. Log in `docs/polish-log.md`, keep `README.md` and `CLAUDE.md` current, update the
+memory files, and finish by writing the next kickoff prompt into this file.
