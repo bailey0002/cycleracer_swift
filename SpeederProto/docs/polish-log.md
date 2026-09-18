@@ -102,6 +102,54 @@ arena log line now carries the rival's position, speed and its derez cause.
 The rival's trail keeps the orange opponent role colour; only the tag, portrait and badge carry the
 rival's own colour. Not done: feel tuning of the accel constants on the phone (the user's call).
 
+## 18 Sep 2026: assessment pass (see `assessment-2026-09-18.md`; built and verified the same day, third pass below)
+
+| Was wrong | Changed | Verify with |
+|---|---|---|
+| Every corridor job authored 8-14 blocks (320-560 m) and repeated its last block for the rest: RELAY 01 had no obstacles for its last 2 km, all beacons sat on the empty "sweep end" block, and a scripted demo earned gold. | `TrackComposer` composes the whole distance from a per-job recipe (bends kept centred, fields, split, conduit, undercity, skyway, landmarks) plus a two-block finish. | `SPEEDER_MISSION=0 SPEEDER_CAMERA=overview` at 9 / 20 / 40 s |
+| Only the fork could reach the tunnel and skyway; the canyon jobs had no landmarks. | `.undercity` and `.skyway` phrases place those blocks directly; `TrackBlock.dressing` adds the overpass (rock arch in the canyon) and the gateway on city blocks. | `SPEEDER_MISSION=6` at 12 / 30 s |
+| No audio. | `SoundEngine`: synthesised cues and loops, wired on the same frame as the acks. | phone, sound toggle |
+| Meters two-state, timer red-only, pursuer a number, no speed, no lead on sections. | Three-state pulsing meters, timer amber / red / pulse + ticks, GAP bar, km/h, "IN n m" chip with an approach tone. | simulator HUD screenshots |
+| Touch could not fire or use a pickup; cards blocked the gear; a stale card stayed up in free play; an idle pad disabled touch. | Quick tap = A; tap target is the card; state cleared when the loop is off; idle pad yields. | simulator |
+| Theme change from The Grid never rebuilt (`world != nil` guard), so the loop dead-ended after a duel. | Guard on world or arena. | play DUEL 01 to the end |
+| Boost flickered at an empty hull; cruise adjustable mid-job; reset kept ranks; payout replayable; respawn stamped on a time-out; negative mission env crashed. | Hysteresis, cruise lock, full reset, payout banked with the index, order fixed, `abs`. | headless reasoning; play |
+| Arena: PHASE lost on a second pickup, farmable kick, tunnel grind out-earned boost, rival ceiling 96, double derez. | Fixed in `ArenaController`. | `grind` and `wall` demo scripts |
+
+## 18 Sep 2026 (second pass): the game (verified in the third pass below)
+
+| Was thin | Changed | Verify with |
+|---|---|---|
+| Nine jobs in a row, no story, credits with no use, a passed job finished. | Three chapters, eighteen jobs, a debrief line per job; salvage and dive kinds; inbox with replay at half pay; garage with four upgrades; flags kept. | `SPEEDER_MISSION=8` (salvage), `=10` (dive), `=17` (VESS); simulator screenshots of the briefing with the inbox and garage |
+| Time only counted down; a failure was a card round-trip. | Gates add 1.5 s; the failed card's A relaunches after the rebuild. | play |
+| The rival died in its own pockets; one competence level; a double derez was a player loss. | Occupancy grid + flood fill area term, loop guard, skill tiers by reaction, void round. | `drive` script from `-40,40,0` against KADE / ORIN / SABLE: rounds survived before vs after |
+| No music. | Three generative layers per world, intensity-driven. | phone |
+
+## 18 Sep 2026 (third pass): built, verified, fixed (captures in `Captures/polish/p6/`)
+
+The two blind passes compiled first time on Xcode 26.6 (Mac and iOS simulator), no compiler
+fixes needed. Verification, what it showed, and what changed:
+
+| Checked | Result | Capture |
+|---|---|---|
+| RELAY 01 stays varied over its length. | Overpass with a hanging hologram at 9 s, gateway + obstacle rows at 20 s, gateway (NEXUS) + bend + rows at 40 s (1.7 km). | `p6/m0-overview/frame-9,20`, `p6/m0-overview-40/frame-40` |
+| RELAY 03 has two conduits. | Portal at 6 s, inside the tube at 10 s, second tube at 20 s, gateway between. | `p6/m4-conduits/frame-6,10,20,26` |
+| RELAY 04: canyon undercity, rock-arch overpass, split. | Undercity roof at 12 s, arch at 18 s and 30 s, the split's skyway branch (hoops, billboards) at 24 s. | `p6/m6-canyon/frame-12,18,24,30,38` |
+| SWEEP 02 skyway and beacons. | Skyway lead-in at 10 s, beacon rings on the canyon road at 15 / 26 s. | `p6/m7-skyway/frame-10,15,26` |
+| SALVAGE 01, DIVE 01, DUEL 04. | Canyon rows with the arch; the dive's conduit-first track (rock-pipe look) and a checkpoint respawn in the log; DUEL 04 vs VESS runs rounds and ends MATCH LOST 0-3 for the scripted drive. | `p6/m8-salvage`, `p6/m10-dive`, `p6/m17-vess` |
+| DUEL 01 -> RELAY 04 (the old dead end). | `SPEEDER_ARENA_KILL_RIVAL=2`: match won 2-0, the success card accepted, the world rebuilt into the canyon (entities 4467), RELAY 04 briefing accepted and running at t=15. | `p6/duel01-flow/log.txt` |
+| The rival's own-trail deaths. | New hook `SPEEDER_ARENA_IMMORTAL=1` (the player drives through walls) so the rival is watched for a whole run: KADE 3 derezzes (player trail), ORIN 3 (boundary x2, player trail), SABLE 3 (player trail); no own-trail death in nine. Rounds last 20-30 s in a trail maze. `p5/temper-*` had one hazard death in three short rounds, so the numbers are not comparable; the own-trail cause is what mattered. | `p6/immortal-*/log.txt` |
+| Simulator HUD: briefing with chapter line, inbox chips, garage rows. | All present. Two fixes: the card overlapped the race block on the 390 pt phone (the block is now hidden while any card is up); with a forced `SPEEDER_MISSION` the inbox showed only RELAY 01 (a forced job now counts as reached, so the chain up to it is listed and the chip scrolls into view). | `p6/sim/briefing-m8-20`, `briefing-m12-18` |
+| Running strip: hull amber / red, streak, respawns, gate stamp with `+1.5 s`. | Reads on the phone. | `p6/sim/relay01-22`, `run01-26` |
+| Escape GAP bar. | Present, but the strip ran into the gear button; the pursuer block is now two lines (pursuer + distance, gap bar) and the strip spacing is 12. | `p6/sim/probe-m3-34` |
+| Failed card with RETRY NOW; result card with flags and debrief; the CONDUIT chip. | Failed card (HULL BREACHED, race block hidden); result card DELIVERED with payout, SILVER + NEW BEST, flags with the new ones bracketed, VESS's debrief line; `CONDUIT IN 66 m` chip above the pips at 193 m. | `p6/sim/dive01-failed-110`, `relay01-result-180`, `relay03-chip-20` |
+| Demo accept. | In demo mode the accept was a held button, so a result card in the arena never got its edge and the corridor loop stalled after a rebuild; the demo now pulses the accept (0.5 s on, 1 s off), which also fixes DUEL -> next job in captures. | `p6/duel01-flow` |
+| Death attribution on The Grid (kickoff step 3). | The centre state reads `CUT OFF BY KADE` / `BOXED YOURSELF` instead of `DEREZZED - OPPONENT TRAIL` / `OWN TRAIL`. | log `state=` |
+
+Not verified here: sound and music levels, the Backbone browse / buy on the briefing, and the
+balance numbers (all need the phone; the phone was asleep during this pass). The void round is
+verified by reading (`ArenaController` tests both collisions on the same frame) but not by a
+capture: the scripted drives cannot make both bikes hit a wall on the same frame.
+
 ## Still open (noted, not done)
 
 - The camera up-vector stays world-up in the conduit; F-Zero-style surface-normal tracking would

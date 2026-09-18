@@ -37,6 +37,7 @@ struct ContentView: View {
         #if os(iOS)
         .persistentSystemOverlays(.hidden)
         .statusBarHidden(true)
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         #endif
     }
 }

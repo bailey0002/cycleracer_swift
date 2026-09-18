@@ -47,6 +47,8 @@ final class RoadSegment {
     let tubeGroup = Entity()
     let obstacleGroup = Entity()
     let portalGroup = Entity()        // section mouths (entry / exit frames per style)
+    let overpassGroup = Entity()      // landmark dressing: a crossing deck over the road
+    let gatewayGroup = Entity()       // landmark dressing: twin pylons with a lit crossbar
     private var entryPortals: [SegmentStyle: Entity] = [:]
     private var exitPortals: [SegmentStyle: Entity] = [:]
     private var strobes: [Entity] = []
@@ -97,7 +99,7 @@ final class RoadSegment {
         buildingGroup.addChild(secondRowGroup)
         buildingGroup.addChild(altRowGroup)
         [surface, wideSurface, laneGroup, roadsideGroup, buildingGroup, signGroup, reflectionGroup,
-         tunnelGroup, elevatedGroup, forkGroup, tubeGroup, obstacleGroup, portalGroup].forEach { root.addChild($0) }
+         tunnelGroup, elevatedGroup, forkGroup, tubeGroup, obstacleGroup, portalGroup, overpassGroup, gatewayGroup].forEach { root.addChild($0) }
         var rng = SeededRNG(seed: UInt64(1000 + index * 7919))
         buildLanes()
         buildBarriers()
@@ -109,6 +111,7 @@ final class RoadSegment {
         buildFork()
         buildTube()
         buildPortals()
+        buildLandmarks(&rng)
         buildObstaclePool()
     }
 
@@ -148,6 +151,8 @@ final class RoadSegment {
         tunnelGroup.isEnabled = style == .tunnel
         elevatedGroup.isEnabled = style == .elevated
         forkGroup.isEnabled = style == .fork
+        overpassGroup.isEnabled = city && block.dressing == .overpass
+        gatewayGroup.isEnabled = city && block.dressing == .gateway
         obstacleGroup.isEnabled = s.obstacles
         for m in hazardMarks { m.isEnabled = s.hazardX }
         storefrontGroup.isEnabled = s.storefronts
@@ -848,6 +853,83 @@ final class RoadSegment {
         }
     }
 
+    // MARK: Landmarks (block dressing)
+
+    /// Two landmark dressings a composed track can put on a city block. Both are built once and
+    /// toggled by `apply`: an overpass (a deck crossing the road on piers, lit underneath, a
+    /// hologram hanging from it; in the canyon the same shape reads as a rock arch) and a gateway
+    /// (twin pylons with a lit crossbar and glyph panels). Nothing here enters the lane.
+    private func buildLandmarks(_ rng: inout SeededRNG) {
+        let z = mid
+        // overpass
+        var deckMat = materials.facades[index % materials.facades.count]
+        deckMat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(44 / 24, 9 / 36), rotation: 0)
+        let deck = ModelEntity(mesh: .generateBox(width: 44, height: 1.8, depth: 9, cornerRadius: 0.3), materials: [deckMat])
+        deck.position = [0, 12.5, z]
+        overpassGroup.addChild(deck)
+        for side in [-1, 1] as [Float] {
+            let pier = ModelEntity(mesh: .generateBox(size: [1.8, 12, 3]), materials: [materials.concrete])
+            pier.position = [side * 12.2, 6, z]
+            overpassGroup.addChild(pier)
+            let beacon = ModelEntity(mesh: .generateBox(size: [0.5, 0.5, 0.5]), materials: [materials.neon(Neon.red, intensity: 5)])
+            beacon.position = [side * 21, 13.7, z]
+            overpassGroup.addChild(beacon)
+        }
+        for dz in [-4.3, 4.3] as [Float] {
+            let strip = ModelEntity(mesh: .generateBox(size: [40, 0.12, 0.12]), materials: [materials.neon(Neon.cyan, intensity: 4)])
+            strip.position = [0, 11.55, z + dz]
+            overpassGroup.addChild(strip)
+            roadPrimary.append((strip, 4))
+        }
+        let rail = ModelEntity(mesh: .generateBox(size: [44, 0.1, 0.1]), materials: [materials.neon(Neon.magenta, intensity: 3)])
+        rail.position = [0, 13.6, z + 4.5]
+        overpassGroup.addChild(rail)
+        cityNeon.append((rail, 3))
+        if materials.theme == .neonCity {
+            let sign = ModelEntity(mesh: .generatePlane(width: 8, height: 4), materials: [materials.hologramSigns[(index + 1) % materials.hologramSigns.count]])
+            sign.position = [rng.float(-3, 3), 9.3, z + 4.7]
+            overpassGroup.addChild(sign)
+        }
+        let pool = ModelEntity(mesh: .generatePlane(width: 16, depth: 10), materials: [materials.reflection(Neon.cyan, opacity: 0.22)])
+        pool.position = [0, 0.03, z]
+        overpassGroup.addChild(pool)
+        roadReflections.append((pool, 0.22))
+        overpassGroup.isEnabled = false
+
+        // gateway
+        for side in [-1, 1] as [Float] {
+            let pylon = ModelEntity(mesh: .generateBox(size: [1.4, 26, 1.4]), materials: [materials.concrete])
+            pylon.position = [side * 10.8, 13, z]
+            gatewayGroup.addChild(pylon)
+            let strip = ModelEntity(mesh: .generateBox(size: [0.2, 24, 0.2]), materials: [materials.neon(Neon.cyan, intensity: 4)])
+            strip.position = [side * 10.8 - side * 0.8, 13, z]
+            gatewayGroup.addChild(strip)
+            roadPrimary.append((strip, 4))
+            let cap = ModelEntity(mesh: .generateBox(size: [0.7, 0.7, 0.7]), materials: [materials.neon(Neon.red, intensity: 5)])
+            cap.position = [side * 10.8, 26.4, z]
+            gatewayGroup.addChild(cap)
+        }
+        let bar = ModelEntity(mesh: .generateBox(size: [23, 0.6, 0.6]), materials: [materials.concrete])
+        bar.position = [0, 24, z]
+        gatewayGroup.addChild(bar)
+        let barLight = ModelEntity(mesh: .generateBox(size: [22, 0.14, 0.14]), materials: [materials.neon(Neon.magenta, intensity: 4)])
+        barLight.position = [0, 23.6, z + 0.35]
+        gatewayGroup.addChild(barLight)
+        cityNeon.append((barLight, 4))
+        if materials.theme == .neonCity {
+            for (k, x) in ([-5.5, 5.5] as [Float]).enumerated() {
+                let panel = ModelEntity(mesh: .generatePlane(width: 2.4, height: 7), materials: [materials.glyphSigns[(index + k * 3) % materials.glyphSigns.count]])
+                panel.position = [x, 19.5, z + 0.4]
+                gatewayGroup.addChild(panel)
+            }
+        }
+        let gpool = ModelEntity(mesh: .generatePlane(width: 18, depth: 8), materials: [materials.reflection(Neon.cyan, opacity: 0.2)])
+        gpool.position = [0, 0.03, z]
+        gatewayGroup.addChild(gpool)
+        roadReflections.append((gpool, 0.2))
+        gatewayGroup.isEnabled = false
+    }
+
     // MARK: Obstacles
 
     /// Red X mark: two crossed emissive bars on the face of a barrier.
@@ -1167,6 +1249,21 @@ final class WorldScroller {
     /// Past the fork's nose the V divider is a wall: (side the player is on, minimum |x| from the
     /// road centre on that side). The vehicle scrapes along it instead of passing through.
     private(set) var wedgeLimit: (side: Float, limit: Float)? = nil
+    /// The next section change ahead of the player (stamp label, metres to its mouth), within
+    /// `upcomingRange`, for the HUD's "coming up" chip and the approach cue.
+    private(set) var upcoming: (label: String, distance: Float)? = nil
+    static let upcomingRange: Float = 140
+
+    /// Centre-screen stamp text for a section entry.
+    static func sectionLabel(_ style: SegmentStyle) -> String? {
+        switch style {
+        case .tube: return "CONDUIT"
+        case .tunnel: return "UNDERCITY"
+        case .elevated: return "SKYWAY"
+        case .fork: return "SPLIT"
+        default: return nil
+        }
+    }
 
     init(materials: SceneMaterials, settings: FXSettings, program: TrackProgram = TrackProgram()) {
         root.name = "WorldRoot"
@@ -1306,6 +1403,19 @@ final class WorldScroller {
     private func updateSectionBlends() {
         tubeBlend = blend(for: [.tube], lead: Self.tubeLead)
         enclosure = blend(for: [.tube, .tunnel], lead: Self.enclosureLead)
+        upcoming = nil
+        if let ci = segments.firstIndex(where: { $0.root.position.z >= 0 && $0.root.position.z - segmentLength < 0 }) {
+            var prev = segments[ci].block.style
+            for seg in segments[(ci + 1)...] {
+                let st = seg.block.style
+                if st != prev, let label = Self.sectionLabel(st) {
+                    let d = -seg.root.position.z
+                    if d <= Self.upcomingRange { upcoming = (label, max(0, d)) }
+                    break
+                }
+                prev = st
+            }
+        }
         wedgeLimit = nil
         if forkTarget != 0, let fork = segmentAt(worldZ: 0), fork.block.style == .fork {
             let t = fork.root.position.z / segmentLength            // 0 near edge ... 1 far edge

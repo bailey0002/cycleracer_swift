@@ -203,3 +203,92 @@ Sources: Wikipedia (Distance, NFSU, NFSU2, Burnout 3, Burnout Paradise, Sayonara
 5. Single energy bar (hull + boost) with pit-strip refills and "Boost OK" unlock - M.
 
 Sources: Wikipedia F-Zero GX; SDA F-Zero GX; GamingTrend Trackmania preview; Star Fox 64 manual; StrategyWiki; Engadget Mirror's Edge colour and sim-sickness pieces; Game Anim first-person movement; Arwingpedia; mutecity Pipe/Cylinder; doc.trackmania.com; Juice It or Lose It (GDC); Cinemachine notes; elliotdev feeling of speed.
+
+---
+
+# Round 2 (18 Sep 2026): mission runners, HUD norms, duel AI
+
+Three more agents, run for the prototype assessment (`docs/assessment-2026-09-18.md`). Egress
+blocked most game sites, so several facts come from search snippets; speculation is marked.
+
+## Report E: short-session mission runners (Data Wing, Crazy Taxi, Jetpack Joyride, Alto's Odyssey, Race the Sun, Asphalt 9, Tron Run/r)
+
+- **Data Wing** (Vogt, 2017): 40+ levels of 20-90 s, strictly linear; the story is a phone: the AI
+  "Mother" issues orders as text messages and completed levels unlock the other character's texts,
+  which is how the twist arrives. Restart is one tap, unlimited, no currency. The six intro levels
+  are the tutorial and the story at once. Closest tonal and structural match to this prototype.
+- **Crazy Taxi**: one master timer plus a per-fare timer; picking up adds time; fare = distance +
+  time left + stunt tips in combos; a big green arrow at top centre points at the destination and
+  turns red as you close; customers colour-coded by distance; SPEEDY / NORMAL / SLOW rating spoken
+  by the passenger. Lesson: the clock as a resource you refill, and a directional cue to the drop.
+- **Jetpack Joyride / Subway Surfers**: always three active missions with 1-3 stars, completion
+  banner mid-run, replacement drawn at once; stars fill a rank bar that pays coins; coins buy
+  passive gadgets and one-use utilities. Lesson: side objectives make a passed job worth replaying.
+- **Alto's Odyssey**: 60 levels x 3 hand-crafted goals; coins buy Izel's workshop items (helmet =
+  one free crash, lotus timer, chasm rescue). Lesson: the "small, visible, repeatable" upgrade
+  shop the direction note asked for.
+- **Race the Sun**: the sun is the timer (diegetic), pickups push it back up, three rolling
+  objectives level the ship to 25 with an attachment per level; no currency. Lesson: a
+  no-currency ladder that fits Tron-clean tone.
+- **Asphalt 9**: three flags per event on the pre-race screen; icons at the top show what track
+  features are coming in the next seconds. Lesson: the "coming up" strip, and flags.
+- **Tron Run/r**: same score rule as our streak; criticised for hazards that "arrive too fast to
+  read" at speed, the risk our conduit and gates carry on a 390 pt screen.
+
+Ranked for this prototype: three flags per job [S, done 18 Sep]; a four-item shop [M]; upcoming
+feature icons [S, done]; time as a refillable resource [S]; contacts' inbox [M]; one-tap retry
+[S]; a ghost/pace-setter for the first three jobs [M]; an objective ladder instead of a shop [M].
+
+## Report F: HUD, telegraphing and feedback norms
+
+- Apple (WWDC24 "Design advanced games"): essential text at 17 pt, never below 11 pt for the
+  non-essential; 44 pt tap targets; controller glyphs from `GCController` element
+  `sfSymbolsName`, shown only when the action is relevant and removed otherwise; every touch
+  control needs a press state.
+- Placement: core driving data in the lower corners, transient gains near the centre without
+  blocking the road; corners are read peripherally, which needs brightness change and motion,
+  not text (Player Research).
+- Meters: three states (about 50 % and 20-25 %) with a pulse below the last; Redout's warning tone
+  starts at 25 % and its boost is a rising-pitch loop so heat is heard; Distance tints the screen.
+- Timers: colour at 10 s, tick and pulse under 5 s. Pursuit: NFS scanners blink faster as the
+  threat nears; off-screen threats get an edge arrow. Telegraphing: F-Zero and Thumper give each
+  hazard a sound before it is visible; runner rule "never unfair on first encounter".
+- Feel: hit-stop 40-80 ms, shake 0.1-0.3 s with fast exponential decay, floating text 0.6-1.2 s,
+  one transient element in the centre at a time.
+
+Ten gaps found (in priority): no audio [done]; two-state static meters [done]; timer at 10 s
+only [done]; pursuer as a number [done]; controls paragraph instead of prompts [half: timed
+out, glyphs owed]; no speedometer [done]; centre stack piles up and stamps overstay [owed];
+no lead on section changes [done]; text at Apple's floor [owed]; arena spatial awareness only
+in-world [owed]. Already good: same-frame acks, hit feel on spec, mode-aware element set, one
+visual language, safe areas and the scrolling panel, the diegetic pursuer.
+
+## Report G: single-player light-cycle duels
+
+- **Armagetron `gAIBase`**: states SURVIVE / CLOSECOMBAT / TRACE / PATH; three rays with range =
+  one second of travel; danger levels LOOP (would this turn close a loop of my own wall), SPACE,
+  TRAP, TEAM, max wins; difficulty is `AI_IQ` from ten character properties (reaction, range,
+  loop detection, prediction depth); think interval 0.6 s minus concentration; path-finding
+  disables itself past a CPU budget. Players beat bots with dead ends and traces, not speed.
+- **GLtron `computer.c`**: four levels tabled as reaction time 600/400/200/100 ms, spiral
+  detection after ten same-direction turns, active mode races the crossing point (`t_player` vs
+  `t_opponent`, commit if ahead by < 0.5 s, evade if behind by > 0.8 s).
+- **Google AI Challenge 2010 (a1k0n)**: Voronoi partition by BFS, eval = 0.055 (N1-N2) +
+  0.194 (E1-E2), articulation points split space into chambers, alpha-beta with iterative
+  deepening; "a better evaluation heuristic will always beat deeper minimax". A 6 m occupancy
+  grid (37 x 37) makes flood fill and Voronoi well under a millisecond on an A14 (spec.).
+- Rounds: Armagetron ends quiet rounds with a zone (sumo reference: radius 56, shrinks 0.57 m/s,
+  opens 40 s in and 20 s after the last death; outside for 4 s the zone collapses on you and
+  re-entry slows it back); win +10, kill +3, die -2, suicide -4, so a simultaneous derez is a
+  round with no winner. The 0.4 cockpit shows rubber, time-to-next-impact and a grind proximity
+  gauge. No shipped game has a kill cam.
+- Fairness complaints: Tron 2.0's "insanely fast responses" and cheap tactics; racing-AI
+  literature: rubber-banding by speed is easy to spot, vary mistake frequency and aggression.
+
+Ranked for this prototype: reachable-area term via flood fill [S-M]; loop/spiral guard [S];
+skill tiers by reaction not speed [S]; cut-race timing for the boxer [S-M]; Voronoi + 2-ply
+lookahead for the top tier [M]; death attribution and a 4 s rewind [M]; a round clock, a
+readable zone spin-up and a void round on a simultaneous derez [S-M]; an opponent strip and a
+first-round grind lesson [M]. Already good: finite trails sidestep the space-filling endgame;
+survival-first scoring with a one-step player prediction on identical physics; named rivals
+with declared tempers and a cause line.

@@ -39,6 +39,8 @@ struct FXSettings: Equatable {
     var grinding     = true     // proximity speed surge + energy
     // missions
     var missions     = true     // corridor worlds run the job loop; off = free play
+    var sound        = true     // synthesised cues and loops (SoundEngine)
+    var music        = true     // generative music layers per world
 }
 
 struct FrameStats {
@@ -69,6 +71,9 @@ struct FrameStats {
     var rival = "RIVAL"
     var matchTarget = 3
     var zone: String? = nil
+    // corridor: the next section change ahead (label and metres to its mouth)
+    var upcoming: String? = nil
+    var upcomingDistance: Float = 0
 }
 
 /// Same-frame acknowledgement of player actions for the HUD. Published only when it changes.

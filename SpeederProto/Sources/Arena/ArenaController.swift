@@ -51,6 +51,7 @@ final class ArenaController {
     private(set) var energy: Float = 0.6
     private(set) var edge: Float = 1
     private(set) var grind: Float = 0
+    private var playerBoosting = false
     private var grindAccel: Float = 0
     private var opponentAccel: Float = 0
     /// Armagetron's proximity term: accel / (offset + d) - accel / (offset + near), zero beyond `near`.
@@ -87,6 +88,7 @@ final class ArenaController {
         var matchResult = false
         var charged = false
         var zoneOpened = false
+        var voidRound = false
     }
     private(set) var events = Events()
     /// Match: first to `matchTarget` derezzes of the other cycle. A duel mission sets it out of
@@ -120,6 +122,9 @@ final class ArenaController {
     private let rivalTagHolder = Entity()
     /// Capture hook: SPEEDER_ARENA_KILL_RIVAL=<run seconds> force-derezzes the rival.
     private let killRivalAt: Float? = ProcessInfo.processInfo.environment["SPEEDER_ARENA_KILL_RIVAL"].flatMap { Float($0) }
+    /// Capture hook: SPEEDER_ARENA_IMMORTAL=1 lets the player drive through walls, so a scripted
+    /// drive can watch the rival for a whole run (the AI logs).
+    private let immortal = ProcessInfo.processInfo.environment["SPEEDER_ARENA_IMMORTAL"] == "1"
     private var padCooldown: [Float] = []
     private var prevGrind: Float = 0
     private var phaseTimer: Float = 0
@@ -167,6 +172,7 @@ final class ArenaController {
         // the rival's burst is shorter than the player's: its 0.16 s decisions cannot handle more
         opponent.boostSpeed = 54
         opponent.boostAccel = 24
+        opponent.maxSpeed = 62            // grinds must not take it into the regime where it boxes itself in
         ai = ArenaAI(cycleID: 2, heading: .pi)
         lastNose = [player.nose, opponent.nose]
         // sumo zone ring: 64 box segments on a unit circle (a scaled thin shell gets culled; boxes draw),
@@ -272,6 +278,7 @@ final class ArenaController {
     /// Rebuild what depends on the rival: the AI temper and the tag texture.
     private func applyRival() {
         ai.temper = rival.temper
+        ai.skill = rival.skill
         let tex = try? SceneMaterials.texture(ProceduralTextures.nameTag(name: rival.name, temper: rival.temper.rawValue, color: rival.color), .color)
         if let tex {
             var m = UnlitMaterial()
@@ -507,28 +514,38 @@ final class ArenaController {
         var pin = input
         if pin.boost && energy <= 0.02 { pin.boost = false }
         if pin.boost { energy = max(0, energy - dt * 0.22) } else { energy = min(1, energy + dt * 0.03) }
+        playerBoosting = pin.boost
         if pin.jump && player.airborne { pin.jump = false }
         updatePads(dt: dt)
         stepCycle(player, input: pin, dt: dt, accel: settings.grinding ? grindAccel : 0)
         // --- opponent
         if settings.opponent && !opponentDead { stepOpponent(dt: dt, aiInput: aiInput) }
 
-        // --- collisions
+        // --- collisions (both tested on the same frame: a double derez is a void round, Armagetron style)
+        let rivalHit: TrailHit? = (settings.opponent && !opponentDead) ? collide(opponent) : nil
+        var playerCrashed = false
         if let hit = collide(player) {
-            if heldPickup == nil && phaseTimer > 0 && !hit.boundary {
+            if phaseTimer > 0 && !hit.boundary {
                 // phase: pass through one wall (already consumed)
                 phaseTimer = 0
                 flash = max(flash, 0.25)
             } else if let deflected = tryDeflect(player, hit: hit) {
                 _ = deflected
-            } else {
+            } else if !immortal {
                 crashPlayer(at: hit)
-                return
+                playerCrashed = true
             }
         }
-        if settings.opponent && !opponentDead, let hit = collide(opponent) {
+        if let hit = rivalHit {
             crashOpponent(at: hit)
+            if playerCrashed {
+                wins -= 1; losses -= 1
+                events.roundWon = false; events.roundLost = false; events.voidRound = true
+                stateText = "VOID ROUND - BOTH DEREZZED"
+                phase = .crashed(0)
+            }
         }
+        if playerCrashed { return }
 
         // --- grinding / edge (player only; the AI has no rubber)
         updateGrinding(dt: dt)
@@ -707,6 +724,7 @@ final class ArenaController {
     }
 
     private func crashPlayer(at hit: TrailHit) {
+        guard player.alive, !immortal else { return }
         losses += 1
         events.roundLost = true
         let p = player.position + [0, 0.9, 0]
@@ -720,7 +738,8 @@ final class ArenaController {
         pulseOrigin = (player.id, trails.trails[player.id].headS, time)
         cameraOrbit = (p, 0)
         phase = .crashed(0)
-        stateText = hit.boundary ? "DEREZZED - BOUNDARY" : (hit.ref.trail == -2 ? "DEREZZED - OUTSIDE THE ZONE" : (hit.ref.trail == player.id ? "DEREZZED - OWN TRAIL" : (hit.ref.trail == 0 ? "DEREZZED - HAZARD" : "DEREZZED - OPPONENT TRAIL")))
+        // attribution: the rival's name on a cut-off, and an own-trail death reads as your own doing
+        stateText = hit.boundary ? "DEREZZED - BOUNDARY" : (hit.ref.trail == -2 ? "DEREZZED - OUTSIDE THE ZONE" : (hit.ref.trail == player.id ? "BOXED YOURSELF" : (hit.ref.trail == 0 ? "DEREZZED - HAZARD" : "CUT OFF BY \(rival.name)")))
     }
 
     private func crashOpponent(at hit: TrailHit) {
@@ -835,11 +854,12 @@ final class ArenaController {
             g = min(1, g * 1.5)
         }
         // break-away kick: leaving a hard grind gives a burst that the decay curve then bleeds off
-        if prevGrind > 0.45 && g < 0.1 { player.speed = min(player.maxSpeed, player.speed + 10) }
+        if prevGrind > 0.45 && g < 0.1 && grindRun > 0.6 { player.speed = min(player.maxSpeed, player.speed + 10) }
         prevGrind = g
         grind = damp(grind, g, 8, dt)
         grindAccel = accel
-        if g > 0.1 { energy = min(1, energy + dt * g * 0.35) }
+        // a grind refills energy, but slower while boost is spending it, so a tunnel grind cannot fund an endless boost
+        if g > 0.1 { energy = min(1, energy + dt * g * (playerBoosting ? 0.12 : 0.35)) }
     }
 
     // MARK: - Pickups
