@@ -169,7 +169,11 @@ final class MissionRunner {
         credits = defaults.integer(forKey: "credits")
         upgrades = Upgrades.load(defaults)
         index = abs(defaults.integer(forKey: "missionIndex")) % max(1, missions.count)
-        if let m = env["SPEEDER_MISSION"], let i = Int(m) { index = abs(i) % max(1, missions.count) }
+        if let m = env["SPEEDER_MISSION"], let i = Int(m) {
+            index = abs(i) % max(1, missions.count)
+            // a forced job counts as reached: the inbox lists it and the loop carries on from it
+            if index > defaults.integer(forKey: "cleared") { defaults.set(index, forKey: "cleared") }
+        }
         previewIndex = index
     }
 

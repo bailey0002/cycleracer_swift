@@ -18,7 +18,7 @@ struct HUDView: View {
                 }
                 Spacer()
                 HStack(alignment: .bottom) {
-                    raceBlock
+                    if !cardUp { raceBlock }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 6) {
                         upcomingChip
@@ -37,6 +37,16 @@ struct HUDView: View {
         .controlSize(.mini)
         #endif
         .foregroundStyle(.white.opacity(0.9))
+    }
+
+    /// A card (briefing, result, match) owns the screen: the race block under it would show through
+    /// on a 390 pt phone, and its numbers mean nothing while the vehicle is parked.
+    private var cardUp: Bool {
+        if controller.matchResult != nil { return true }
+        switch controller.mission.phase {
+        case .briefing, .success, .failed: return true
+        default: return false
+        }
     }
 
     /// The frame-stats block is diagnostic: always on the Mac, only with the settings panel on the phone.
@@ -208,7 +218,7 @@ struct HUDView: View {
             }
         case .running:
             VStack {
-                HStack(spacing: 14) {
+                HStack(spacing: 12) {
                     if m.kind != .duel {
                         Text(String(format: "%3.0f s", m.timeLeft)).font(.system(size: HUDStyle.bigSize, weight: .bold, design: .monospaced))
                             .foregroundStyle(m.timeLeft < 10 ? .red : (m.timeLeft < 20 ? HUDStyle.amber : .white))
@@ -227,11 +237,14 @@ struct HUDView: View {
                         Text("BEACONS \(m.beaconsHit)/\(m.beaconsTotal)   NEED \(m.beaconsRequired)").font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.pickup)
                         Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .escape:
+                        // two lines so the strip stays inside a phone's width: pursuer + distance, then the gap bar
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(String(format: "PURSUER %3.0f m", m.gap)).font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(m.gap < 20 ? .red : .orange)
+                            HStack(spacing: 10) {
+                                Text(String(format: "PURSUER %3.0f m", m.gap)).font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(m.gap < 20 ? .red : .orange)
+                                Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
+                            }
                             meter("GAP", m.gap / max(1, m.startGap), m.gap < 20 ? .red : .orange, low: m.gap < 20)
                         }
-                        Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .duel:
                         Text("FIRST TO \(m.duelTarget)    YOU \(m.duelWins)  -  \(m.duelLosses) \(m.rivalName)").font(.system(size: HUDStyle.baseSize + 4, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .salvage:
@@ -276,20 +289,26 @@ struct HUDView: View {
     /// The inbox: every unlocked job as a chip (cleared ones ticked), the shown one lit. A tap
     /// loads it; on a pad the stick browses left / right.
     private func inbox(_ m: MissionState) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
-                ForEach(m.jobs, id: \.id) { j in
-                    let shown = j.id == m.index
-                    Text((j.cleared ? "* " : "") + j.code)
-                        .font(.system(size: HUDStyle.baseSize - 1, weight: .bold, design: .monospaced))
-                        .foregroundStyle(shown ? .black : (j.cleared ? .white.opacity(0.7) : .white))
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 3).fill(shown ? HUDStyle.accent : .white.opacity(j.cleared ? 0.08 : 0.16)))
-                        .contentShape(Rectangle())
-                        .onTapGesture { controller.browseJob(to: j.id) }
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(m.jobs, id: \.id) { j in
+                        let shown = j.id == m.index
+                        Text((j.cleared ? "* " : "") + j.code)
+                            .font(.system(size: HUDStyle.baseSize - 1, weight: .bold, design: .monospaced))
+                            .foregroundStyle(shown ? .black : (j.cleared ? .white.opacity(0.7) : .white))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(RoundedRectangle(cornerRadius: 3).fill(shown ? HUDStyle.accent : .white.opacity(j.cleared ? 0.08 : 0.16)))
+                            .contentShape(Rectangle())
+                            .onTapGesture { controller.browseJob(to: j.id) }
+                            .id(j.id)
+                    }
+                    Text("<  >  BROWSE").font(.system(size: HUDStyle.baseSize - 2, design: .monospaced)).foregroundStyle(.white.opacity(0.4))
                 }
-                Text("<  >  BROWSE").font(.system(size: HUDStyle.baseSize - 2, design: .monospaced)).foregroundStyle(.white.opacity(0.4))
             }
+            // the shown job's chip stays in view (a long chain scrolls past the card's width)
+            .onAppear { proxy.scrollTo(m.index, anchor: .center) }
+            .onChange(of: m.index) { _, i in withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(i, anchor: .center) } }
         }
     }
 

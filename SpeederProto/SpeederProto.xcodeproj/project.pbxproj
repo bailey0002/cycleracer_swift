@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A0D10E5E01000000000000B1 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D10E5E01000000000000F1 /* SoundEngine.swift */; };
-		A0D10E5E01000000000000B2 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D10E5E01000000000000F1 /* SoundEngine.swift */; };
 		02D3D56823114D66FCF57FEF /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
 		03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		070BB31D4D19848AA63BFC0C /* Rival.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CB4715E79FFE27B9C57F3 /* Rival.swift */; };
@@ -59,6 +57,7 @@
 		8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
 		92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
 		9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
+		9D9093F4819EE9359D41FC2A /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE1291018C742677C899082 /* SoundEngine.swift */; };
 		9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
 		A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
@@ -72,6 +71,7 @@
 		D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
 		DB49B1D8B243C8F5A4D3C3D9 /* Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B36422554C4AD2CC76BF3BBE /* Avatar.usdz */; };
 		DC41CBFF327A56F45112A39A /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
+		E132C8599DEE43F567931FC4 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE1291018C742677C899082 /* SoundEngine.swift */; };
 		E4BA5063FAA37F1CB0887EBE /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
 		EA6E0C0F4AB2DC46D198DA28 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
 		ED7A03D5F51FEA26BECEA23A /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
@@ -82,7 +82,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A0D10E5E01000000000000F1 /* SoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEngine.swift; sourceTree = "<group>"; };
 		0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialFactory.swift; sourceTree = "<group>"; };
 		1362513C3D8ABE25AC8315B7 /* Mission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mission.swift; sourceTree = "<group>"; };
 		196B1573C8FB9CC7F731E150 /* WorldScroller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldScroller.swift; sourceTree = "<group>"; };
@@ -120,6 +119,7 @@
 		FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SpeederProto-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC6DBC66827CF202624BE7B3 /* Weapons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weapons.swift; sourceTree = "<group>"; };
 		FCF5F98B937F71B03F109B71 /* AvatarActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarActor.swift; sourceTree = "<group>"; };
+		FFE1291018C742677C899082 /* SoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -161,7 +161,7 @@
 			children = (
 				8D77DD23F54D80E39174AFD9 /* App */,
 				E87E23EDACC0C849C6E4598B /* Arena */,
-				A0D10E5E010000000000009A /* Audio */,
+				5A7B8C2E3EA20E517338BAB5 /* Audio */,
 				41A26131AA380A7C955A557C /* Missions */,
 				14456DB4C36B752427D5A0E6 /* Rendering */,
 				58FAD8C39C416204195ADA96 /* Scene */,
@@ -206,6 +206,14 @@
 			path = Scene;
 			sourceTree = "<group>";
 		};
+		5A7B8C2E3EA20E517338BAB5 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				FFE1291018C742677C899082 /* SoundEngine.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
 		60DE0E2CE1A5F121C9BB663F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -221,14 +229,6 @@
 				9D1146D252113EB8417E5731 /* SpeederApp.swift */,
 			);
 			path = App;
-			sourceTree = "<group>";
-		};
-		A0D10E5E010000000000009A /* Audio */ = {
-			isa = PBXGroup;
-			children = (
-				A0D10E5E01000000000000F1 /* SoundEngine.swift */,
-			);
-			path = Audio;
 			sourceTree = "<group>";
 		};
 		E87E23EDACC0C849C6E4598B /* Arena */ = {
@@ -382,8 +382,8 @@
 				4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */,
 				6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */,
 				5E2B35048AA4E66F36171C9A /* Rival.swift in Sources */,
-				A0D10E5E01000000000000B1 /* SoundEngine.swift in Sources */,
 				BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */,
+				9D9093F4819EE9359D41FC2A /* SoundEngine.swift in Sources */,
 				F4CA0144019743170E987786 /* SpeederApp.swift in Sources */,
 				621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */,
 				4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */,
@@ -423,8 +423,8 @@
 				5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */,
 				27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */,
 				070BB31D4D19848AA63BFC0C /* Rival.swift in Sources */,
-				A0D10E5E01000000000000B2 /* SoundEngine.swift in Sources */,
 				38F466D3DC77436528A13440 /* Shaders.metal in Sources */,
+				E132C8599DEE43F567931FC4 /* SoundEngine.swift in Sources */,
 				92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */,
 				9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */,
 				147812546190B4325B27A09E /* Theme.swift in Sources */,

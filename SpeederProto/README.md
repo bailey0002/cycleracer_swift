@@ -60,6 +60,14 @@ judged in isolation. On iOS the RealityKit view does not take touches at all: Sw
   `Captures/polish/capture.sh <dir> <seconds> ENV=VAL ...` runs and kills it.
 - `SPEEDER_CAMERA=overview` — high camera behind the vehicle (corridor layout captures).
 - `SPEEDER_SWEEP=1` (with capture dir) — one frame per disabled technique, plus `source.png`, the raw render before the post pass.
+- `SPEEDER_MISSION=<n>` also marks the jobs before `n` as cleared (the inbox lists the chain and
+  the loop continues from `n`); `SPEEDER_RESET_PROGRESS=1` first for a clean slate.
+- In demo mode the accept button pulses (0.5 s on, 1 s off) so cards are accepted on their edge;
+  `SPEEDER_HOLD_BRIEFING=1` / `SPEEDER_HOLD_RESULT=1` keep a card up for screenshots.
+- Simulator HUD screenshots: `Captures/polish/simshot.sh <outprefix> "<delays>" ENV=VAL ...`
+  launches the installed simulator build with `SIMCTL_CHILD_` env vars and screenshots at each
+  delay from launch. The simulator runs slower than wall clock (about 25 m of track per second,
+  scene time starts ~14 s after launch); take several delays.
 
 ## What is in the scene
 
@@ -343,14 +351,17 @@ of what to build next. The pieces the code now has:
   outside drains it and an empty bar derezzes (rival included). The AI heads for the zone.
 
 Capture hooks: `SPEEDER_ARENA_RIVAL=<name>`, `SPEEDER_HOLD_RESULT=1`, `SPEEDER_DEMO_BOOST=always`,
-`SPEEDER_ARENA_ZONE_AT=<s>`.
-Captures: `Captures/polish/p5/`.
+`SPEEDER_ARENA_ZONE_AT=<s>`, `SPEEDER_ARENA_KILL_RIVAL=<run s>` (force-derez the rival each round,
+wins a mission duel for the demo), `SPEEDER_ARENA_IMMORTAL=1` (the player drives through walls, for
+watching the rival over a whole run).
+Captures: `Captures/polish/p5/`, `Captures/polish/p6/` (18 Sep verification).
 
 ## Assessment pass (18 Sep 2026)
 
 `docs/assessment-2026-09-18.md` is the mechanics / UI / sequencing / code assessment (six agent
-reports merged; round-2 research appended to `docs/research-comparables.md`). What it changed,
-none of it built yet (the session had no Xcode; build on the Mac first):
+reports merged; round-2 research appended to `docs/research-comparables.md`). What it changed
+(built and verified on the Mac and the simulator later the same day; `docs/polish-log.md`, third
+pass, and `Captures/polish/p6/`):
 
 - **Full-length tracks**: `TrackComposer` (in `Scene/TrackProgram.swift`) composes every corridor
   job from phrases (straight, bend, S-bend, obstacle field, split, conduit, undercity, skyway,
@@ -384,7 +395,8 @@ none of it built yet (the session had no Xcode; build on the Mac first):
 
 ## The game (18 Sep 2026, second pass): an arc, an inbox, a garage, a sharper rival, music
 
-Built on the assessment pass, still unbuilt (no Xcode in the session):
+Built on the assessment pass (verified with the assessment pass; see the third-pass section of
+`docs/polish-log.md`):
 
 - **Three chapters, eighteen jobs** (`Missions/Mission.swift`): DOWNTOWN with VESS (five corridor
   jobs and the duel with KADE), OUTLANDS with KADE as the contact (the canyon, a salvage run, a

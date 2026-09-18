@@ -122,6 +122,9 @@ final class ArenaController {
     private let rivalTagHolder = Entity()
     /// Capture hook: SPEEDER_ARENA_KILL_RIVAL=<run seconds> force-derezzes the rival.
     private let killRivalAt: Float? = ProcessInfo.processInfo.environment["SPEEDER_ARENA_KILL_RIVAL"].flatMap { Float($0) }
+    /// Capture hook: SPEEDER_ARENA_IMMORTAL=1 lets the player drive through walls, so a scripted
+    /// drive can watch the rival for a whole run (the AI logs).
+    private let immortal = ProcessInfo.processInfo.environment["SPEEDER_ARENA_IMMORTAL"] == "1"
     private var padCooldown: [Float] = []
     private var prevGrind: Float = 0
     private var phaseTimer: Float = 0
@@ -528,7 +531,7 @@ final class ArenaController {
                 flash = max(flash, 0.25)
             } else if let deflected = tryDeflect(player, hit: hit) {
                 _ = deflected
-            } else {
+            } else if !immortal {
                 crashPlayer(at: hit)
                 playerCrashed = true
             }
@@ -721,7 +724,7 @@ final class ArenaController {
     }
 
     private func crashPlayer(at hit: TrailHit) {
-        guard player.alive else { return }
+        guard player.alive, !immortal else { return }
         losses += 1
         events.roundLost = true
         let p = player.position + [0, 0.9, 0]
@@ -735,7 +738,8 @@ final class ArenaController {
         pulseOrigin = (player.id, trails.trails[player.id].headS, time)
         cameraOrbit = (p, 0)
         phase = .crashed(0)
-        stateText = hit.boundary ? "DEREZZED - BOUNDARY" : (hit.ref.trail == -2 ? "DEREZZED - OUTSIDE THE ZONE" : (hit.ref.trail == player.id ? "DEREZZED - OWN TRAIL" : (hit.ref.trail == 0 ? "DEREZZED - HAZARD" : "DEREZZED - OPPONENT TRAIL")))
+        // attribution: the rival's name on a cut-off, and an own-trail death reads as your own doing
+        stateText = hit.boundary ? "DEREZZED - BOUNDARY" : (hit.ref.trail == -2 ? "DEREZZED - OUTSIDE THE ZONE" : (hit.ref.trail == player.id ? "BOXED YOURSELF" : (hit.ref.trail == 0 ? "DEREZZED - HAZARD" : "CUT OFF BY \(rival.name)")))
     }
 
     private func crashOpponent(at hit: TrailHit) {

@@ -41,19 +41,26 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   (`Mission.maxScore`, `rank.<id>` in UserDefaults), checkpoint respawn (two per job), sumo zone
   (16 Sep 2026, `ArenaController.updateZone`, `SPEEDER_ARENA_ZONE_AT`). Feel tuning on the phone
   with the Backbone is still owed (`LightCycle` constants).
-- Assessment pass 18 Sep 2026 (`SpeederProto/docs/assessment-2026-09-18.md`, done on Linux without
-  Xcode, so **unbuilt**): `TrackComposer` composes every corridor job over its full length (before,
-  85 % of each job repeated its last block), overpass / gateway landmark dressings, a synthesised
-  sound layer (`Sources/Audio/SoundEngine.swift`, `SPEEDER_SOUND=0|1`), HUD states (speedometer,
-  three-state pulsing meters, timer ticks, pursuer GAP bar, "coming up" chip, job flags), tap to
-  fire on touch, and a batch of review fixes (theme change from The Grid never rebuilt; boost
-  flicker at empty hull; arena economy exploits). First job of the next thread: build it.
-- Second pass 18 Sep 2026 (also unbuilt): three chapters and eighteen jobs with debrief lines
-  (`Mission.deliveries`), salvage and dive kinds, the inbox (browse unlocked jobs on the briefing,
-  replay at half pay), the garage (`Upgrades`, four items), gate time bonus, one-tap retry
-  (`MissionRunner.autoStart`), rival skill tiers (`Rival.skill`) and space sense
-  (`TrailSystem.occupancy`, flood fill in `ArenaAI.choose`), void rounds, generative music per
-  world (`SoundEngine.setMusic`). README section "The game".
+- Assessment pass 18 Sep 2026 (`SpeederProto/docs/assessment-2026-09-18.md`, written on Linux,
+  built and verified on the Mac the same day): `TrackComposer` composes every corridor job over
+  its full length (before, 85 % of each job repeated its last block), overpass / gateway landmark
+  dressings, a synthesised sound layer (`Sources/Audio/SoundEngine.swift`, `SPEEDER_SOUND=0|1`),
+  HUD states (speedometer, three-state pulsing meters, timer ticks, pursuer GAP bar, "coming up"
+  chip, job flags), tap to fire on touch, review fixes (theme change from The Grid never rebuilt;
+  boost flicker at empty hull; arena economy exploits).
+- Second pass 18 Sep 2026 (verified the same day): three chapters and eighteen jobs with debrief
+  lines (`Mission.deliveries`), salvage and dive kinds, the inbox (browse unlocked jobs on the
+  briefing, replay at half pay), the garage (four upgrades bought with credits), gate time bonus,
+  one-tap retry, the rival's occupancy-grid space term + loop guard + skill tiers, void rounds,
+  generative music per world.
+- Third pass 18 Sep 2026 (`docs/polish-log.md`, `Captures/polish/p6/`): both blind passes compiled
+  clean; captures verified the composed tracks, both conduits, the canyon undercity / arch / split,
+  the skyway, DUEL 01 -> RELAY 04 rebuild, rival own-trail deaths (none in nine), the simulator
+  HUD cards. Fixes: race block hidden under cards on the phone, escape strip in two lines, a forced
+  `SPEEDER_MISSION` unlocks its chain, inbox scrolls to the shown chip, demo accept pulses, Grid
+  death attribution (`CUT OFF BY KADE` / `BOXED YOURSELF`), `SPEEDER_ARENA_IMMORTAL=1` hook.
+  Still owed on the phone: sound / music levels, Backbone browse and buy, balance (step 2 of the
+  kickoff), the void round by play. Branch `claude/game-prototype-assessment-chlzto`, PR #2.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
@@ -130,7 +137,16 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view, `side` a side elevation; the chase camera cannot
   show elevated trails or trail cuts. Capture times with decimals are allowed (`frame-1.5.png`).
 - The MCP iOS simulator panel crashed in this session; `xcrun simctl io <udid> screenshot` works
-  and `SIMCTL_CHILD_<VAR>` passes env vars to `simctl launch`.
+  and `SIMCTL_CHILD_<VAR>` passes env vars to `simctl launch`. `Captures/polish/simshot.sh` wraps
+  that (delays from launch); the simulator covers ~25 m of track per wall second and scene time
+  starts ~14 s after launch, later when the Mac is busy, so take several delays per scene.
+- Captures run in parallel share the GPU: four Mac instances at once drop to 15-25 fps and scene
+  time (fixed 60 Hz step) falls to a quarter of wall clock, so late capture times are missed. Run
+  long arena logs one at a time.
+- Demo mode pulses the accept button (`Int(time * 2) % 3 == 0`); a held accept has no edge, so a
+  result card was never accepted in the arena and the corridor loop stalled after a rebuild.
+- `SPEEDER_MISSION=<n>` writes `cleared = n` to UserDefaults when n is past the cleared count (the
+  inbox lists the chain); use `SPEEDER_RESET_PROGRESS=1` with it for a clean slate.
 
 ## Working style the user wants
 

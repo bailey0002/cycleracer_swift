@@ -426,7 +426,7 @@ final class GameController: ObservableObject {
             input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
             input.pointerClimb = max(-1, min(1, sin(time * 0.6 + 1.0) * 0.9))
             // weapons pulse during a run; while parked the only "fire" is the scripted accept
-            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing)) : Int(time * 2) % 3 == 0
+            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing) && Int(time * 2) % 3 == 0) : Int(time * 2) % 3 == 0
             let demoBoost = ProcessInfo.processInfo.environment["SPEEDER_DEMO_BOOST"]
             input.pointerBoost = demoBoost == "always" || (time > 6.5 && time < 11 && demoBoost != "0")
         }
@@ -881,7 +881,8 @@ final class GameController: ObservableObject {
         if demoMode, let script = ProcessInfo.processInfo.environment["SPEEDER_DEMO_SCRIPT"], script == "noai" { aiCmd = CycleInput() }
         if missionActive {
             // duel: the briefing holds the arena; A / F / tap accepts, the arena's score decides the job
-            let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing)
+            // the demo pulses its accept (a held button has no edge, so the result card would stay up)
+            let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing) && Int(time * 2) % 3 == 0)
             if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
             missionFirePrev = fire
             briefingInput(input)
