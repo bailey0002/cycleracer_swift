@@ -13,6 +13,14 @@ final class ArenaAI {
     private var rng = SeededRNG(seed: 4242)
     let cycleID: Int
     var temper: Rival.Temper = .hunter
+    /// Reaction tier: tick length, probe range, noise and blink chance (never speed).
+    var skill: Rival.Skill = .sharp
+    /// Loop guard (Armagetron LOOPLEVEL, GLtron's spiral counter): the last turn direction and how
+    /// many turns in a row went that way.
+    private var lastTurn = 0
+    private var sameTurns = 0
+    /// Occupancy grid cell: about one tick of travel at base speed.
+    static let gridCell: Float = 6
     /// Boost pads the runner chains (same-level pads only, filtered per tick).
     var pads: [SIMD3<Float>] = []
     /// Ramps (bottom point, top point) the hunter takes when the player is on the deck.
@@ -28,7 +36,7 @@ final class ArenaAI {
         targetHeading = heading
     }
 
-    func reset(heading: Float) { targetHeading = heading; pendingSnap = 0; tick = 0; rampLeg = 0; goal = nil }
+    func reset(heading: Float) { targetHeading = heading; pendingSnap = 0; tick = 0; rampLeg = 0; goal = nil; lastTurn = 0; sameTurns = 0 }
 
     func decide(dt: Float, cycle: LightCycle, trails: TrailSystem, player: LightCycle, snapMode: Bool) -> CycleInput {
         var input = CycleInput()
@@ -36,8 +44,11 @@ final class ArenaAI {
         let ahead = trails.openDistance(from: cycle.nose, dir: cycle.forward2, maxDistance: 60, yBand: cycle.yBand, ignoreOwner: cycle.id)
         let urgent = ahead < 14 + cycle.speed * 0.25
         if tick <= 0 || urgent {
-            tick = urgent ? 0.08 : 0.16
-            choose(cycle: cycle, trails: trails, player: player, snapMode: snapMode, ahead: ahead)
+            tick = urgent ? skill.urgentTick : skill.tick
+            // a steady rival blinks now and then: it keeps its heading for one more tick (readable mistakes)
+            if urgent || rng.float() >= skill.blink {
+                choose(cycle: cycle, trails: trails, player: player, snapMode: snapMode, ahead: ahead)
+            }
         }
         if snapMode {
             if pendingSnap < 0 { input.snapLeft = true }
@@ -123,12 +134,22 @@ final class ArenaAI {
         }
         let toGoal = goal.map { $0 - cycle.xz }
         var bestOpen: Float = 0
+        // space sense (a1k0n's flood fill, Armagetron's SPACELEVEL): how many cells can be reached
+        // from one tick ahead on each heading; a pocket is rejected outright
+        let grid = trails.occupancy(cell: Self.gridCell, yBand: cycle.yBand)
+        let areaCap = 90
+        var areas: [Float] = []
         for opt in options {
+            let h = cycle.heading + opt
+            let dir = SIMD2<Float>(-sin(h), -cos(h))
+            areas.append(Float(grid.reachable(from: cycle.nose + dir * (Self.gridCell * 1.2), limit: areaCap)))
+        }
+        for (k, opt) in options.enumerated() {
             let h = cycle.heading + opt
             let dir = SIMD2<Float>(-sin(h), -cos(h))
             // look from slightly ahead of the nose so a turn does not clip the wall we are next to
             let origin = cycle.nose + dir * 1.5
-            var open = trails.openDistance(from: origin, dir: dir, maxDistance: 80, yBand: cycle.yBand, ignoreOwner: cycle.id, ignoreNewest: 6)
+            var open = trails.openDistance(from: origin, dir: dir, maxDistance: skill.range, yBand: cycle.yBand, ignoreOwner: cycle.id, ignoreNewest: 6)
             // the player's next second of trail counts as a wall already: probes run 0.16 s ahead of the
             // world, and a cut that arrives late meets the trail head
             if abs(player.position.y - cycle.position.y) < 2, let t = Self.rayHitsSegment(origin: origin, dir: dir, a: player.nose, b: player.nose + player.forward2 * max(8, player.speed * 1.2)) {
@@ -141,6 +162,17 @@ final class ArenaAI {
             open = min(open, leftOpen + 6, rightOpen + 6)
             var score = open
             if opt == 0 { score += 8 }                                // prefer straight
+            let area = areas[k]
+            score += min(area, 60) * 0.5
+            if area < 8 && area < (areas.max() ?? 0) { score -= 200 }   // a dead-end pocket, when there is anything better
+            // loop guard: a fourth turn the same way is only worth it if the inside is the bigger space
+            if opt != 0 {
+                let sgn = opt > 0 ? 1 : -1
+                if sgn == lastTurn && sameTurns >= 3 {
+                    let mirror = options.firstIndex(of: -opt).map { areas[$0] } ?? 0
+                    if area <= mirror { score -= 25 }
+                }
+            }
             // the goal only counts where the heading is open: survival first, temper second
             if let toGoal, simd_length(toGoal) > 1 { score += simd_dot(simd_normalize(toGoal), dir) * goalWeight * clamp01(open / 30) }
             switch temper {
@@ -157,8 +189,12 @@ final class ArenaAI {
                     score += 9
                 }
             }
-            score += rng.float(0, 5)
+            score += rng.float(0, skill.noise)
             if score > bestScore { bestScore = score; best = opt; bestOpen = open }
+        }
+        if best != 0 {
+            let sgn = best > 0 ? 1 : -1
+            if sgn == lastTurn { sameTurns += 1 } else { lastTurn = sgn; sameTurns = 1 }
         }
         if best != 0 || ahead < 14 {
             targetHeading = cycle.heading + best

@@ -115,6 +115,15 @@ rival's own colour. Not done: feel tuning of the accel constants on the phone (t
 | Boost flickered at an empty hull; cruise adjustable mid-job; reset kept ranks; payout replayable; respawn stamped on a time-out; negative mission env crashed. | Hysteresis, cruise lock, full reset, payout banked with the index, order fixed, `abs`. | headless reasoning; play |
 | Arena: PHASE lost on a second pickup, farmable kick, tunnel grind out-earned boost, rival ceiling 96, double derez. | Fixed in `ArenaController`. | `grind` and `wall` demo scripts |
 
+## 18 Sep 2026 (second pass): the game
+
+| Was thin | Changed | Verify with |
+|---|---|---|
+| Nine jobs in a row, no story, credits with no use, a passed job finished. | Three chapters, eighteen jobs, a debrief line per job; salvage and dive kinds; inbox with replay at half pay; garage with four upgrades; flags kept. | `SPEEDER_MISSION=8` (salvage), `=10` (dive), `=17` (VESS); simulator screenshots of the briefing with the inbox and garage |
+| Time only counted down; a failure was a card round-trip. | Gates add 1.5 s; the failed card's A relaunches after the rebuild. | play |
+| The rival died in its own pockets; one competence level; a double derez was a player loss. | Occupancy grid + flood fill area term, loop guard, skill tiers by reaction, void round. | `drive` script from `-40,40,0` against KADE / ORIN / SABLE: rounds survived before vs after |
+| No music. | Three generative layers per world, intensity-driven. | phone |
+
 ## Still open (noted, not done)
 
 - The camera up-vector stays world-up in the conduit; F-Zero-style surface-normal tracking would

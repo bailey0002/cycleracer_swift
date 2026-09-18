@@ -88,7 +88,7 @@ struct TrackComposer {
     }
 
     /// `place` names the plain blocks ("downtown", "canyon road"); `finish` names the goal.
-    static func compose(distance: Float, recipe: [Phrase], place: String, finish: String, seed: UInt64) -> [TrackBlock] {
+    static func compose(distance: Float, recipe: [Phrase], place: String, finish: String, seed: UInt64, density: Float = 1) -> [TrackBlock] {
         var rng = SeededRNG(seed: seed)
         var out: [TrackBlock] = [.city(0, rows: 0, place), .city(0, rows: 1, place)]
         // the last block repeats past the goal, so the list needs the goal plus what is visible ahead
@@ -150,6 +150,12 @@ struct TrackComposer {
         out.append(.city(0, rows: 1, "\(finish) ahead"))
         out.append(.city(0, rows: 0, finish))
         out.append(.city(0, rows: 0, finish))
+        // chapter density: scale the obstacle rows (the first two blocks stay quiet for the launch)
+        if density != 1 {
+            for i in 2..<out.count where out[i].obstacleRows > 0 {
+                out[i].obstacleRows = max(1, min(3, Int((Float(out[i].obstacleRows) * density).rounded())))
+            }
+        }
         return out
     }
 }

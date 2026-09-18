@@ -382,6 +382,40 @@ none of it built yet (the session had no Xcode; build on the Mac first):
   a real grind, grinds pay less energy while boosting, the rival's ceiling is 62 m/s, a player
   cannot derez twice in one frame, free play gets its match target back after a duel.
 
+## The game (18 Sep 2026, second pass): an arc, an inbox, a garage, a sharper rival, music
+
+Built on the assessment pass, still unbuilt (no Xcode in the session):
+
+- **Three chapters, eighteen jobs** (`Missions/Mission.swift`): DOWNTOWN with VESS (five corridor
+  jobs and the duel with KADE), OUTLANDS with KADE as the contact (the canyon, a salvage run, a
+  dive, the duel with ORIN), THE CORE with ORIN (VESS has been selling the packets to SABLE; an
+  escape from the first metre, a twelve-target salvage, the deep-line dive, the ledger sweep, the
+  duel with SABLE to three and the last duel with VESS on a cycle). Every job has a `debrief`,
+  the contact's line on the result card, which is how the story is told. Two new kinds:
+  **salvage** (destroy N targets before the drop; `TARGETS k/N` on the strip) and **dive** (no
+  weapons, hull bruises twice as hard, precision pays twice). Chapter density scales the
+  obstacle rows 0.8 / 1.0 / 1.3.
+- **Inbox**: the briefing card lists every unlocked job as a chip (cleared ones ticked); stick
+  left / right or a tap browses, A loads the chosen job (the world rebuilds) and A again launches.
+  Jobs unlock in order; cleared jobs can be replayed for flags and gold at half pay.
+- **Garage**: four upgrades bought with credits on the briefing card (stick up / down highlights,
+  Y / `]` / tap buys): HULL PLATING I/II (hits cost 20 / 16 %), BOOST COIL I/II (boost burns 9 /
+  7 %/s), SPARE CORE (+1 respawn), HELMET (the first hit of every job is free, with a HELMET
+  stamp). Persisted as one integer (`upgrades`); `SPEEDER_RESET_PROGRESS` clears it.
+- **Time as a resource**: every 200 m gate adds 1.5 s to the window (`+50 x3  +1.5 s`), so a
+  clean fast run keeps buying time; the windows were tightened by about 6 %.
+- **One-tap retry**: A on the failed card rebuilds the job and launches it as the curtain opens.
+- **The rival** (`Arena/ArenaAI.swift`, `Arena/TrailSystem.swift`): a 6 m occupancy grid of
+  every live wall and a flood fill from one tick ahead give each candidate heading a
+  reachable-space term, and a pocket is rejected outright; a loop guard penalises a fourth turn
+  the same way unless the inside is the bigger space; **skill tiers** on `Rival.skill` set the
+  tick (0.30 / 0.16 / 0.10 s), probe range, noise and a blink chance, never speed: KADE is STEADY,
+  ORIN SHARP, SABLE and VESS KEEN. A **double derez is a void round** (no score either way).
+- **Music** (`Audio/SoundEngine.swift`): three generative layers per world (pad, bass, arp) at
+  112 bpm over four bars, rendered at launch from a chord progression per world (Am F C G neon,
+  Dm F C Am canyon, Em C D Bm grid); the pad plays under the cards, the bass on the run, the
+  arp when it gets hot (boost, streak x4, a close pursuer, a grind, the zone). HUD `music` toggle.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

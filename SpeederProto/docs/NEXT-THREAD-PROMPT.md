@@ -30,25 +30,24 @@ smallest change that keeps the intent. Then the phone build and install.
   switch the session category to `.soloAmbient`. Tune the `gain` constants in `synthesise()`.
 - Log the verified captures in `docs/polish-log.md` (18 Sep section), fix what the captures show.
 
-**2. Give credits a use** (research E, Alto's workshop): a four-item shop on the briefing card,
-bought with the purse: a helmet (one free hit per job), +20 % hull, +10 s window, +1 respawn.
-Persist in UserDefaults; `SPEEDER_RESET_PROGRESS` clears it. Keep it Tron-clean: four lines and a
-price, no art.
+**2. Verify the second pass** the same way (README "The game"): the inbox and garage on the
+briefing (pad: stick browses, up / down highlights, Y buys; touch: chips and rows), a replay of a
+cleared job paying half, the HELMET stamp, the `+1.5 s` on gates, the one-tap retry, SALVAGE 01
+(`SPEEDER_MISSION=8`) failing on missed targets, DIVE 01 (`=10`) with no bolts and the double
+bruise, DUEL 04 against VESS (`=17`). Measure the rival: rounds survived per rival with the
+scripted `drive` from `-40,40,0` before and after the space term (`git stash` the AI to compare),
+and confirm ORIN no longer dies on its own trail in `p5/temper-ORIN`. Music: the layers must
+swell in over a bar and never click at the loop point; if the pad is muddy on the phone speaker,
+drop its saw component.
 
-**3. The rival's space sense** (research G, item 1-3): a 6 m occupancy grid in `TrailSystem`
-rasterised from the segments; per candidate heading a flood fill from one tick ahead adds a
-reachable-area term and rejects pockets under ~8 s of travel; a loop guard after three same-
-direction snaps; skill tiers by reaction time (0.40 / 0.25 / 0.16 / 0.10 s tick, probe range and
-noise per tier) on `Rival`, KADE easy in DUEL 01, ORIN medium, free play climbing per match won.
-Measure with the scripted `drive` from `-40,40,0`: rounds survived per rival before and after.
+**3. Feel and balance from the phone**: the chapter-3 density (1.3) and the dive windows are
+guesses; tune with the Backbone until a clean run is gold and a sloppy one is bronze. The garage
+prices assume about 1,000 credits per chapter; adjust to that.
 
-**4. The inbox** (research E, Data Wing; shortlist 10): replace "next job" with a message thread per
-contact; a job is a message with the portrait; a job unlocks when the previous one of its contact
-has a flag; the briefing card stays. Keep `SPEEDER_MISSION`.
-
-**5. If there is time**: one-tap retry from the failed state; time as a refillable resource on
-deliveries (Crazy Taxi: a checkpoint adds seconds, SPEEDY / NORMAL stamp); controller glyph chips
-from `sfSymbolsName` on first relevance; a void round on a simultaneous derez.
+**4. If there is time**: a contact message log (the debriefs, reread from the briefing);
+controller glyph chips from `sfSymbolsName` on first relevance; death attribution on the Grid
+("CUT OFF BY KADE"); the round clock and the zone spin-up; a title screen with the last
+job's card.
 
 Keep the two corridor looks unchanged unless a change is clearly a fix. Push every meaningful build
 to the phone. Log in `docs/polish-log.md`, keep `README.md` and `CLAUDE.md` current, update the

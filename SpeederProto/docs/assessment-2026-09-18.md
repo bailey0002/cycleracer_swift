@@ -150,6 +150,14 @@ access; the settings `didSet` re-applies the whole world (cruise nudges no longe
   idle timer off on iOS.
 - `Arena/ArenaController.swift`: the five fixes listed under mechanics.
 
+## Addendum (same day, second pass)
+
+After the assessment the brief widened to "develop this into a strong game". The design owed
+above was built, still unbuilt in this session: the three-chapter arc with eighteen jobs and
+debrief lines, salvage and dive kinds, the inbox with replays, the garage with four upgrades,
+gate time bonus, one-tap retry, the rival's reachable-space term, loop guard and skill tiers,
+void rounds, and generative music per world. See README "The game" and `docs/polish-log.md`.
+
 ## Verification plan for the next thread
 
 1. `xcodegen generate`, build the Mac app, fix whatever the compiler says (this pass had no

@@ -48,6 +48,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   three-state pulsing meters, timer ticks, pursuer GAP bar, "coming up" chip, job flags), tap to
   fire on touch, and a batch of review fixes (theme change from The Grid never rebuilt; boost
   flicker at empty hull; arena economy exploits). First job of the next thread: build it.
+- Second pass 18 Sep 2026 (also unbuilt): three chapters and eighteen jobs with debrief lines
+  (`Mission.deliveries`), salvage and dive kinds, the inbox (browse unlocked jobs on the briefing,
+  replay at half pay), the garage (`Upgrades`, four items), gate time bonus, one-tap retry
+  (`MissionRunner.autoStart`), rival skill tiers (`Rival.skill`) and space sense
+  (`TrailSystem.occupancy`, flood fill in `ArenaAI.choose`), void rounds, generative music per
+  world (`SoundEngine.setMusic`). README section "The game".
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

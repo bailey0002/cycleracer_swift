@@ -32,6 +32,8 @@ final class GameController: ObservableObject {
     @Published var hintVisible = true
     private var hintTimer: Float = 0
     private var lastTickSecond = -1
+    /// Edge detection for the briefing's inbox (steer) and garage (climb, buy) controls.
+    private var briefPrev = (steer: Float(0), climb: Float(0), buy: false)
     private var lastUpcoming: String? = nil
     #if os(iOS)
     private var touchStarts: [SpatialEventCollection.Event.ID: (CGPoint, Double)] = [:]
@@ -213,12 +215,18 @@ final class GameController: ObservableObject {
         post.captureRequest = nil
         await build()
         rebuilding = false
+        if missions.autoStart {
+            // one-tap retry: the failed card's accept rebuilt the job; launch it as the curtain opens
+            missions.autoStart = false
+            acceptMission()
+        }
     }
 
     private func build() async {
         do {
             theme = Theme(rawValue: settings.environment) ?? .neonCity
             post.theme = theme
+            sound.setMusic(world: theme.rawValue)
             let device = MTLCreateSystemDefaultDevice()
             let materials = try SceneMaterials(device: device, theme: theme)
             self.materials = materials
@@ -378,6 +386,7 @@ final class GameController: ObservableObject {
     private func applySettings() {
         post.settings = settings
         sound.enabled = settings.sound
+        sound.musicEnabled = settings.music
         print("settings applied: fog=\(settings.fogLevel) bloom=\(settings.bloomLevel) skin=\(settings.obstacleSkin) secondRow=\(settings.secondRow) storefronts=\(settings.storefronts) windowsBright=\(settings.windowsBright) world=\(world != nil)")
         world?.apply(settings)
         arena?.apply(settings)
@@ -425,8 +434,9 @@ final class GameController: ObservableObject {
         handleCaptures()
 
         // throttle: cruise speed adjusted with up/down, boost multiplies
-        // (locked during a live job: the timer and the pursuer are tuned to the job's cruise)
-        let cruiseLocked = missionActive && missions.isRunning
+        // (locked while the job loop is on: the timers and the pursuer are tuned to the job's cruise,
+        // and Y / ] is the garage's buy button on the briefing)
+        let cruiseLocked = missionActive
         if input.speedUp && !cruiseLocked { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
         if input.speedDown && !cruiseLocked { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
         // missions: A / F / tap accepts a briefing or a result; the vehicle only moves during a live job
@@ -434,6 +444,7 @@ final class GameController: ObservableObject {
             let fire = input.firing
             if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
             missionFirePrev = fire
+            briefingInput(input)
             var beaconHits = 0
             if let beacons, missions.isRunning {
                 beaconHits = beacons.update(distance: distance, roadX: { world.offset(atWorldZ: $0) - world.playerOffset }, playerX: speeder.x, playerY: speeder.altitude, time: time)
@@ -444,9 +455,11 @@ final class GameController: ObservableObject {
             missionHitsSeen = hits
             missionKillsSeen = kills
             if missions.isRunning, let s = missions.scoredNow {
-                stamp(s.streak > 1 ? "+\(s.value)  x\(s.streak)" : "+\(s.value)", seconds: 0.6)
+                let timeText = s.time > 0 ? String(format: "  +%.1f s", s.time) : ""
+                stamp((s.streak > 1 ? "+\(s.value)  x\(s.streak)" : "+\(s.value)") + timeText, seconds: 0.6)
                 sound.play(.gate, volume: 0.7, pitch: 0.85 + Float(s.streak) * 0.06)
             }
+            if missions.helmetUsedNow { stamp("HELMET", seconds: 0.9); flash = max(flash, 0.5); sound.play(.respawn, volume: 0.6) }
             if missions.respawnedNow {
                 let left = missions.snapshot().respawnsLeft
                 stamp("HULL RESTORED  \(left) LEFT", seconds: 1.4)
@@ -476,10 +489,14 @@ final class GameController: ObservableObject {
                 }
             }
             if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = ms }
+            // music: the pad under the cards, bass on the run, the arp when it gets hot
+            let hot = (input.boosting && missions.boostAllowed) || ms.streak >= 4 || (ms.kind == .escape && ms.gap < 25)
+            sound.setMusic(intensity: missions.isRunning ? (hot ? 2 : 1) : 0.4)
             contactAvatar?.root.isEnabled = missions.phase != .running
             if missions.phase != .running { contactAvatar?.face(cameraRig.position) }
             if demoMode && Int(time * 4) % 4 == 0 && statsAccumulator > 0.2, let a = contactAvatar { print("avatar \(a.debugBounds())") }
         }
+        if !missionActive { sound.setMusic(intensity: input.boosting ? 2 : 1) }
         let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
         let boosting = moving && input.boosting && (!missionActive || missions.boostAllowed)
         if boosting && !boostPrev {
@@ -555,7 +572,7 @@ final class GameController: ObservableObject {
         }
         // weapons
         if let weapons {
-            if input.firing && settings.obstacles && !parked {
+            if input.firing && settings.obstacles && !parked && (!missionActive || missions.current.weaponsAllowed) {
                 if weapons.fire(from: speeder.root.position, orientation: speeder.root.orientation) {
                     shakeBurst = max(shakeBurst, 0.08)
                     ackTimers.fire = 0.15
@@ -732,6 +749,49 @@ final class GameController: ObservableObject {
         cameraRig?.resetArena()
     }
 
+    /// Inbox: browse the unlocked jobs from the briefing (stick left / right, or a tap on a chip).
+    func browseJob(_ delta: Int) {
+        guard missionActive, missions.phase == .briefing else { return }
+        missions.browse(delta)
+        mission = missions.snapshot()
+        sound.play(.tick, volume: 0.5)
+    }
+    func browseJob(to id: Int) {
+        guard missionActive, missions.phase == .briefing else { return }
+        missions.browse(to: id)
+        mission = missions.snapshot()
+        sound.play(.tick, volume: 0.5)
+    }
+    /// Garage: move the highlight (stick up / down) and buy (Y / ] / tap on the row).
+    func shopMove(_ delta: Int) {
+        guard missionActive, missions.phase == .briefing else { return }
+        missions.shopMove(delta)
+        mission = missions.snapshot()
+        sound.play(.tick, volume: 0.4, pitch: 1.3)
+    }
+    func buyUpgrade(at row: Int? = nil) {
+        guard missionActive, missions.phase == .briefing else { return }
+        if let row { while missions.shopSelection != row { missions.shopMove(1) } }
+        let ok = missions.buySelected()
+        mission = missions.snapshot()
+        sound.play(ok ? .pickupTaken : .streakLost, volume: 0.6)
+        if ok { gamepad.rumble(intensity: 0.4, sharpness: 0.6) }
+    }
+
+    /// Pad and keyboard edges while a briefing is up: steer browses the inbox, climb moves the
+    /// garage highlight, Y / ] buys. Touch never browses (a tap on the card accepts).
+    private func briefingInput(_ input: InputState) {
+        guard missions.phase == .briefing, !demoMode else { briefPrev = (0, 0, false); return }
+        let steer: Float = input.padSteer ?? ((input.right ? 1 : 0) - (input.left ? 1 : 0))
+        let climb: Float = input.padSteer != nil ? input.padClimb : ((input.up ? 1 : 0) - (input.down ? 1 : 0))
+        if steer > 0.5 && briefPrev.steer <= 0.5 { browseJob(1) }
+        if steer < -0.5 && briefPrev.steer >= -0.5 { browseJob(-1) }
+        if climb > 0.5 && briefPrev.climb <= 0.5 { shopMove(-1) }
+        if climb < -0.5 && briefPrev.climb >= -0.5 { shopMove(1) }
+        if input.speedUp && !briefPrev.buy { buyUpgrade() }
+        briefPrev = (steer, climb, input.speedUp)
+    }
+
     /// Accept the briefing or continue past a result (also called by the HUD tap).
     func acceptMission() {
         if let arena, arena.awaitingRestart, !missionActive { restartArenaMatch(arena); return }
@@ -824,6 +884,7 @@ final class GameController: ObservableObject {
             let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing)
             if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
             missionFirePrev = fire
+            briefingInput(input)
             arena.paused = missions.phase != .running
             arena.matchTarget = Int.max
             if missions.phase != mission.phase {
@@ -856,6 +917,7 @@ final class GameController: ObservableObject {
         // round and match beats: one stamp each, on the frame they happen
         if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2); sound.play(.rivalDerez) }
         if ev.roundLost { stamp("DEREZZED", seconds: 2.2); sound.play(.derez) }
+        if ev.voidRound { stamp("VOID ROUND", seconds: 2.2); sound.play(.derez) }
         if ev.matchWon { stamp("MATCH WON  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchWon) }
         if ev.matchLost { stamp("MATCH LOST  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchLost) }
         if ev.roundStart && !ev.matchWon && !ev.matchLost { stamp(arena.matchTarget == Int.max ? "READY" : "ROUND \(arena.roundNumber)", seconds: 1.0); sound.play(.roundStart, volume: 0.6) }
@@ -866,6 +928,8 @@ final class GameController: ObservableObject {
         sound.set(.grind, volume: arenaLive ? arena.grind * 0.9 : 0, pitch: 0.8 + arena.grind * 0.7)
         let zoneOut: Float = (arena.zoneRadius != nil && arena.energy < 0.3) ? 0.4 : 0
         sound.set(.alarm, volume: arenaLive ? max(arena.edge < 0.3 ? 0.3 : 0, zoneOut) : 0)
+        let hot = (cmd.boost && arena.energy > 0.02) || arena.grind > 0.5 || arena.zoneRadius != nil
+        sound.setMusic(intensity: arenaLive ? (hot ? 2 : 1) : 0.4)
         if ev.matchResult, let r = arena.matchResult {
             missions.award(r.credits)
             matchResult = r

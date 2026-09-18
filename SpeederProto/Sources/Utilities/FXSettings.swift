@@ -40,6 +40,7 @@ struct FXSettings: Equatable {
     // missions
     var missions     = true     // corridor worlds run the job loop; off = free play
     var sound        = true     // synthesised cues and loops (SoundEngine)
+    var music        = true     // generative music layers per world
 }
 
 struct FrameStats {

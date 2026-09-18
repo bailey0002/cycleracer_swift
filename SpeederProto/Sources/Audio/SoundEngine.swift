@@ -25,6 +25,14 @@ final class SoundEngine {
     private var loopVolumes: [Float] = Array(repeating: 0, count: Loop.allCases.count)
     private var running = false
     private(set) var available = false
+    // music: three generative layers per world (pad, bass, arp), rendered once per world
+    enum MusicLayer: Int, CaseIterable { case pad, bass, arp }
+    private var music: [AVAudioPlayerNode] = []
+    private var musicBuffers: [AVAudioPCMBuffer] = []
+    private var musicWorld = -1
+    private var musicTargets: [Float] = [0, 0, 0]
+    private var musicVolumes: [Float] = [0, 0, 0]
+    var musicEnabled = true
     /// Master switch (the HUD `sound` toggle). Loops fade out when off.
     var enabled = true {
         didSet { engine.mainMixerNode.outputVolume = enabled ? masterVolume : 0 }
@@ -72,6 +80,13 @@ final class SoundEngine {
             p.volume = 0
             loops.append((p, v, b))
         }
+        for _ in MusicLayer.allCases {
+            let p = AVAudioPlayerNode()
+            engine.attach(p)
+            engine.connect(p, to: engine.mainMixerNode, format: format)
+            p.volume = 0
+            music.append(p)
+        }
         engine.mainMixerNode.outputVolume = enabled ? masterVolume : 0
     }
 
@@ -85,6 +100,7 @@ final class SoundEngine {
                 l.player.scheduleBuffer(l.buffer, at: nil, options: [.loops], completionHandler: nil)
                 l.player.play()
             }
+            startMusic()
         } catch {
             print("sound: engine start failed: \(error)")
             running = false
@@ -96,7 +112,103 @@ final class SoundEngine {
         engine.stop()
         for l in loops { l.player.stop() }
         for s in shots { s.player.stop() }
+        for m in music { m.stop() }
         start()
+    }
+
+    // MARK: - Music
+
+    /// Pick the world's progression (0 Neon City, 1 Sunset Canyon, 2 The Grid); renders the three
+    /// layers (about a third of a second) and restarts them in sync.
+    func setMusic(world: Int) {
+        guard running, world != musicWorld else { return }
+        musicWorld = world
+        musicBuffers = renderMusic(world: world)
+        for m in music { m.stop() }
+        startMusic()
+    }
+
+    /// Intensity: 0 silent, up to 0.5 pad only, up to 1.5 pad + bass, above that all three.
+    func setMusic(intensity: Float) {
+        guard running else { return }
+        let on = enabled && musicEnabled
+        musicTargets[0] = on && intensity > 0 ? 0.42 : 0
+        musicTargets[1] = on && intensity >= 0.9 ? 0.5 : 0
+        musicTargets[2] = on && intensity >= 1.6 ? 0.4 : 0
+    }
+
+    private func startMusic() {
+        guard musicBuffers.count == music.count else { return }
+        // one start time for the three layers so they stay locked
+        var at: AVAudioTime? = nil
+        if let rt = engine.outputNode.lastRenderTime, rt.isSampleTimeValid {
+            at = AVAudioTime(sampleTime: rt.sampleTime + 4410, atRate: rt.sampleRate)
+        }
+        for (i, m) in music.enumerated() {
+            m.scheduleBuffer(musicBuffers[i], at: nil, options: [.loops], completionHandler: nil)
+            m.play(at: at)
+        }
+    }
+
+    private func midi(_ n: Int) -> Float { 440 * pow(2, Float(n - 69) / 12) }
+
+    /// Four bars at 112 bpm, one chord per bar, exactly 16 beats of samples so the loop is seamless.
+    private func renderMusic(world: Int) -> [AVAudioPCMBuffer] {
+        let chords: [[Int]]
+        switch world {
+        case 1:  chords = [[50, 53, 57], [53, 57, 60], [48, 52, 55], [45, 48, 52]]     // Dm F C Am: warm
+        case 2:  chords = [[52, 55, 59], [48, 52, 55], [50, 54, 57], [47, 50, 54]]     // Em C D Bm: cold
+        default: chords = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]]     // Am F C G: neon
+        }
+        let beat = 23625                     // samples per beat at 112 bpm, 44.1 kHz
+        let bar = beat * 4
+        let total = bar * 4
+        var pad = [Float](repeating: 0, count: total)
+        var bass = [Float](repeating: 0, count: total)
+        var arp = [Float](repeating: 0, count: total)
+        let sr = Float(sampleRate)
+        for (b, chord) in chords.enumerated() {
+            let start = b * bar
+            // pad: three sines an octave down plus a whisper of saw, faded at the bar edges
+            let fades = Float(beat) * 0.35
+            for i in 0..<bar {
+                let t = Float(i) / sr
+                let env = min(1, Float(i) / fades) * min(1, Float(bar - i) / fades)
+                var v: Float = 0
+                for n in chord {
+                    let f = midi(n - 12)
+                    v += sin(t * f * 2 * .pi) * 0.22 + osc(.saw, t * f * 1.003) * 0.05
+                }
+                pad[start + i] = v * env
+            }
+            // bass: eighth notes on the root two octaves down, the fifth on the "and" of three
+            let root = chord[0] - 24, fifth = chord[0] - 17
+            for e in 0..<8 {
+                let n = e == 5 ? fifth : root
+                let f = midi(n)
+                let s0 = start + e * beat / 2
+                let len = beat / 2
+                let accent: Float = e % 2 == 0 ? 1 : 0.7
+                for i in 0..<len {
+                    let t = Float(i) / sr
+                    let env = min(1, Float(i) / 300) * exp(-5.5 * t) * accent
+                    bass[s0 + i] = (osc(.saw, t * f) * 0.5 + sin(t * f * 2 * .pi) * 0.5) * env
+                }
+            }
+            // arp: sixteenths over the chord tones, two octaves up, short and bright
+            let tones = [chord[0], chord[1], chord[2], chord[1] + 12, chord[2], chord[1], chord[0] + 12, chord[1]]
+            for k in 0..<16 {
+                let f = midi(tones[k % tones.count] + 12)
+                let s0 = start + k * beat / 4
+                let len = beat / 4
+                for i in 0..<len {
+                    let t = Float(i) / sr
+                    let env = min(1, Float(i) / 120) * exp(-11 * t)
+                    arp[s0 + i] = (sin(t * f * 2 * .pi) * 0.8 + osc(.square, t * f) * 0.2) * env
+                }
+            }
+        }
+        return [make(pad, gain: 0.5), make(bass, gain: 0.55), make(arp, gain: 0.4)]
     }
 
     // MARK: - Playback
@@ -130,6 +242,11 @@ final class SoundEngine {
             loopVolumes[i] = damp(v, t, rate, dt)
             loops[i].player.volume = loopVolumes[i]
             loopTargets[i] = 0        // callers re-assert every frame; silence otherwise
+        }
+        for i in music.indices {
+            let t = musicTargets[i]
+            musicVolumes[i] = damp(musicVolumes[i], t, t > musicVolumes[i] ? 1.5 : 2.5, dt)   // layers swell in over a bar
+            music[i].volume = musicVolumes[i]
         }
     }
 

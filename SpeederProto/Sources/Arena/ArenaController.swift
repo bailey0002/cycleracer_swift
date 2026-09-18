@@ -88,6 +88,7 @@ final class ArenaController {
         var matchResult = false
         var charged = false
         var zoneOpened = false
+        var voidRound = false
     }
     private(set) var events = Events()
     /// Match: first to `matchTarget` derezzes of the other cycle. A duel mission sets it out of
@@ -274,6 +275,7 @@ final class ArenaController {
     /// Rebuild what depends on the rival: the AI temper and the tag texture.
     private func applyRival() {
         ai.temper = rival.temper
+        ai.skill = rival.skill
         let tex = try? SceneMaterials.texture(ProceduralTextures.nameTag(name: rival.name, temper: rival.temper.rawValue, color: rival.color), .color)
         if let tex {
             var m = UnlitMaterial()
@@ -516,7 +518,9 @@ final class ArenaController {
         // --- opponent
         if settings.opponent && !opponentDead { stepOpponent(dt: dt, aiInput: aiInput) }
 
-        // --- collisions
+        // --- collisions (both tested on the same frame: a double derez is a void round, Armagetron style)
+        let rivalHit: TrailHit? = (settings.opponent && !opponentDead) ? collide(opponent) : nil
+        var playerCrashed = false
         if let hit = collide(player) {
             if phaseTimer > 0 && !hit.boundary {
                 // phase: pass through one wall (already consumed)
@@ -526,12 +530,19 @@ final class ArenaController {
                 _ = deflected
             } else {
                 crashPlayer(at: hit)
-                return
+                playerCrashed = true
             }
         }
-        if settings.opponent && !opponentDead, let hit = collide(opponent) {
+        if let hit = rivalHit {
             crashOpponent(at: hit)
+            if playerCrashed {
+                wins -= 1; losses -= 1
+                events.roundWon = false; events.roundLost = false; events.voidRound = true
+                stateText = "VOID ROUND - BOTH DEREZZED"
+                phase = .crashed(0)
+            }
         }
+        if playerCrashed { return }
 
         // --- grinding / edge (player only; the AI has no rubber)
         updateGrinding(dt: dt)

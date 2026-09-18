@@ -181,6 +181,8 @@ struct HUDView: View {
         switch m.phase {
         case .briefing:
             missionCard {
+                Text("CHAPTER \(m.chapter)  //  \(m.chapterTitle)").font(.system(size: HUDStyle.baseSize - 1, weight: .bold, design: .monospaced)).foregroundStyle(.white.opacity(0.5))
+                inbox(m)
                 HStack(spacing: 10) {
                     portrait(m.contact)
                     if m.kind == .duel && !m.rivalName.isEmpty {
@@ -189,19 +191,20 @@ struct HUDView: View {
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(m.code)  //  \(m.title)").font(.system(size: 16, weight: .black, design: .monospaced)).foregroundStyle(HUDStyle.accent)
-                        Text("CONTACT \(m.contact)   JOB \(m.index + 1)/\(m.count)   CREDITS \(m.credits)").foregroundStyle(.white.opacity(0.7))
+                        Text("CONTACT \(m.contact)   JOB \(m.index + 1)/\(m.count)   CREDITS \(m.credits)" + (m.cleared ? "   CLEARED: REPLAY PAYS HALF" : "")).foregroundStyle(.white.opacity(0.7))
                         if m.kind != .duel {
                             Text("BEST RANK \(m.bestRank.text)   SILVER \(m.silverScore)   GOLD \(m.goldScore)").foregroundStyle(rankColor(m.bestRank))
                             Text("FLAGS \(m.flags.text)").foregroundStyle(HUDStyle.amber)
                         }
                         if m.kind == .duel && !m.rivalName.isEmpty {
-                            Text("RIVAL \(m.rivalName)  //  \(m.rivalTemper): \(m.rivalLine)").foregroundStyle(.orange)
+                            Text("RIVAL \(m.rivalName)  //  \(m.rivalTemper), \(m.rivalSkill): \(m.rivalLine)").foregroundStyle(.orange)
                         }
                     }
                 }
                 Text(m.brief).font(.system(size: HUDStyle.baseSize + 1, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
                 Text(m.goalText).foregroundStyle(HUDStyle.accent)
-                prompt("ACCEPT")
+                garage(m)
+                prompt(m.browsing ? "LOAD THIS JOB" : "ACCEPT")
             }
         case .running:
             VStack {
@@ -231,7 +234,13 @@ struct HUDView: View {
                         Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     case .duel:
                         Text("FIRST TO \(m.duelTarget)    YOU \(m.duelWins)  -  \(m.duelLosses) \(m.rivalName)").font(.system(size: HUDStyle.baseSize + 4, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
+                    case .salvage:
+                        Text("TARGETS \(m.kills)/\(m.killsRequired)").font(.system(size: HUDStyle.baseSize + 3, weight: .bold, design: .monospaced)).foregroundStyle(m.kills >= m.killsRequired ? HUDStyle.accent : .orange)
+                        Text(String(format: "%4.0f m", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
+                    case .dive:
+                        Text(String(format: "%4.0f m   NO WEAPONS", m.distanceLeft)).font(.system(size: HUDStyle.baseSize + 2, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.accent)
                     }
+                    if m.helmetArmed { Text("HELMET").font(.system(size: HUDStyle.baseSize - 1, weight: .bold, design: .monospaced)).foregroundStyle(HUDStyle.amber) }
                 }
                 .padding(.horizontal, 4)
                 .hudPanel()
@@ -248,16 +257,56 @@ struct HUDView: View {
                     Text("SCORE \(m.score)   RANK \(m.rank.text)" + (m.rank > .none && m.rank >= m.bestRank ? "   NEW BEST" : "")).font(.system(size: 14, weight: .black, design: .monospaced)).foregroundStyle(rankColor(m.rank))
                     Text("FLAGS \(m.flags.text)" + (m.newFlags.isEmpty ? "" : "   NEW: \(m.newFlags.text)")).foregroundStyle(HUDStyle.amber)
                 }
+                if !m.debrief.isEmpty {
+                    Text(m.debrief).font(.system(size: HUDStyle.baseSize + 1, design: .monospaced)).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true).padding(.top, 2)
+                }
                 prompt("NEXT JOB")
             }
         case .failed:
             missionCard {
                 Text("RUN FAILED").font(.system(size: 22, weight: .black, design: .monospaced)).foregroundStyle(.red)
                 Text(m.failReason).foregroundStyle(.white.opacity(0.8))
-                prompt("RETRY")
+                prompt("RETRY NOW")
             }
         case .freePlay:
             EmptyView()
+        }
+    }
+
+    /// The inbox: every unlocked job as a chip (cleared ones ticked), the shown one lit. A tap
+    /// loads it; on a pad the stick browses left / right.
+    private func inbox(_ m: MissionState) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                ForEach(m.jobs, id: \.id) { j in
+                    let shown = j.id == m.index
+                    Text((j.cleared ? "* " : "") + j.code)
+                        .font(.system(size: HUDStyle.baseSize - 1, weight: .bold, design: .monospaced))
+                        .foregroundStyle(shown ? .black : (j.cleared ? .white.opacity(0.7) : .white))
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(RoundedRectangle(cornerRadius: 3).fill(shown ? HUDStyle.accent : .white.opacity(j.cleared ? 0.08 : 0.16)))
+                        .contentShape(Rectangle())
+                        .onTapGesture { controller.browseJob(to: j.id) }
+                }
+                Text("<  >  BROWSE").font(.system(size: HUDStyle.baseSize - 2, design: .monospaced)).foregroundStyle(.white.opacity(0.4))
+            }
+        }
+    }
+
+    /// The garage: four upgrades with prices, the highlighted row bought with Y / ] or a tap.
+    private func garage(_ m: MissionState) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("GARAGE   CREDITS \(m.credits)   Y / ] / TAP TO BUY").font(.system(size: HUDStyle.baseSize - 1, weight: .bold, design: .monospaced)).foregroundStyle(.white.opacity(0.5))
+            ForEach(Array(m.upgrades.items.enumerated()), id: \.offset) { i, item in
+                let hot = i == m.shopSelection
+                let can = !item.owned && m.credits >= item.price
+                Text((hot ? "> " : "  ") + item.text)
+                    .font(.system(size: HUDStyle.baseSize, weight: hot ? .bold : .regular, design: .monospaced))
+                    .foregroundStyle(item.owned ? .white.opacity(0.45) : (can ? (hot ? HUDStyle.amber : .white.opacity(0.85)) : .white.opacity(0.6)))
+                    .contentShape(Rectangle())
+                    .onTapGesture { controller.buyUpgrade(at: i) }
+            }
+            if !m.shopNote.isEmpty { Text(m.shopNote).foregroundStyle(HUDStyle.amber) }
         }
     }
 
@@ -292,7 +341,7 @@ struct HUDView: View {
     private func missionCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) { content() }
             .padding(6)
-            .frame(width: 360)
+            .frame(width: 430)
             .hudPanel(opacity: 0.7)
             .contentShape(Rectangle())
             .onTapGesture { controller.acceptMission() }
@@ -355,6 +404,7 @@ struct HUDView: View {
             picker("world", \.environment, ["neon city", "canyon", "the grid"])
             toggle("missions (corridor)", \.missions)
             toggle("sound", \.sound)
+            toggle("music", \.music)
             if isArena {
                 Divider().overlay(.white.opacity(0.3))
                 Text("THE GRID").bold().foregroundStyle(HUDStyle.accent)
