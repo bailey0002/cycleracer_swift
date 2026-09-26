@@ -53,6 +53,9 @@ final class GameController: ObservableObject {
     private var runClock: Float = 0
     /// The rider's identity, published for the HUD.
     @Published var player = Player()
+    /// The title screen: the world's front door. A / F / tap starts. Off for the demo and captures.
+    @Published var titleVisible = !(ProcessInfo.processInfo.environment["SPEEDER_DEMO"] == "1") && ProcessInfo.processInfo.environment["SPEEDER_TITLE"] != "0"
+    private var titleFirePrev = false
     private var lastStyle: SegmentStyle? = nil
     private var boostPrev = false
     /// Held boost, eased: 150 ms in, 400 ms out. One scalar for the post pass, the exhaust and the HUD.
@@ -461,7 +464,13 @@ final class GameController: ObservableObject {
         if input.speedUp && !cruiseLocked { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
         if input.speedDown && !cruiseLocked { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
         // missions: A / F / tap accepts a briefing or a result; the vehicle only moves during a live job
-        if missionActive {
+        if titleVisible {
+            let fire = input.firing
+            if fire && !titleFirePrev { startFromTitle() }
+            titleFirePrev = fire
+            missionFirePrev = fire
+        }
+        if missionActive && !titleVisible {
             let fire = input.firing
             if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
             missionFirePrev = fire
@@ -735,6 +744,18 @@ final class GameController: ObservableObject {
         if !commsSlots.last && ms.distanceLeft < 320 && ms.distanceLeft > 0 && ackTimers.stamp <= 0 { commsSlots.last = true; comms(.lastStretch) }
     }
 
+    /// The rival card can be skipped with A once it has been up for a moment.
+    private static let introSkipAfter = MissionRunner.introDuration - 0.8
+
+    /// Leave the title screen (also called by a tap on it).
+    func startFromTitle() {
+        guard titleVisible else { return }
+        titleVisible = false
+        sound.play(.accept)
+        gamepad.rumble(intensity: 0.3, sharpness: 0.5)
+        hintVisible = true; hintTimer = 0
+    }
+
     // MARK: - Identity
 
     func setCallsign(_ raw: String) {
@@ -890,6 +911,7 @@ final class GameController: ObservableObject {
         let rebuild = missions.accept()
         mission = missions.snapshot()
         sound.play(.accept)
+        if wasBriefing && missions.phase == .rivalIntro { sound.play(.warn, volume: 0.8, pitch: 0.7); gamepad.rumble(intensity: 0.5, sharpness: 0.3) }
         if wasBriefing && missions.phase == .running {
             // launch: the same kick as a boost, plus the stamp
             cameraRig?.punch(0.8)
@@ -973,9 +995,15 @@ final class GameController: ObservableObject {
             // duel: the briefing holds the arena; A / F / tap accepts, the arena's score decides the job
             // the demo pulses its accept (a held button has no edge, so the result card would stay up)
             let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing) && Int(time * 2) % 3 == 0)
-            if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
+            if titleVisible {
+                if fire && !titleFirePrev { startFromTitle() }
+                titleFirePrev = fire
+            } else if fire && !missionFirePrev && missions.phase != .running && missions.phase != .rivalIntro { acceptMission() }
+            else if fire && !missionFirePrev && missions.phase == .rivalIntro && !demoMode && missions.snapshot().introLeft < Self.introSkipAfter { acceptMission() }
             missionFirePrev = fire
             briefingInput(input)
+            if missions.phase == .rivalIntro { missions.tickIntro(dt: dt); if missions.phase == .running { stamp("ROUND 1", seconds: 1.0); sound.play(.roundStart, volume: 0.6) } }
+            missions.lastDerezCause = arena.stateText
             arena.paused = missions.phase != .running
             arena.matchTarget = Int.max
             if missions.phase != mission.phase {
@@ -1023,6 +1051,7 @@ final class GameController: ObservableObject {
         sound.setMusic(intensity: arenaLive ? (hot ? 2 : 1) : 0.4)
         if ev.matchResult, let r = arena.matchResult {
             missions.award(r.credits)
+            missions.recordMatch(rival: r.rival, won: r.won)
             matchResult = r
             mission.credits = missions.credits      // free play: only the purse changes, no job card
         }

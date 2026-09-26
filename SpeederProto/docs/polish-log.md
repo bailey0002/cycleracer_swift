@@ -197,3 +197,20 @@ Not built from pass 2: A6 (building archetypes and batching) is deferred to pass
 instancing gate; the volumetric fog slices and the datamosh glitch from the technique table were not
 started. Not verified here: phone frame time with the blur (six full-resolution taps in the outer
 ring; `motionBlur` and `lensFX` are HUD toggles so the phone pass can turn them off).
+
+## Pass 3 of the market assessment: the cast, the code half (26 Sep 2026)
+
+Assessment section 7, pass 3 items that are code (D1, D3, C4, C5, C6). D4 (the cast through
+Character Creator 5 / iClone 8) needs the Windows machine and is Mark's; the pipeline and the proof
+are in `docs/research-2026-09-26-reports.md`, report E. Simulator shots in `Captures/polish/p7/sim/`.
+
+| Item | What changed | Capture |
+|---|---|---|
+| D1 reactive debrief | `Missions/Debrief.swift`: a reactive line per contact chosen from the run's outcome (two respawns > one > hull low > clean and fast > gold > new best > fast > sloppy > clean > evergreen; duels: sweep / boxed yourself / close), never repeated until the contact's others are spent (`said.<contact>.<key>` in UserDefaults); the job's own debrief stays as the essential beat under it. Failed cards get a per-contact, per-cause line (`Debrief.failure`) | `sim/result-93` ("A core burned. It comes off the fee."), `sim/intro-18` (failed card) |
+| D3 rival card | A `.rivalIntro` phase between the duel briefing and the run (3.6 s, A skips it after 2.8 s, not in the demo): the rival's name huge in its colour, temper and tier ticks, its line, the head-to-head record (`record.<rival>.w/.l`, updated by duels and free-play matches), a taunt from the record (`Debrief.taunt`), a countdown hairline; slams in from the right; ROUND 1 stamps when it leaves. The briefing's right column shows contact and rival with the record | `sim/intro2-22` |
+| C4 result reveal | `StagedCard`: title, then the rank letter (large), score and NEW BEST, flags, payout and credits, the reactive line, the debrief, 150 ms apart with springs | `sim/result-92`, `result-93` |
+| C5 title screen | `titleVisible` at launch (off for the demo and with `SPEEDER_TITLE=0`): the parked scene behind a left gradient, the wordmark, the tagline, callsign / title / credits, the next job, a START prompt pulsing at 112 bpm; A / F / tap starts (the same press does not also accept the briefing) | `sim/title-17` |
+| C6 briefing | Two columns: the job (title, job / pay / credits, brief, goal, ranks, flags) left and the contact (portrait, name, role) right, with VS + rival + record on duels; a LOADOUT row of owned upgrades; the inbox strip above a footer with ACCEPT pinned under a scrolling body (`HUDStyle.cardMaxHeight`), so a tall duel card never hides the button; the duel HUD reads DUEL // FIRST TO n with the callsign and the rival's name in their colours; stamps no longer draw over cards | `sim/duel-brief3-17`, `sim/intro2-17.5` |
+
+`SPEEDER_RESET_PROGRESS=1` now also clears the records and the said-line sets (the callsign and
+livery stay). Not verified here: the title on the phone with the Backbone, the rival card's sting.

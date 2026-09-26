@@ -35,8 +35,9 @@ struct HUDView: View {
             .scaleEffect(controller.ack.boost && !cardUp ? 1.025 : 1)
             .brightness(controller.ack.boost && !cardUp ? 0.1 : 0)
             .animation(.easeOut(duration: controller.ack.boost ? 0.15 : 0.4), value: controller.ack.boost)
-            missionOverlay
+            if !controller.titleVisible { missionOverlay }
             stampOverlay
+            if controller.titleVisible { titleScreen }
         }
         .font(HUDStyle.body(HUDStyle.bodySize))
         #if os(iOS)
@@ -62,9 +63,9 @@ struct HUDView: View {
 
     /// A card (briefing, result, match) owns the screen: the run readouts mean nothing while parked.
     private var cardUp: Bool {
-        if controller.matchResult != nil { return true }
+        if controller.matchResult != nil || controller.titleVisible { return true }
         switch controller.mission.phase {
-        case .briefing, .success, .failed: return true
+        case .briefing, .rivalIntro, .success, .failed: return true
         default: return false
         }
     }
@@ -88,7 +89,7 @@ struct HUDView: View {
             }
         } else if isArena && !cardUp {
             VStack(alignment: .leading, spacing: 0) {
-                Text(s.matchTarget == Int.max ? "FREE PLAY" : "ROUND \(s.round)  //  FIRST TO \(s.matchTarget)")
+                Text(running && m.kind == .duel ? "DUEL  //  FIRST TO \(m.duelTarget)" : (s.matchTarget == Int.max ? "FREE PLAY" : "ROUND \(s.round)  //  FIRST TO \(s.matchTarget)"))
                     .font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.2).foregroundStyle(.white.opacity(0.55))
                 HStack(spacing: 6) {
                     Text(controller.player.callsign).font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.color(controller.player.liveryColor)).padding(.trailing, 2)
@@ -119,9 +120,6 @@ struct HUDView: View {
                 Text(z).font(HUDStyle.display(HUDStyle.headingSize)).foregroundStyle(.white)
                 Text("STAY INSIDE").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(.white.opacity(0.6))
             }
-        } else if running && m.kind == .duel {
-            Text("FIRST TO \(m.duelTarget)    \(m.duelWins) - \(m.duelLosses)  \(m.rivalName)")
-                .font(HUDStyle.display(HUDStyle.headingSize - 2)).monospacedDigit().foregroundStyle(accent)
         } else {
             Color.clear.frame(width: 1, height: 1)
         }
@@ -346,7 +344,7 @@ struct HUDView: View {
     @ViewBuilder private var stampOverlay: some View {
         let a = controller.ack
         VStack(spacing: 6) {
-            if !a.stamp.isEmpty {
+            if !a.stamp.isEmpty && !cardUp {
                 Text(a.stamp)
                     .font(HUDStyle.display(HUDStyle.stampSize)).tracking(2)
                     .foregroundStyle(accent)
@@ -384,71 +382,99 @@ struct HUDView: View {
         }
         switch m.phase {
         case .briefing:
-            card {
+            card(footer: m.browsing ? "LOAD THIS JOB" : "ACCEPT") {
                 HStack(alignment: .firstTextBaseline) {
                     Text("CHAPTER \(m.chapter)  //  \(m.chapterTitle)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.5))
                     Spacer()
                     identityRow(m)
                 }
-                inbox(m)
-                HStack(alignment: .top, spacing: 12) {
-                    portrait(m.contact, tint: HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor))
-                    if m.kind == .duel && !m.rivalName.isEmpty {
-                        Text("VS").font(HUDStyle.display(12)).foregroundStyle(.red).padding(.top, 18)
-                        portrait(m.rivalName, tint: HUDStyle.color(Rival.named(m.rivalName)?.color ?? Rival.vessColor))
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .top, spacing: 14) {
+                    // left: the job
+                    VStack(alignment: .leading, spacing: 5) {
                         Text("\(m.code)  //  \(m.title)").font(HUDStyle.display(HUDStyle.titleSize)).tracking(1).foregroundStyle(accent)
-                        row("CONTACT", m.contact, "JOB", "\(m.index + 1)/\(m.count)", "CREDITS", "\(m.credits)")
+                        row("JOB", "\(m.index + 1)/\(m.count)", "PAY", "\(m.kind == .duel ? "DUEL" : "HULL PAYS")", "CREDITS", "\(m.credits)")
                         if m.cleared { Text("CLEARED  //  REPLAY PAYS HALF").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.amber) }
+                        Text(m.brief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+                        Text(m.goalText).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(accent)
                         if m.kind != .duel {
-                            row("BEST", m.bestRank.text, "SILVER", "\(m.silverScore)", "GOLD", "\(m.goldScore)", valueColor: rankColor(m.bestRank))
+                            HStack(spacing: 10) {
+                                row("BEST", m.bestRank.text, "SILVER", "\(m.silverScore)", "GOLD", "\(m.goldScore)", valueColor: rankColor(m.bestRank))
+                            }
                             flagsRow(m.flags, new: [])
                         }
+                    }
+                    Spacer(minLength: 0)
+                    // right: who is talking (and who you will face)
+                    VStack(alignment: .center, spacing: 3) {
+                        portrait(m.contact, tint: HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor), size: 52)
+                        Text(m.contact).font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5).foregroundStyle(HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor))
+                        Text(m.contactRole).font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
                         if m.kind == .duel && !m.rivalName.isEmpty {
-                            Text("\(m.rivalName)  //  \(m.rivalTemper), \(m.rivalSkill): \(m.rivalLine)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.5).foregroundStyle(HUDStyle.rival)
+                            Text("VS").font(HUDStyle.display(10)).tracking(2).foregroundStyle(.red).padding(.top, 2)
+                            portrait(m.rivalName, tint: HUDStyle.color(m.rivalColor), size: 44)
+                            Text(m.rivalName).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(m.rivalColor))
+                            Text("\(m.rivalTemper)  \(m.rivalWins)-\(m.rivalLosses)").font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).monospacedDigit().foregroundStyle(.white.opacity(0.6))
                         }
                     }
+                    .frame(width: 112)
                 }
-                Text(m.brief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
-                Text(m.goalText).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(accent)
+                loadoutRow(m)
                 garage(m)
-                prompt(m.browsing ? "LOAD THIS JOB" : "ACCEPT")
+                inbox(m)
             }
+        case .rivalIntro:
+            rivalIntroCard(m)
         case .running, .freePlay:
             EmptyView()
         case .success:
-            card {
-                Text(m.successTitle).font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(accent)
-                HStack(spacing: 8) {
-                    Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
-                    Text("\(m.code)  //  \(m.title)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.7))
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 14) {
-                    stat("PAYOUT", "+\(m.payout)", accent)
-                    stat("CREDITS", "\(m.credits)", .white)
-                    if m.kind != .duel { stat("HULL", "\(Int(m.energy * 100))%", .white) }
-                    if m.kind == .search { stat("BEACONS", "\(m.beaconsHit)/\(m.beaconsTotal)", HUDStyle.pickup) }
-                }
-                if m.kind != .duel {
-                    HStack(alignment: .firstTextBaseline, spacing: 14) {
-                        stat("SCORE", "\(m.score)", .white)
-                        stat("RANK", m.rank.text, rankColor(m.rank))
-                        if m.rank > .none && m.rank >= m.bestRank { Text("NEW BEST").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(HUDStyle.reward) }
+            StagedCard(steps: 6) { step in
+                card(footer: "NEXT JOB") {
+                    Text(m.successTitle).font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(accent)
+                        .scaleEffect(step >= 1 ? 1 : 1.4, anchor: .leading).opacity(step >= 1 ? 1 : 0)
+                    HStack(spacing: 8) {
+                        Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
+                        Text("\(m.code)  //  \(m.title)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.7))
                     }
-                    flagsRow(m.flags, new: m.newFlags)
+                    .opacity(step >= 1 ? 1 : 0)
+                    if m.kind != .duel {
+                        HStack(alignment: .firstTextBaseline, spacing: 14) {
+                            Text(m.rank.text).font(HUDStyle.display(HUDStyle.cardTitleSize + 8)).tracking(3).foregroundStyle(rankColor(m.rank))
+                                .scaleEffect(step >= 2 ? 1 : 1.6, anchor: .leading)
+                            stat("SCORE", "\(step >= 3 ? m.score : 0)", .white)
+                            if m.rank > .none && m.rank >= m.bestRank { Text("NEW BEST").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(HUDStyle.reward).opacity(step >= 3 ? 1 : 0) }
+                        }
+                        .opacity(step >= 2 ? 1 : 0)
+                        flagsRow(m.flags, new: m.newFlags).opacity(step >= 4 ? 1 : 0)
+                    }
+                    HStack(alignment: .firstTextBaseline, spacing: 14) {
+                        stat("PAYOUT", "+\(step >= 5 ? m.payout : 0)", accent)
+                        stat("CREDITS", "\(step >= 5 ? m.credits : m.credits - m.payout)", .white)
+                        if m.kind != .duel { stat("HULL", "\(Int(m.energy * 100))%", .white) }
+                        if m.kind == .search { stat("BEACONS", "\(m.beaconsHit)/\(m.beaconsTotal)", HUDStyle.pickup) }
+                    }
+                    .opacity(step >= 4 ? 1 : 0)
+                    if !m.reactiveLine.isEmpty || !m.debrief.isEmpty {
+                        hairline(accent.opacity(0.35)).opacity(step >= 5 ? 1 : 0)
+                        if !m.reactiveLine.isEmpty {
+                            Text("\(m.contact): \(m.reactiveLine)").font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2)
+                                .foregroundStyle(HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor)).fixedSize(horizontal: false, vertical: true)
+                                .opacity(step >= 5 ? 1 : 0)
+                        }
+                        if !m.debrief.isEmpty {
+                            Text(m.debrief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+                                .opacity(step >= 6 ? 1 : 0)
+                        }
+                    }
                 }
-                if !m.debrief.isEmpty {
-                    hairline(accent.opacity(0.35))
-                    Text(m.debrief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
-                }
-                prompt("NEXT JOB")
             }
         case .failed:
-            card {
+            card(footer: "RETRY NOW") {
                 Text("RUN FAILED").font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(.red)
                 Text(m.failReason).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.8))
-                prompt("RETRY NOW")
+                if !m.reactiveLine.isEmpty {
+                    Text("\(m.contact): \(m.reactiveLine)").font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2)
+                        .foregroundStyle(HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor)).fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -483,6 +509,104 @@ struct HUDView: View {
                 .contentShape(Rectangle().inset(by: -8))
                 .onTapGesture { controller.cycleLivery() }
         }
+    }
+
+    /// Owned upgrades as small chips (the loadout), so the garage list can stay compact.
+    @ViewBuilder private func loadoutRow(_ m: MissionState) -> some View {
+        let owned = m.upgrades.items.filter { $0.level > 0 }
+        if !owned.isEmpty {
+            HStack(spacing: 5) {
+                Text("LOADOUT").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                ForEach(Array(owned.enumerated()), id: \.offset) { _, item in
+                    chip("\(item.title) \(item.level > 1 ? "II" : "I")", accent.opacity(0.85))
+                }
+            }
+        }
+    }
+
+    /// The rival's card before a duel: portrait, name, temper, tier, the head-to-head record and a taunt.
+    /// The rival's colour takes over; it slams in from the right and the duel starts when it leaves.
+    private func rivalIntroCard(_ m: MissionState) -> some View {
+        let color = HUDStyle.color(m.rivalColor)
+        return HStack {
+            Spacer()
+            VStack(alignment: .trailing, spacing: 6) {
+                Text("DUEL  //  FIRST TO \(m.duelTarget)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.55))
+                HStack(alignment: .center, spacing: 14) {
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Text(m.rivalName).font(HUDStyle.display(HUDStyle.stampSize)).tracking(4).foregroundStyle(color)
+                            .shadow(color: color.opacity(0.7), radius: 10)
+                        HStack(spacing: 6) {
+                            ForEach(0..<3, id: \.self) { i in Rectangle().fill(i < (m.rivalSkill == "KEEN" ? 3 : (m.rivalSkill == "SHARP" ? 2 : 1)) ? color : .white.opacity(0.2)).frame(width: 14, height: 3) }
+                            Text("\(m.rivalTemper)  //  \(m.rivalSkill)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(.white.opacity(0.75))
+                        }
+                        Text(m.rivalLine.uppercased()).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.5))
+                    }
+                    portrait(m.rivalName, tint: color, size: 96)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(m.callsign).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
+                    Text("\(m.rivalWins)").font(HUDStyle.display(HUDStyle.headingSize + 4)).monospacedDigit().foregroundStyle(accent)
+                    Text("-").font(HUDStyle.display(HUDStyle.headingSize)).foregroundStyle(.white.opacity(0.5))
+                    Text("\(m.rivalLosses)").font(HUDStyle.display(HUDStyle.headingSize + 4)).monospacedDigit().foregroundStyle(color)
+                    Text(m.rivalName).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(color)
+                }
+                Text(m.rivalTaunt).font(HUDStyle.body(HUDStyle.bodySize + 1)).italic().foregroundStyle(.white.opacity(0.9)).multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 360, alignment: .trailing)
+                // countdown hairline
+                ZStack(alignment: .trailing) {
+                    Rectangle().fill(.white.opacity(0.15)).frame(width: 200, height: 2)
+                    Rectangle().fill(color).frame(width: 200 * CGFloat(max(0, min(1, m.introLeft / MissionRunner.introDuration))), height: 2)
+                }
+                .padding(.top, 4)
+            }
+            .padding(.horizontal, 18).padding(.vertical, 14)
+            .background(LinearGradient(colors: [.black.opacity(0.4), .black.opacity(0.78)], startPoint: .leading, endPoint: .trailing))
+            .clipShape(CutCorner(cut: 16))
+            .overlay(alignment: .top) { hairline(color.opacity(0.9)) }
+            .overlay(alignment: .bottom) { hairline(color.opacity(0.4)) }
+            .padding(.trailing, 24)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
+        .animation(.spring(duration: 0.35, bounce: 0.25), value: m.phase)
+        .allowsHitTesting(false)
+    }
+
+    /// The title screen: the world behind, the wordmark, who you are, the next job, one prompt.
+    private var titleScreen: some View {
+        let m = controller.mission
+        let p = controller.player
+        return ZStack(alignment: .bottomLeading) {
+            LinearGradient(colors: [.black.opacity(0.75), .black.opacity(0.35), .clear], startPoint: .leading, endPoint: .trailing)
+                .ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 10) {
+                Spacer()
+                Text("SPEEDER").font(HUDStyle.display(HUDStyle.wordmarkSize)).tracking(10).foregroundStyle(.white)
+                    .shadow(color: accent.opacity(0.8), radius: 14)
+                Text("COURIER RUNS  //  THE GRID").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(3).foregroundStyle(accent)
+                hairline(accent.opacity(0.6)).frame(width: 220)
+                HStack(spacing: 10) {
+                    Text(p.callsign).font(HUDStyle.display(HUDStyle.headingSize)).tracking(2).foregroundStyle(HUDStyle.color(p.liveryColor))
+                    Text(m.playerTitle).font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(.white.opacity(0.55))
+                    stat("CREDITS", "\(m.credits)", .white, small: true)
+                }
+                if !m.code.isEmpty {
+                    HStack(spacing: 6) {
+                        Text("NEXT").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                        Text("\(m.code)  //  \(m.title)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.85))
+                    }
+                }
+                PulsingPrompt(glyph: touchPlay ? "hand.tap" : glyphs.a, text: "START", accent: accent)
+                    .padding(.top, 8)
+            }
+            .padding(.leading, HUDStyle.sideInset + 28)
+            .padding(.bottom, HUDStyle.bottomInset + 24)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { controller.startFromTitle() }
+        .transition(.opacity)
+        .animation(.easeOut(duration: 0.4), value: controller.titleVisible)
     }
 
     /// The inbox: every unlocked job as a chip (cleared ones ticked), the shown one lit.
@@ -534,9 +658,9 @@ struct HUDView: View {
                 let hot = i == m.shopSelection
                 let can = !item.owned && m.credits >= item.price
                 HStack(spacing: 8) {
-                    Rectangle().fill(hot ? accent : .clear).frame(width: 2, height: 12)
-                    Text(item.title).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(0.8)
-                        .frame(width: 100, alignment: .leading)
+                    Rectangle().fill(hot ? accent : .clear).frame(width: 2, height: 10)
+                    Text(item.title).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.8)
+                        .frame(width: 96, alignment: .leading)
                     if item.owned {
                         Text("OWNED").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(.white.opacity(0.4))
                     } else {
@@ -555,7 +679,7 @@ struct HUDView: View {
 
     /// Free-play match result on The Grid.
     private func matchCard(_ r: ArenaController.MatchResult, credits: Int) -> some View {
-        card {
+        card(footer: "NEXT MATCH") {
             Text(r.won ? "MATCH WON" : "MATCH LOST").font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(r.won ? accent : .red)
             HStack(spacing: 12) {
                 portrait(r.rival, tint: HUDStyle.color(Rival.named(r.rival)?.color ?? Rival.vessColor))
@@ -579,7 +703,6 @@ struct HUDView: View {
                 stat("CREDITS", "+\(r.credits)", accent)
                 stat("TOTAL", "\(credits)", .white)
             }
-            prompt("NEXT MATCH")
         }
     }
 
@@ -639,9 +762,16 @@ struct HUDView: View {
         .padding(.top, 4)
     }
 
-    private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 7) { content() }
-            .padding(.horizontal, 14).padding(.vertical, 12)
+    private func card<Content: View>(footer: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 6) { content() }
+                    .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 6)
+            }
+            .frame(maxHeight: HUDStyle.cardMaxHeight)
+            .fixedSize(horizontal: false, vertical: true)
+            prompt(footer).padding(.horizontal, 14).padding(.bottom, 10)
+        }
             .frame(width: HUDStyle.cardWidth, alignment: .leading)
             .background(LinearGradient(colors: [.black.opacity(0.72), .black.opacity(0.5)], startPoint: .top, endPoint: .bottom))
             .clipShape(CutCorner(cut: 14))
@@ -663,11 +793,11 @@ struct HUDView: View {
     }
 
     /// Portrait badge (Core Text to a texture, cached per name) in a cut-corner frame tinted with the character's colour.
-    private func portrait(_ name: String, tint: Color) -> some View {
+    private func portrait(_ name: String, tint: Color, size: CGFloat = 52) -> some View {
         Image(decorative: Rival.portrait(for: name), scale: 1)
             .resizable()
             .interpolation(.high)
-            .frame(width: 52, height: 52)
+            .frame(width: size, height: size)
             .clipShape(CutCorner(cut: 8))
             .overlay(CutCorner(cut: 8).stroke(tint.opacity(0.8), lineWidth: 1))
     }
@@ -845,6 +975,44 @@ struct HUDView: View {
     }
 }
 
+/// Reveals a card in steps 150 ms apart (rank, score, flags, pay, the lines), Alto-style.
+private struct StagedCard<Content: View>: View {
+    let steps: Int
+    @ViewBuilder let content: (Int) -> Content
+    @State private var step = 0
+    var body: some View {
+        content(step)
+            .animation(.spring(duration: 0.25, bounce: 0.3), value: step)
+            .task {
+                step = 0
+                for i in 1...steps {
+                    try? await Task.sleep(nanoseconds: i == 1 ? 120_000_000 : 170_000_000)
+                    step = i
+                }
+            }
+    }
+}
+
+/// The start prompt pulsing at the music's tempo (112 bpm).
+private struct PulsingPrompt: View {
+    let glyph: String
+    let text: String
+    let accent: Color
+    @State private var lit = false
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: glyph).font(.system(size: 14, weight: .semibold))
+            Text(text).font(HUDStyle.display(HUDStyle.labelSize + 4)).tracking(2)
+        }
+        .foregroundStyle(.black)
+        .padding(.horizontal, 14).padding(.vertical, 7)
+        .background(accent)
+        .clipShape(CutCorner(cut: 8))
+        .opacity(lit ? 1 : 0.55)
+        .onAppear { withAnimation(.easeInOut(duration: 0.536).repeatForever(autoreverses: true)) { lit = true } }
+    }
+}
+
 /// On-screen action button for touch play: 56 pt, press state, light impact on touch-down.
 private struct TouchButton: View {
     let label: String
@@ -891,7 +1059,9 @@ enum HUDStyle {
     static let stampSize: CGFloat = 40
     static let titleSize: CGFloat = 17
     static let cardTitleSize: CGFloat = 24
-    static let cardWidth: CGFloat = 450
+    static let cardWidth: CGFloat = 470
+    static let cardMaxHeight: CGFloat = 356
+    static let wordmarkSize: CGFloat = 56
     static let sideInset: CGFloat = 16
     static let topInset: CGFloat = 12
     static let bottomInset: CGFloat = 10
@@ -904,7 +1074,9 @@ enum HUDStyle {
     static let stampSize: CGFloat = 44
     static let titleSize: CGFloat = 18
     static let cardTitleSize: CGFloat = 26
-    static let cardWidth: CGFloat = 470
+    static let cardWidth: CGFloat = 490
+    static let cardMaxHeight: CGFloat = 700
+    static let wordmarkSize: CGFloat = 64
     static let sideInset: CGFloat = 16
     static let topInset: CGFloat = 12
     static let bottomInset: CGFloat = 12

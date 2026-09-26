@@ -76,8 +76,11 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   trails, dissolve derez) built and verified the same day. Gotchas: apply the chromatic offset inside
   every post-pass sample (re-sampling R/B after a blur fringes everything); a particle-emitter rain
   child of the camera rig rendered almost nothing, the rain lives in `PostFX.metal` instead;
-  `SPEEDER_LIGHTNING_AT=<s>` forces a flash. Pass 3 (cast: D4 needs CC5 on Windows; D1, D3, C4, C5,
-  C6 are code) is next.
+  `SPEEDER_LIGHTNING_AT=<s>` forces a flash. Pass 3's code half (title screen, rival intro phase
+  `.rivalIntro` with records, staged result card, reactive debrief lines in `Missions/Debrief.swift`,
+  two-column briefing with a pinned footer) built and verified the same day; `SPEEDER_TITLE=0` skips
+  the title (the demo always does). D4 (the cast through CC5 / iClone 8) is Mark's, on Windows.
+  Pass 4 (music state machine, ambience beds, RealityView migration, batching, Game Center) is next.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

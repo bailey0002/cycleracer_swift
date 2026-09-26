@@ -45,7 +45,7 @@ struct Upgrades: Equatable {
 
 /// Snapshot of the mission state for the HUD.
 struct MissionState: Equatable {
-    enum Phase: Equatable { case briefing, running, success, failed, freePlay }
+    enum Phase: Equatable { case briefing, rivalIntro, running, success, failed, freePlay }
     var phase: Phase = .freePlay
     var code = ""
     var title = ""
@@ -111,6 +111,14 @@ struct MissionState: Equatable {
     var liveryColor = SIMD3<Float>(0.12, 0.72, 1.0)
     /// The job's total distance (for the comms triggers).
     var distanceTotal: Float = 0
+    // story lines and the rival card
+    var reactiveLine = ""          // the contact's reaction to this run (success and failed cards)
+    var rivalWins = 0
+    var rivalLosses = 0
+    var rivalTaunt = ""
+    var rivalColor = SIMD3<Float>(1, 0.5, 0.2)
+    var contactRole = ""
+    var introLeft: Float = 0       // rival intro card countdown
 }
 
 /// The job loop: briefing -> running (timer, hull energy, distance) -> success / failed -> next.
@@ -151,6 +159,10 @@ final class MissionRunner {
     static let respawnPenalty: Float = 4
     private var respawnsLeft = 0
     private(set) var respawnedNow = false
+    private var reactiveLine = ""
+    private var introLeft: Float = 0
+    /// The last cause of the player's derez in a duel (from the arena), for the debrief.
+    var lastDerezCause = ""
     private var hitsTaken = 0
     private var newFlags: Mission.Flags = []
     private var helmetArmed = false
@@ -174,6 +186,7 @@ final class MissionRunner {
         if env["SPEEDER_RESET_PROGRESS"] == "1" {
             for k in ["credits", "missionIndex", "cleared", Upgrades.key] { defaults.removeObject(forKey: k) }
             for m in missions { defaults.removeObject(forKey: "rank.\(m.id)"); defaults.removeObject(forKey: "flags.\(m.id)") }
+            for k in defaults.dictionaryRepresentation().keys where k.hasPrefix("record.") || k.hasPrefix("said.") { defaults.removeObject(forKey: k) }
         }
         credits = defaults.integer(forKey: "credits")
         upgrades = Upgrades.load(defaults)
@@ -252,13 +265,12 @@ final class MissionRunner {
                 shopNote = ""
                 return true
             }
-            phase = .running
-            elapsed = 0; travelled = 0; energy = 1; payout = 0
-            beaconsHit = 0; killsTaken = 0; gap = current.startGap; duelWins = 0; duelLosses = 0
-            score = 0; streak = 1; nextGate = Mission.gateSpacing; rank = .none; scoredNow = nil
-            respawnsLeft = upgrades.respawns; respawnedNow = false
-            hitsTaken = 0; newFlags = []; boostArmed = true
-            helmetArmed = upgrades.helmet > 0; helmetUsedNow = false
+            if current.kind == .duel { phase = .rivalIntro; introLeft = Self.introDuration; return false }
+            startRun()
+            return false
+        case .rivalIntro:
+            // A again skips the card
+            startRun()
             return false
         case .success:
             index = min(missions.count - 1, max(index + 1, lastUnlocked))
@@ -289,6 +301,36 @@ final class MissionRunner {
     }
     var golds: Int { missions.filter { bestRank(for: $0) == .gold }.count }
     var playerTitle: String { Player.title(golds: golds, cleared: clearedCount) }
+
+    static let introDuration: Float = 3.6
+
+    private func startRun() {
+        phase = .running
+        elapsed = 0; travelled = 0; energy = 1; payout = 0
+        beaconsHit = 0; killsTaken = 0; gap = current.startGap; duelWins = 0; duelLosses = 0
+        score = 0; streak = 1; nextGate = Mission.gateSpacing; rank = .none; scoredNow = nil
+        respawnsLeft = upgrades.respawns; respawnedNow = false
+        hitsTaken = 0; newFlags = []; boostArmed = true
+        helmetArmed = upgrades.helmet > 0; helmetUsedNow = false
+        reactiveLine = ""; lastDerezCause = ""; introLeft = 0
+    }
+
+    /// The rival intro card counts down, then the duel starts.
+    func tickIntro(dt: Float) {
+        guard phase == .rivalIntro else { return }
+        introLeft -= dt
+        if introLeft <= 0 { startRun() }
+    }
+
+    // MARK: - Records (head to head)
+
+    func record(for rival: String) -> (wins: Int, losses: Int) {
+        (defaults.integer(forKey: "record.\(rival).w"), defaults.integer(forKey: "record.\(rival).l"))
+    }
+    func recordMatch(rival: String, won: Bool) {
+        let k = won ? "record.\(rival).w" : "record.\(rival).l"
+        defaults.set(defaults.integer(forKey: k) + 1, forKey: k)
+    }
 
     /// Flags earned per job, remembered across launches.
     func flags(for m: Mission) -> Mission.Flags { Mission.Flags(rawValue: defaults.integer(forKey: "flags.\(m.id)")) }
@@ -418,11 +460,29 @@ final class MissionRunner {
         if !replay { defaults.set(index + 1, forKey: "cleared") }
         // the payout is banked with the job, so a relaunch on the result card cannot replay it
         defaults.set(min(missions.count - 1, index + 1), forKey: "missionIndex")
+        if current.kind == .duel, let r = current.rival { recordMatch(rival: r.name, won: true) }
+        reactiveLine = Debrief.reactive(contact: current.contact, outcome: outcome(), defaults: defaults)
         phase = .success
+    }
+
+    private func outcome() -> Debrief.Outcome {
+        var o = Debrief.Outcome(kind: current.kind)
+        o.hits = hitsTaken
+        o.respawnsUsed = max(0, upgrades.respawns - respawnsLeft)
+        o.hullLeft = energy
+        o.rank = rank
+        o.newBest = rank > .none && rank >= bestRank(for: current)
+        o.fast = current.timeLimit > 0 && current.timeLimit - elapsed >= current.timeLimit / 3
+        o.timeLeftFraction = current.timeLimit > 0 ? (current.timeLimit - elapsed) / current.timeLimit : 0
+        o.derezCause = lastDerezCause
+        o.duelScore = (duelWins, duelLosses)
+        return o
     }
 
     private func fail(_ reason: String) {
         failReason = reason
+        if current.kind == .duel, let r = current.rival { recordMatch(rival: r.name, won: false) }
+        reactiveLine = Debrief.failure(contact: current.contact, reason: reason)
         phase = .failed
     }
 
@@ -450,6 +510,11 @@ final class MissionRunner {
                             cleared: isCleared(previewIndex), browsing: previewIndex != index, jobs: jobs,
                             upgrades: upgrades, shopSelection: shopSelection, shopNote: shopNote,
                             callsign: player.callsign, playerTitle: playerTitle, liveryName: player.liveryName, liveryColor: player.liveryColor,
-                            distanceTotal: m.distance)
+                            distanceTotal: m.distance,
+                            reactiveLine: reactiveLine,
+                            rivalWins: m.rival.map { record(for: $0.name).wins } ?? 0, rivalLosses: m.rival.map { record(for: $0.name).losses } ?? 0,
+                            rivalTaunt: m.rival.map { Debrief.taunt(rival: $0.name, record: record(for: $0.name)) } ?? "",
+                            rivalColor: m.rival?.color ?? SIMD3<Float>(1, 0.5, 0.2),
+                            contactRole: Debrief.role(m.contact), introLeft: introLeft)
     }
 }

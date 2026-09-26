@@ -461,6 +461,15 @@ depth once and adds reprojection motion blur in the outer ring (never on the bik
 dirt and dither, hot translucent trail walls on The Grid and a dissolve derez on the cycles
 (`dissolveSurface`). Log and captures: `docs/polish-log.md` pass 2, `Captures/polish/p7/`.
 
+## Pass 3 of the assessment, code half: the cast on screen (26 Sep 2026)
+
+A title screen, a rival card before every duel (record, temper, tier, a taunt from the record), a
+staged result card with a reactive debrief line per contact (`Missions/Debrief.swift`, Hades' rule:
+essential beat, then a line that saw what you did, never repeated until the rest are spent), failed
+cards with a cause line, and a two-column briefing with the contact and the rival. Head-to-head records
+persist (`record.<rival>`). The cast itself (Character Creator 5 / iClone 8) is the owed half: see
+`docs/research-2026-09-26-reports.md`, report E, for the pipeline and the first proof.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).
