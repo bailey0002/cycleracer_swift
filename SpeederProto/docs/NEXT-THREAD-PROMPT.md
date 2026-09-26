@@ -67,3 +67,16 @@ ground glow, scrape sparks, thruster haze), D2 (callsign + livery accent), D5 (c
 (continuous haptic engine). Run the five proofs in section 8 first where they gate a choice; keep the
 frozen Neon City frame as the A/B baseline; verify with `Captures/polish/capture.sh` and
 `simshot.sh` at the p6 times; log in `docs/polish-log.md`; push to the phone.
+
+---
+
+## Status 26 Sep 2026 (later the same day): pass 1 is built
+
+Pass 1 above is done and verified (`docs/polish-log.md`, pass 1 section). The phone was locked, so the
+device binary in `build-device/` was not installed: install and launch it first (README command). Then
+the phone checks pass 1 needs: the touch BOOST / FIRE buttons without the Backbone, the engine hum and
+the hit / boost rumble through the phone with the Backbone, the callsign keyboard, the livery tint on
+The Grid. Then pass 2 (assessment section 7): A1 layered horizon and sky dome, A4 brand typography,
+A5 Neon City rain, B2 the post-pass prologue (linear depth, velocity, previous frame), B3 outer-ring
+motion blur, lens dirt, dithering, LUT, then A7 hot Grid trails and the dissolve derez. Keep the frozen
+Neon City frame as the A/B baseline (`Captures/polish/p7/cruise/`).

@@ -158,3 +158,24 @@ capture: the scripted drives cannot make both bikes hit a wall on the same frame
   fade in.
 - The result card ends the run on the frame the distance is reached; a short coast-down with the
   drop marker in view would be the next step (research shortlist item 1).
+
+## Pass 1 of the market assessment: the presentation foundation (26 Sep 2026)
+
+Built from `docs/assessment-2026-09-26-market.md` section 7, pass 1 (C1, C2, B1, A2, A3, D2, D5, D8).
+Mac captures in `Captures/polish/p7/`, simulator HUD shots in `Captures/polish/p7/sim/`. The device
+binary is in `build-device/` (the phone was locked; install pending).
+
+| Item | What changed | Capture |
+|---|---|---|
+| C1 type and chrome | Chakra Petch (SIL OFL, `Resources/Fonts`, registered at launch by `HUDStyle.registerFonts`) for display and labels; no translucent boxes: hairlines, gradients, cut-corner chips and cards (`CutCorner`); HUD zones per the spec: job code + timer top-left, HULL bar + objective top-centre, score + streak chip + respawn pips top-right, speed + altitude ladder + section bottom-left, "coming up" chip bottom-centre, actions bottom-right; distance / hits / kills and the fps block moved into the settings panel; the HUD accent is the world's road colour (`Theme.hudAccent`); numeric roll on score, timer and objective; the streak chip springs on increase | `p7/sim/relay01-22`, `relay01-30`, `panel-22` |
+| C2 glyphs and touch | Button art from `GCControllerElement.sfSymbolsName` (`ControllerGlyphs`, published by the game controller) on pips, prompts, garage and hint; touch play (no pad) gets 56 pt BOOST / FIRE buttons with a press state and a light impact (`TouchButton`), feeding `InputState.buttonBoost / buttonFire`; the hint shows for 8 s, again when a pad connects, and while the panel is open | `p7/sim/relay01-22` (the simulator exposes a virtual "Gamepad", so it shows pad pips) |
+| B1 boost scalar | `GameController.boostLevel` (150 ms in, 400 ms out) reaches the post pass (`PostUniforms.section.w`): vignette tightens, the outer ring desaturates and darkens while the centre lifts (Thumper), streaks and aberration rise; the exhaust lengthens and the thruster glow and engine light rise with it; the HUD scales 2.5 % and brightens | `p7/boost/frame-9` vs `p7/cruise/frame-9` |
+| A3 vehicle contact | A contact shadow (black glow sprite) under the bike that shrinks with altitude; the ground glow grows with throttle; thruster heat haze in the composite pass (`PostUniforms.haze`, value-noise refraction around the projected nozzle, radius and strength with boost) | `p7/cruise/frame-4` |
+| A2 edge cadence | Emissive studs every 5 m on both road edges (in `roadPrimary`, so they follow the palette) and two chevrons per segment on the road centre (`roadSecondary`); painted in the canyon | `p7/lanes/frame-4`, `p7/canyon/frame-12` |
+| D2 identity | `Missions/Player.swift`: callsign (typed once on the briefing, tap the name; `callsign` in UserDefaults), livery (tap the swatch to cycle; tints the bike's glows and lights and the arena trail via `ArenaController.playerColor`), a rank title (ROOKIE / COURIER / GATE-RUNNER / UNBOXED); shown on the briefing header, the result card, the duel score and the match card | `p7/sim/brief2-18` |
+| D5 comms | `Mission.comms(contact:kind:trigger:)`: one register per contact (VESS clipped, KADE blunt, ORIN sharp), at most three lines per job (launch at 1.6 s, one event: section ahead / pursuer close / halfway, the last 320 m), eight words or fewer, shown under the objective with a comms blip (`ActionAck.commsSpeaker / commsText`) | `p7/sim/comms2-17` |
+| D8 haptics | `GamepadInput.activeEngine()`: a pad's own actuators, else the phone's `CHHapticEngine` (touch play and pads without rumble such as the Backbone, which had no haptics at all before); `engineHum` is one continuous event restarted every 18 s and steered with dynamic intensity / sharpness from speed and boost; off while parked | phone only |
+
+Not verified here: the haptics and the on-screen buttons (need the phone), the callsign keyboard on
+the phone, the livery tint on The Grid by play. Pad browsing of the livery / callsign is not built
+(touch or click only); a pad flow belongs with the title screen in pass 3.

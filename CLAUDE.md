@@ -66,7 +66,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   RealityKit architecture; gap analysis, four ranked workstreams (viewing space, post pass, HUD and
   screens, cast / story / sound) and a four-pass build order. Character Creator 5 + iClone 8 are
   available for the cast (FBX -> Blender -> USDZ, one clip per file; blend shapes stop during
-  skeletal clips, so talk is video-in-HUD or blend-shape-only). Nothing from it is built yet.
+  skeletal clips, so talk is video-in-HUD or blend-shape-only). Pass 1 (presentation foundation:
+  HUD type + zones + glyphs + touch buttons, boost scalar, thruster haze, contact shadow, edge studs,
+  callsign / livery, comms lines, haptics director) built and capture-verified 26 Sep 2026
+  (`docs/polish-log.md`, `Captures/polish/p7/`). Fonts: `Resources/Fonts` (Chakra Petch, SIL OFL),
+  registered at launch, no plist keys. The simulator exposes a virtual "Gamepad", so it never shows
+  the touch buttons; only the phone does. Pass 2 (the world) is next.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

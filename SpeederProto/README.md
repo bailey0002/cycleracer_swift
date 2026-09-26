@@ -441,6 +441,18 @@ story / sound layer (reactive debrief lines, callsign and livery, rival cards, C
 iClone 8 characters, comms stamps, a bar-quantised music state machine, ambience beds, continuous
 haptics, Game Center). The full research reports are in `docs/research-2026-09-26-reports.md`.
 
+## Pass 1 of the assessment: presentation foundation (26 Sep 2026)
+
+Built and capture-verified the same day (`docs/polish-log.md`, `Captures/polish/p7/`): the HUD type
+system (Chakra Petch, bundled under the SIL OFL in `Resources/Fonts`), the box-free HUD layout by zone
+with the world's road colour as the accent, controller glyphs from the pad (`sfSymbolsName`) and touch
+BOOST / FIRE buttons with press states, one boost scalar driving the post pass (vignette, centre-weighted
+grade, streaks, aberration, thruster heat haze), the exhaust and the HUD, a contact shadow and throttle
+ground glow under the bike, edge studs and road chevrons, the rider's identity (`Missions/Player.swift`:
+callsign, livery, rank title; tap the name or the swatch on the briefing), contact comms lines in the
+run (`Mission.comms`), and a haptics director with a continuous engine hum that falls back to the
+phone's own haptics for pads without rumble.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).
