@@ -80,3 +80,24 @@ The Grid. Then pass 2 (assessment section 7): A1 layered horizon and sky dome, A
 A5 Neon City rain, B2 the post-pass prologue (linear depth, velocity, previous frame), B3 outer-ring
 motion blur, lens dirt, dithering, LUT, then A7 hot Grid trails and the dissolve derez. Keep the frozen
 Neon City frame as the A/B baseline (`Captures/polish/p7/cruise/`).
+
+---
+
+## Status 26 Sep 2026 (end of day): passes 1 to 4 are built
+
+All four passes of `docs/assessment-2026-09-26-market.md` are built, capture-verified and on the phone
+(`docs/polish-log.md`, pass 1 to pass 4 sections; `Captures/polish/p7/`), except the parts that need
+Mark or another thread: D4 (the cast through Character Creator 5 / iClone 8, on Windows; report E in
+`docs/research-2026-09-26-reports.md` has the pipeline and the two-day proof), B4 (RealityView
+migration), A6 (building archetypes and batching), D9 (Game Center, needs App Store Connect).
+
+Next thread, in order:
+1. The phone pass with the Backbone: the title screen and the START prompt, touch buttons without the
+   pad, the engine hum and the rumble through the phone, the mix (pad / bass / arp / drums levels,
+   the final-stretch lift, the ambience beds, the tunnel reverb; knobs in `SoundEngine.renderMusic`,
+   `ambienceLoop`, `setAmbience`), frame time with `motionBlur` and `lensFX` on an iPhone 12, the rival
+   card's timing by hand, the callsign keyboard, the livery tint on The Grid.
+2. Balance (unchanged from the earlier kickoff): chapter-3 density, the dive windows, garage prices.
+3. D4 proof on the player character, then the four contacts / rivals; the portrait PNGs replace
+   `ProceduralTextures.portrait` through `Rival.portrait(for:)`.
+4. Then B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.

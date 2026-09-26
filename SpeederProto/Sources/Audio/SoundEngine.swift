@@ -12,7 +12,7 @@ final class SoundEngine {
         case hit, fire, kill, beacon, gate, section, approach, streakLost
         case snap, jump, land, derez, rivalDerez, pickup, pickupTaken, surge, slow, zone, roundStart, matchWon, matchLost, charge
     }
-    enum Loop: Int, CaseIterable { case engine, boost, grind, scrape, alarm }
+    enum Loop: Int, CaseIterable { case engine, boost, grind, scrape, alarm, ambience }
 
     private let engine = AVAudioEngine()
     private let sampleRate: Double = 44100
@@ -25,13 +25,29 @@ final class SoundEngine {
     private var loopVolumes: [Float] = Array(repeating: 0, count: Loop.allCases.count)
     private var running = false
     private(set) var available = false
-    // music: three generative layers per world (pad, bass, arp), rendered once per world
-    enum MusicLayer: Int, CaseIterable { case pad, bass, arp }
+    // music: four generative layers per world (pad, bass, arp, drums), rendered once per world,
+    // summed into one mixer and one varispeed (the final-stretch lift) before the main mix
+    enum MusicLayer: Int, CaseIterable { case pad, bass, arp, drums }
     private var music: [AVAudioPlayerNode] = []
     private var musicBuffers: [AVAudioPCMBuffer] = []
     private var musicWorld = -1
-    private var musicTargets: [Float] = [0, 0, 0]
-    private var musicVolumes: [Float] = [0, 0, 0]
+    private var musicTargets: [Float] = [0, 0, 0, 0]       // applied on the next bar line
+    private var musicPending: [Float] = [0, 0, 0, 0]
+    private var musicVolumes: [Float] = [0, 0, 0, 0]
+    private let musicMix = AVAudioMixerNode()
+    private let musicSpeed = AVAudioUnitVarispeed()
+    private var musicRateTarget: Float = 1
+    private var musicRatePending: Float = 1
+    private var lastBarPhase = 0
+    private static let barSamples = 23625 * 4
+    /// A one-bar duck (the finish) or a cut (a derez): a multiplier on every layer that recovers by itself.
+    private var musicDuck: Float = 1
+    private var musicDuckRecover: Float = 0
+    private var cutTimer: Float = 0
+    /// The engine, boost and scrape loops pass through a reverb that opens in enclosed sections.
+    private let loopMix = AVAudioMixerNode()
+    private let reverb = AVAudioUnitReverb()
+    private var reverbTarget: Float = 0
     var musicEnabled = true
     /// Master switch (the HUD `sound` toggle). Loops fade out when off.
     var enabled = true {
@@ -71,22 +87,34 @@ final class SoundEngine {
             engine.connect(v, to: engine.mainMixerNode, format: format)
             shots.append((p, v))
         }
-        let loopBuffers: [AVAudioPCMBuffer] = [engineLoop(), boostLoop(), grindLoop(), scrapeLoop(), alarmLoop()]
-        for b in loopBuffers {
+        engine.attach(loopMix); engine.attach(reverb)
+        let loopBuffers: [AVAudioPCMBuffer] = [engineLoop(), boostLoop(), grindLoop(), scrapeLoop(), alarmLoop(), ambienceLoop(world: 0)]
+        for (i, b) in loopBuffers.enumerated() {
             let p = AVAudioPlayerNode(), v = AVAudioUnitVarispeed()
             engine.attach(p); engine.attach(v)
             engine.connect(p, to: v, format: format)
-            engine.connect(v, to: engine.mainMixerNode, format: format)
+            // the vehicle's own sounds take the room; alarms, grind and the ambience bed stay dry
+            let roomy = i == Loop.engine.rawValue || i == Loop.boost.rawValue || i == Loop.scrape.rawValue
+            engine.connect(v, to: roomy ? loopMix : engine.mainMixerNode, format: format)
             p.volume = 0
             loops.append((p, v, b))
         }
+        // sources first, then the sub-mixers: connecting an empty mixer forward raises an exception
+        reverb.loadFactoryPreset(.largeHall)
+        reverb.wetDryMix = 0
+        // the reverb unit picks its own (stereo) format; forcing the mono format raises an exception
+        engine.connect(loopMix, to: reverb, format: nil)
+        engine.connect(reverb, to: engine.mainMixerNode, format: nil)
+        engine.attach(musicMix); engine.attach(musicSpeed)
         for _ in MusicLayer.allCases {
             let p = AVAudioPlayerNode()
             engine.attach(p)
-            engine.connect(p, to: engine.mainMixerNode, format: format)
+            engine.connect(p, to: musicMix, format: format)
             p.volume = 0
             music.append(p)
         }
+        engine.connect(musicMix, to: musicSpeed, format: format)
+        engine.connect(musicSpeed, to: engine.mainMixerNode, format: format)
         engine.mainMixerNode.outputVolume = enabled ? masterVolume : 0
     }
 
@@ -102,7 +130,6 @@ final class SoundEngine {
             }
             startMusic()
         } catch {
-            print("sound: engine start failed: \(error)")
             running = false
         }
     }
@@ -126,16 +153,51 @@ final class SoundEngine {
         musicBuffers = renderMusic(world: world)
         for m in music { m.stop() }
         startMusic()
+        // the ambience bed for the world (a 4 s loop: hum and rain, wind, or a pure tone)
+        let a = loops[Loop.ambience.rawValue]
+        a.player.stop()
+        let b = ambienceLoop(world: world)
+        loops[Loop.ambience.rawValue].buffer = b
+        a.player.scheduleBuffer(b, at: nil, options: [.loops], completionHandler: nil)
+        a.player.play()
     }
 
-    /// Intensity: 0 silent, up to 0.5 pad only, up to 1.5 pad + bass, above that all three.
-    func setMusic(intensity: Float) {
+    /// The music state machine (Mario Kart's layers, Wipeout Zone, Forza's finish): `intensity` 0
+    /// silent, up to 0.5 pad only, up to 1.5 pad + bass, above that the arp too, but the arp waits for
+    /// the first gate (`gated`); `lead` adds the drums (boosting, a long streak, leading a duel);
+    /// `finalStretch` lifts tempo and pitch by a fraction of a semitone. Every change lands on a bar.
+    func setMusic(intensity: Float, lead: Bool = false, finalStretch: Bool = false, gated: Bool = true) {
         guard running else { return }
         let on = enabled && musicEnabled
-        musicTargets[0] = on && intensity > 0 ? 0.42 : 0
-        musicTargets[1] = on && intensity >= 0.9 ? 0.5 : 0
-        musicTargets[2] = on && intensity >= 1.6 ? 0.4 : 0
+        musicPending[0] = on && intensity > 0 ? 0.42 : 0
+        musicPending[1] = on && intensity >= 0.9 ? 0.5 : 0
+        musicPending[2] = on && intensity >= 1.6 && gated ? 0.4 : 0
+        musicPending[3] = on && intensity >= 0.9 && lead ? 0.38 : 0
+        musicRatePending = finalStretch ? 1.054 : 1.0
     }
+
+    /// The finish: a one-bar duck, then the slam back to full.
+    func musicSlam() {
+        guard running else { return }
+        musicDuck = 0.08
+        musicDuckRecover = 0.55
+    }
+
+    /// A derez or a failed run: hard cut to a detuned pad for a moment.
+    func musicCut() {
+        guard running else { return }
+        musicDuck = 0.35
+        musicDuckRecover = 0.2
+        cutTimer = 1.6
+        musicSpeed.rate = 0.94
+        for i in 1..<music.count { musicVolumes[i] = 0; music[i].volume = 0 }
+    }
+
+    /// Ambience bed level (0 ... 1), per frame.
+    func setAmbience(_ level: Float) { set(.ambience, volume: level) }
+
+    /// Room size for the vehicle's own sounds (0 open ... 1 inside a tunnel), per frame.
+    func setEnclosure(_ e: Float) { reverbTarget = max(0, min(1, e)) }
 
     private func startMusic() {
         guard musicBuffers.count == music.count else { return }
@@ -166,7 +228,39 @@ final class SoundEngine {
         var pad = [Float](repeating: 0, count: total)
         var bass = [Float](repeating: 0, count: total)
         var arp = [Float](repeating: 0, count: total)
+        var drums = [Float](repeating: 0, count: total)
         let sr = Float(sampleRate)
+        // drums: a kick on 1 and 3 (and the "and" of 4 on the last bar), closed hats on the eighths,
+        // a clap on 2 and 4; short synthesised hits, no samples
+        var drng = SeededRNG(seed: 77)
+        for b in 0..<4 {
+            let start = b * bar
+            for k in 0..<8 {
+                let s0 = start + k * beat / 2
+                // hat: 22 ms of bright noise
+                for i in 0..<Int(0.022 * sr) where s0 + i < total {
+                    let env = exp(-Float(i) / (0.006 * sr))
+                    drums[s0 + i] += drng.float(-1, 1) * env * (k % 2 == 0 ? 0.22 : 0.14)
+                }
+            }
+            var kicks = [0, 2]
+            if b == 3 { kicks.append(3) }
+            for q in kicks {
+                let s0 = start + q * beat + (q == 3 ? beat / 2 : 0)
+                for i in 0..<Int(0.16 * sr) where s0 + i < total {
+                    let t = Float(i) / sr
+                    let f = 42 + 110 * exp(-t * 28)
+                    drums[s0 + i] += sin(2 * .pi * f * t) * exp(-t * 14) * 0.9
+                }
+            }
+            for q in [1, 3] {
+                let s0 = start + q * beat
+                for i in 0..<Int(0.09 * sr) where s0 + i < total {
+                    let env = exp(-Float(i) / (0.03 * sr))
+                    drums[s0 + i] += drng.float(-1, 1) * env * 0.35
+                }
+            }
+        }
         for (b, chord) in chords.enumerated() {
             let start = b * bar
             // pad: three sines an octave down plus a whisper of saw, faded at the bar edges
@@ -208,7 +302,7 @@ final class SoundEngine {
                 }
             }
         }
-        return [make(pad, gain: 0.5), make(bass, gain: 0.55), make(arp, gain: 0.4)]
+        return [make(pad, gain: 0.5), make(bass, gain: 0.55), make(arp, gain: 0.4), make(drums, gain: 0.5)]
     }
 
     // MARK: - Playback
@@ -243,11 +337,34 @@ final class SoundEngine {
             loops[i].player.volume = loopVolumes[i]
             loopTargets[i] = 0        // callers re-assert every frame; silence otherwise
         }
+        // bar clock: pending layer and rate changes land when the loop crosses a bar line
+        if let nt = music.first?.lastRenderTime, nt.isSampleTimeValid, let pt = music.first?.playerTime(forNodeTime: nt), pt.isSampleTimeValid {
+            let phase = Int(pt.sampleTime % Int64(Self.barSamples))
+            if phase < lastBarPhase || musicTargets.allSatisfy({ $0 == 0 }) {
+                musicTargets = musicPending
+                musicRateTarget = musicRatePending
+            }
+            lastBarPhase = phase
+        } else {
+            musicTargets = musicPending; musicRateTarget = musicRatePending
+        }
+        // the duck recovers on its own; the cut holds the detune for a moment
+        if musicDuck < 1 {
+            musicDuckRecover -= dt
+            if musicDuckRecover <= 0 { musicDuck = min(1, musicDuck + dt * 3.5) }
+        }
+        if cutTimer > 0 {
+            cutTimer -= dt
+            if cutTimer <= 0 { musicSpeed.rate = musicRateTarget }
+        } else {
+            musicSpeed.rate = damp(musicSpeed.rate, musicRateTarget, 2.0, dt)
+        }
         for i in music.indices {
-            let t = musicTargets[i]
+            let t = musicTargets[i] * musicDuck
             musicVolumes[i] = damp(musicVolumes[i], t, t > musicVolumes[i] ? 1.5 : 2.5, dt)   // layers swell in over a bar
             music[i].volume = musicVolumes[i]
         }
+        reverb.wetDryMix = damp(reverb.wetDryMix, reverbTarget * 55, 2.5, dt)
     }
 
     // MARK: - Synthesis
@@ -414,6 +531,41 @@ final class SoundEngine {
             let gate: Float = (t * 4).truncatingRemainder(dividingBy: 1) < 0.35 ? 1 : 0
             return osc(.square, t * 880) * 0.4 * gate
         }, gain: 0.45)
+    }
+
+    /// Ambience bed per world, four seconds, crossfaded so it never clicks: Neon City is a low hum
+    /// with rain hiss and a distant advert-band murmur; the canyon a slow wind; The Grid a pure tone
+    /// bed with a faint trail whine (Cyberpunk's per-district method, nothing natural on the Grid).
+    private func ambienceLoop(world: Int) -> AVAudioPCMBuffer {
+        var rng = SeededRNG(seed: 300 + UInt64(world))
+        let n = Int(sampleRate) * 4
+        var out = [Float](repeating: 0, count: n)
+        var lp1: Float = 0, lp2: Float = 0, lp3: Float = 0
+        for i in 0..<n {
+            let t = Float(i) / Float(sampleRate)
+            let w = rng.float(-1, 1)
+            switch world {
+            case 1:
+                // wind: noise through two low-passes whose cutoff breathes over ~7 s, gusting
+                let cut = 0.02 + 0.06 * (0.5 + 0.5 * sin(t * 0.9 + 1.0)) + 0.03 * (0.5 + 0.5 * sin(t * 2.3))
+                lp1 += (w - lp1) * cut; lp2 += (lp1 - lp2) * cut
+                let gust = 0.55 + 0.45 * (0.5 + 0.5 * sin(t * 0.45))
+                out[i] = lp2 * 6 * gust
+            case 2:
+                // pure tone bed with slow beating and a whine that drifts
+                let bed = sin(2 * .pi * 110 * t) * 0.35 + sin(2 * .pi * 110.4 * t) * 0.25 + sin(2 * .pi * 165 * t) * 0.18 + sin(2 * .pi * 220.6 * t) * 0.1
+                let whine = sin(2 * .pi * (1760 + 40 * sin(t * 0.7)) * t) * 0.035 * (0.5 + 0.5 * sin(t * 1.9))
+                out[i] = bed * 0.5 + whine
+            default:
+                // city hum + rain hiss + a muffled murmur under it
+                lp1 += (w - lp1) * 0.35                   // hiss
+                lp3 += (w - lp3) * 0.03                   // murmur
+                let hum = sin(2 * .pi * 55 * t) * 0.22 + sin(2 * .pi * 110 * t) * 0.08 + sin(2 * .pi * 55.3 * t) * 0.1
+                let patter = 0.7 + 0.3 * sin(t * 3.1) * sin(t * 0.37)
+                out[i] = hum * 0.6 + lp1 * 0.28 * patter + lp3 * 1.6
+            }
+        }
+        return make(crossfadeLoop(out), gain: 0.45)
     }
 
     private func crossfadeLoop(_ a: [Float]) -> [Float] {

@@ -470,6 +470,15 @@ cards with a cause line, and a two-column briefing with the contact and the riva
 persist (`record.<rival>`). The cast itself (Character Creator 5 / iClone 8) is the owed half: see
 `docs/research-2026-09-26-reports.md`, report E, for the pipeline and the first proof.
 
+## Pass 4 of the assessment, audio half (26 Sep 2026)
+
+A music state machine on the synthesised stems: a drum layer that enters while boosting, on a streak or
+when leading a duel, the arp held back until the first gate, a tempo-and-pitch lift in the final
+stretch, a one-bar duck and slam on the finish, a detuned cut on a fail or a derez, every change on a
+bar line. Per-world ambience beds (hum and rain, wind, a pure tone) and a reverb on the vehicle's own
+sounds that opens in tunnels and the conduit. Not built from pass 4: the RealityView migration,
+building batching, Game Center.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

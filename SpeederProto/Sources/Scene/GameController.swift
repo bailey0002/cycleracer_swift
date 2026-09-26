@@ -522,12 +522,20 @@ final class GameController: ObservableObject {
             if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = ms }
             // music: the pad under the cards, bass on the run, the arp when it gets hot
             let hot = (input.boosting && missions.boostAllowed) || ms.streak >= 4 || (ms.kind == .escape && ms.gap < 25)
-            sound.setMusic(intensity: missions.isRunning ? (hot ? 2 : 1) : 0.4)
+            let lead = (input.boosting && missions.boostAllowed) || ms.streak >= 4
+            let final = missions.isRunning && ms.distanceTotal > 0 && ms.distanceLeft < ms.distanceTotal * 0.25
+            sound.setMusic(intensity: missions.isRunning ? (hot ? 2 : 1) : 0.4, lead: lead, finalStretch: final, gated: ms.score > 0)
+            if missions.phase != mission.phase {
+                if missions.phase == .success { sound.musicSlam() }
+                if missions.phase == .failed { sound.musicCut() }
+            }
             contactAvatar?.root.isEnabled = missions.phase != .running
             if missions.phase != .running { contactAvatar?.face(cameraRig.position) }
             if demoMode && Int(time * 4) % 4 == 0 && statsAccumulator > 0.2, let a = contactAvatar { print("avatar \(a.debugBounds())") }
         }
-        if !missionActive { sound.setMusic(intensity: input.boosting ? 2 : 1) }
+        if !missionActive { sound.setMusic(intensity: input.boosting ? 2 : 1, lead: input.boosting, gated: true) }
+        sound.setAmbience((0.5 - world.enclosure * 0.3) * (settings.weather || theme != .neonCity ? 1 : 0.7))
+        sound.setEnclosure(world.enclosure)
         let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
         let boosting = moving && input.boosting && (!missionActive || missions.boostAllowed)
         if boosting && !boostPrev {
@@ -1048,7 +1056,13 @@ final class GameController: ObservableObject {
         let zoneOut: Float = (arena.zoneRadius != nil && arena.energy < 0.3) ? 0.4 : 0
         sound.set(.alarm, volume: arenaLive ? max(arena.edge < 0.3 ? 0.3 : 0, zoneOut) : 0)
         let hot = (cmd.boost && arena.energy > 0.02) || arena.grind > 0.5 || arena.zoneRadius != nil
-        sound.setMusic(intensity: arenaLive ? (hot ? 2 : 1) : 0.4)
+        let target = arena.matchTarget == Int.max ? (missionActive ? missions.current.duelTarget : 3) : arena.matchTarget
+        let final = arenaLive && (arena.wins == target - 1 || arena.losses == target - 1)
+        sound.setMusic(intensity: arenaLive ? (hot ? 2 : 1) : 0.4, lead: arena.wins > arena.losses || (cmd.boost && arena.energy > 0.02), finalStretch: final, gated: true)
+        if ev.roundLost || ev.voidRound { sound.musicCut() }
+        if ev.matchWon { sound.musicSlam() }
+        sound.setAmbience(0.35)
+        sound.setEnclosure(0)
         if ev.matchResult, let r = arena.matchResult {
             missions.award(r.credits)
             missions.recordMatch(rival: r.rival, won: r.won)

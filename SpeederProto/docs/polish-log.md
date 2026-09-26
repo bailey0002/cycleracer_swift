@@ -214,3 +214,24 @@ are in `docs/research-2026-09-26-reports.md`, report E. Simulator shots in `Capt
 
 `SPEEDER_RESET_PROGRESS=1` now also clears the records and the said-line sets (the callsign and
 livery stay). Not verified here: the title on the phone with the Backbone, the rival card's sting.
+
+## Pass 4 of the market assessment: the audio systems (26 Sep 2026)
+
+Assessment section 7, pass 4, the audio items (D6, D7). B4 (RealityView migration), A6 (building
+archetypes and batching) and D9 (Game Center) were not started: the migration carries touch and
+capture-pipeline risk that wants its own thread, batching is gated on the iOS 26 instancing path,
+and Game Center needs App Store Connect leaderboards that only Mark can create.
+
+| Item | What changed |
+|---|---|
+| D6 music state machine | A fourth generative layer, drums (kick on 1 and 3 plus the "and" of 4 on the last bar, hats on the eighths, a clap on 2 and 4), rendered with the other three. All four layers sum into one mixer and one varispeed. `setMusic(intensity:lead:finalStretch:gated:)`: the arp waits for the first gate, the drums enter while boosting, on a streak of four, or when leading a duel; the final quarter of a job (or match point either way on The Grid) lifts the rate by 5.4 % (tempo and about a semitone together); every change lands on a bar line (the player time modulo the bar). `musicSlam()` on a finish: a one-bar duck and the slam back. `musicCut()` on a fail or a derez: the layers drop to the pad, detuned to 0.94 for 1.6 s |
+| D7 ambience and room | An `ambience` loop per world, four seconds and crossfaded: Neon City hum with rain hiss and a muffled murmur, the canyon a breathing wind with gusts, The Grid a pure tone bed with a drifting whine; level 0.5 in the open, less in enclosed sections (`setAmbience`). The engine, boost and scrape loops pass through a large-hall reverb whose wet mix follows the enclosure (`setEnclosure`), so tunnels and the conduit are audible before they are seen |
+
+Verified: both worlds run with sound on, through a Grid crash, without engine errors in the log
+(`Captures/polish/p7/audio-*`). Two graph gotchas cost a bisect: a sub-mixer must have its sources
+connected before it is connected forward, and `AVAudioUnitReverb` must be connected with `format: nil`
+(forcing the mono format raises an ObjC exception that SwiftUI swallows, so the app sits idle with no
+scene and no log).
+Not verified: the mix itself (levels, the drum layer against the pad, the lift at the final stretch,
+the beds under the music) needs the phone and ears; the `gain` constants in `renderMusic`,
+`ambienceLoop` and the `setAmbience` levels are the knobs.

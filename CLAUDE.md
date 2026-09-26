@@ -80,7 +80,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   `.rivalIntro` with records, staged result card, reactive debrief lines in `Missions/Debrief.swift`,
   two-column briefing with a pinned footer) built and verified the same day; `SPEEDER_TITLE=0` skips
   the title (the demo always does). D4 (the cast through CC5 / iClone 8) is Mark's, on Windows.
-  Pass 4 (music state machine, ambience beds, RealityView migration, batching, Game Center) is next.
+  Pass 4's audio half (drum layer, bar-quantised music state machine with a final-stretch lift, slam
+  and cut, ambience beds per world, tunnel reverb on the vehicle loops) built the same day; the mix
+  needs ears on the phone. Not built: RealityView migration (B4), batching (A6), Game Center (D9).
+  Audio graph gotchas: connect a sub-mixer's sources before connecting it forward; connect
+  `AVAudioUnitReverb` with `format: nil` (a forced mono format throws an ObjC exception that SwiftUI
+  swallows: the app idles with no scene and an empty log).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
