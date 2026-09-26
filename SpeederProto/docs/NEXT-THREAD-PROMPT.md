@@ -54,3 +54,16 @@ the chain up to n. Run long arena logs one at a time (parallel instances starve 
 Keep the two corridor looks unchanged unless a change is clearly a fix. Push every meaningful build
 to the phone. Log in `docs/polish-log.md`, keep `README.md` and `CLAUDE.md` current, update the
 memory files, and finish by writing the next kickoff prompt into this file.
+
+---
+
+## After the phone pass: the presentation foundation (added 26 Sep 2026)
+
+Read `docs/assessment-2026-09-26-market.md` (sections 6 to 8). Build pass 1 in that order: C1 (display
+face, hairlines, debug block and hint line off the run, Island insets), C2 (controller glyphs from
+`sfSymbolsName`, 56 pt touch buttons with press states), B1 (the boost scalar reaches vignette,
+exhaust and HUD; centre-weighted grade), A2 (edge cadence strips, road decals), A3 (blob shadow,
+ground glow, scrape sparks, thruster haze), D2 (callsign + livery accent), D5 (comms stamps), D8
+(continuous haptic engine). Run the five proofs in section 8 first where they gate a choice; keep the
+frozen Neon City frame as the A/B baseline; verify with `Captures/polish/capture.sh` and
+`simshot.sh` at the p6 times; log in `docs/polish-log.md`; push to the phone.

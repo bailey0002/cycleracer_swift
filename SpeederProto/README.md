@@ -428,6 +428,19 @@ Built on the assessment pass (verified with the assessment pass; see the third-p
   Dm F C Am canyon, Em C D Bm grid); the pad plays under the cards, the bass on the run, the
   arp when it gets hot (boost, streak x4, a close pursuer, a grind, the zone). HUD `music` toggle.
 
+## Market assessment (26 Sep 2026)
+
+`docs/assessment-2026-09-26-market.md` compares the game with contemporary futuristic racers and
+short-session mobile games (Asphalt, Redout 2, Wipeout, Fast RMX, Distance, Horizon Chase 2, Thumper,
+Sayonara Wild Hearts, Tron: Ares / Catalyst, Hades, Ridge Racer Type 4, F-Zero 99 and others), lists the
+gaps by layer and ranks the fixes in four workstreams: the viewing space (layered horizon, edge cadence,
+vehicle contact, brand typography, rain, hot Grid trails), the post pass (one boost scalar, depth +
+velocity prologue, outer-ring blur, lens dirt, LUT, MSAA via RealityView), HUD and screens (display face,
+no boxes, controller glyphs, motion language, title screen, briefing and result redesign) and the cast /
+story / sound layer (reactive debrief lines, callsign and livery, rival cards, Character Creator 5 +
+iClone 8 characters, comms stamps, a bar-quantised music state machine, ambience beds, continuous
+haptics, Game Center). The full research reports are in `docs/research-2026-09-26-reports.md`.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

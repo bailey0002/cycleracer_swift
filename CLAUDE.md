@@ -61,6 +61,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   death attribution (`CUT OFF BY KADE` / `BOXED YOURSELF`), `SPEEDER_ARENA_IMMORTAL=1` hook.
   Still owed on the phone: sound / music levels, Backbone browse and buy, balance (step 2 of the
   kickoff), the void round by play. Branch `claude/game-prototype-assessment-chlzto`, PR #2.
+- Market assessment 26 Sep 2026 (`SpeederProto/docs/assessment-2026-09-26-market.md`, reports in
+  `docs/research-2026-09-26-reports.md`): six research streams on look, HUD, story / cast / sound and
+  RealityKit architecture; gap analysis, four ranked workstreams (viewing space, post pass, HUD and
+  screens, cast / story / sound) and a four-pass build order. Character Creator 5 + iClone 8 are
+  available for the cast (FBX -> Blender -> USDZ, one clip per file; blend shapes stop during
+  skeletal clips, so talk is video-in-HUD or blend-shape-only). Nothing from it is built yet.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
