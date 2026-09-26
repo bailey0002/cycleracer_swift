@@ -283,6 +283,26 @@ final class RoadSegment {
                 laneGroup.addChild(dash)
             }
         }
+        // edge cadence (Horizon Chase, Wipeout): studs every 5 m on both edges; at speed their strobe is
+        // the speedometer the player feels, and in the open canyon stretches they carry the pace
+        for x in [-8.35, 8.35] as [Float] {
+            for k in 0..<8 {
+                let stud = ModelEntity(mesh: .generateBox(size: [0.34, 0.07, 0.55]), materials: [materials.neon(Neon.cyan, intensity: 3.0)])
+                stud.position = [x, 0.035, -2.5 - Float(k) * 5]
+                laneGroup.addChild(stud)
+                roadPrimary.append((stud, 3.0))
+            }
+        }
+        // road chevrons: two per segment pointing down the road, in the secondary road colour
+        for zc in [-14, -34] as [Float] {
+            for side in [-1, 1] as [Float] {
+                let arm = ModelEntity(mesh: .generateBox(size: [0.16, 0.012, 2.6]), materials: [materials.neon(Neon.magenta, intensity: 1.6)])
+                arm.position = [side * 1.0, 0.011, zc + 1.0]
+                arm.orientation = simd_quatf(angle: side * 0.62, axis: [0, 1, 0])
+                laneGroup.addChild(arm)
+                roadSecondary.append((arm, 1.6))
+            }
+        }
     }
 
     private func buildBarriers() {

@@ -91,6 +91,40 @@ struct Mission: Identifiable {
         }
     }
 
+    /// The voice in the ear (DATA WING, Ghostrunner): at most three lines per job, eight words or fewer,
+    /// fired by events and never at the objective. Each contact keeps one register: VESS clipped, KADE
+    /// blunt and warm, ORIN sharp.
+    enum CommsTrigger { case launch, sectionAhead, pursuerClose, midway, lastStretch }
+    static func comms(contact: String, kind: Kind, trigger: CommsTrigger, section: String = "") -> String {
+        let sec = section.isEmpty ? "SECTION" : section
+        switch (contact, trigger) {
+        case ("VESS", .launch): return "Packet is live. Do not stop."
+        case ("VESS", .sectionAhead): return "\(sec) ahead. Hold your line."
+        case ("VESS", .pursuerClose): return "It is on you. Burn hull."
+        case ("VESS", .lastStretch): return "Drop in sight. Finish clean."
+        case ("KADE", .launch): return "Ride it like you stole it."
+        case ("KADE", .sectionAhead): return "\(sec). Trust the bike."
+        case ("KADE", .pursuerClose): return "Boost. Now."
+        case ("KADE", .lastStretch): return "Almost home. Keep it tight."
+        case ("ORIN", .launch): return "Clock is running. Impress me."
+        case ("ORIN", .sectionAhead): return "\(sec). Try not to scrape."
+        case ("ORIN", .pursuerClose): return "Behind you. Move."
+        case ("ORIN", .lastStretch): return "Last stretch. Do not bore me."
+        case (_, .midway):
+            switch kind {
+            case .search: return "Beacons count. Take the branch."
+            case .salvage: return "Targets are live. Fire early."
+            case .dive: return "No weapons. Precision only."
+            case .escape: return "Keep the gap. Boost in windows."
+            default: return "Halfway. Hull pays."
+            }
+        case (_, .launch): return "Go."
+        case (_, .sectionAhead): return "\(sec) ahead."
+        case (_, .pursuerClose): return "It is closing."
+        case (_, .lastStretch): return "Finish it."
+        }
+    }
+
     /// Chapter titles: the three districts of the story.
     static func chapterTitle(_ c: Int) -> String {
         switch c { case 1: return "DOWNTOWN"; case 2: return "OUTLANDS"; default: return "THE CORE" }

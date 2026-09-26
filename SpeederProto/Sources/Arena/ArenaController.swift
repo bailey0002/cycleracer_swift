@@ -42,7 +42,8 @@ final class ArenaController {
     private var time: Float = 0
 
     // colour roles: player cyan/white family, opponent orange/amber family, hazards lime
-    static let playerColor = SIMD3<Float>(0.12, 0.72, 1.0)
+    /// The player's trail and derez colour: the livery (set by the game controller before a build).
+    nonisolated(unsafe) static var playerColor = SIMD3<Float>(0.12, 0.72, 1.0)
     static let opponentColor = SIMD3<Float>(1.0, 0.42, 0.06)
     static let hazardColor = SIMD3<Float>(0.55, 1.0, 0.12)
     static let pickupColor = SIMD3<Float>(0.85, 0.7, 1.0)

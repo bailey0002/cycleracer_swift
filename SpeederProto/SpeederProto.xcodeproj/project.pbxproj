@@ -70,6 +70,8 @@
 		A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		A975139BC959AB5AC5F0212B /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
 		ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
+		AE6B361F8A64298F877C17FC /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A1F6907665CF7ECFD7DDF5 /* Player.swift */; };
+		AFB983264A7AB37663B129A4 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A1F6907665CF7ECFD7DDF5 /* Player.swift */; };
 		B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */; };
 		B671EFFBFEDC2FCD6CE6E5B7 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
 		BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
@@ -118,6 +120,7 @@
 		9D1146D252113EB8417E5731 /* SpeederApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederApp.swift; sourceTree = "<group>"; };
 		9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaWorld.swift; sourceTree = "<group>"; };
 		AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
+		B0A1F6907665CF7ECFD7DDF5 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
 		B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameCapture.swift; sourceTree = "<group>"; };
 		B36422554C4AD2CC76BF3BBE /* Avatar.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Avatar.usdz; sourceTree = "<group>"; };
 		B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailRenderer.swift; sourceTree = "<group>"; };
@@ -192,6 +195,7 @@
 				1362513C3D8ABE25AC8315B7 /* Mission.swift */,
 				37A7B277A67AB843AA132612 /* MissionProps.swift */,
 				E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */,
+				B0A1F6907665CF7ECFD7DDF5 /* Player.swift */,
 			);
 			path = Missions;
 			sourceTree = "<group>";
@@ -416,6 +420,7 @@
 				6217B1DC87DB3D1206277B17 /* MissionProps.swift in Sources */,
 				077FD038A6003EABA8B6BC90 /* MissionRunner.swift in Sources */,
 				ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */,
+				AE6B361F8A64298F877C17FC /* Player.swift in Sources */,
 				D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */,
 				4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */,
 				6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */,
@@ -457,6 +462,7 @@
 				3EEA9A12F0D52EA687DE3BB7 /* MissionProps.swift in Sources */,
 				B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */,
 				02D3D56823114D66FCF57FEF /* Platform.swift in Sources */,
+				AFB983264A7AB37663B129A4 /* Player.swift in Sources */,
 				114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */,
 				5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */,
 				27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */,

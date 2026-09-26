@@ -13,7 +13,8 @@ struct PostUniforms {
     var proj           = SIMD4<Float>(0, 0, 1.15, 0.45)
     var misc           = SIMD4<Float>(0.002, 0, 1.15, 1.0)
     var flags          = SIMD4<Float>(1, 1, 1, 1)
-    var section        = SIMD4<Float>(0, 0, 0, 0)   // x: enclosure (tunnel/conduit)  y: curtain  z: kick  w: unused
+    var section        = SIMD4<Float>(0, 0, 0, 0)   // x: enclosure (tunnel/conduit)  y: curtain  z: kick  w: boost level
+    var haze           = SIMD4<Float>(0.5, 0.5, 0, 0.08)  // x,y: thruster (uv)  z: strength  w: radius
 }
 
 /// Full-screen Metal post pass driven from ARView's render callback:
@@ -33,6 +34,11 @@ final class PostProcessor {
     var curtain: Float = 0
     /// Boost kick envelope: extra streaks and aberration for a moment.
     var kick: Float = 0
+    /// Held boost, eased (150 ms in, 400 ms out): one scalar that drives vignette, edge desaturation,
+    /// streaks and the thruster haze together (Asphalt's nitro tunnel, Thumper's centre weighting).
+    var boost: Float = 0
+    /// Thruster position on screen (uv) and haze strength for the heat shimmer.
+    var thrusterUV = SIMD2<Float>(0.5, 0.6)
     var theme: Theme = .neonCity
     private(set) var sourceFormat: String = "-"
     /// Set to request a readback of the next finished frame.
@@ -113,11 +119,12 @@ final class PostProcessor {
         let fogDensity: Float = [0.0020, 0.0060, 0.0140][max(0, min(2, s.fogLevel))] * th.fogDensityScale * (1 + 1.5 * enc)
         u.vanishingTexel = SIMD4<Float>(vanishing.x, vanishing.y, flash, threshold)
         u.bloom = SIMD4<Float>((isHDR ? 0.6 : 0.72) * bloomMul,
-                               s.streaks ? (0.12 + sp * 0.5 + kk * 0.35) * th.streakScale : 0,
-                               0.07 + sp * 0.22 + kk * 0.06,
+                               s.streaks ? (0.12 + sp * 0.5 + kk * 0.35 + boost * 0.18) * th.streakScale : 0,
+                               0.07 + sp * 0.22 + kk * 0.06 + boost * 0.05,
                                fogDensity)
-        u.misc = SIMD4<Float>(0.0007 + sp * 0.0025 + kk * 0.0015, Float(ctx.time), th.saturation, th.gradeStrength)
-        u.section = SIMD4<Float>(enc, curtain, kk, 0)
+        u.misc = SIMD4<Float>(0.0007 + sp * 0.0025 + kk * 0.0015 + boost * 0.0012, Float(ctx.time), th.saturation, th.gradeStrength)
+        u.section = SIMD4<Float>(enc, curtain, kk, boost)
+        u.haze = SIMD4<Float>(thrusterUV.x, thrusterUV.y, (0.35 + sp * 0.4 + boost * 0.9) * (s.particles ? 1 : 0), 0.06 + boost * 0.05)
         u.proj.z = (isHDR ? 1.2 : 1.0) * th.exposure
         u.proj.w = th.vignette
         let fogMode: Float = s.fog ? (depthUsable == false ? 2 : 1) : 0

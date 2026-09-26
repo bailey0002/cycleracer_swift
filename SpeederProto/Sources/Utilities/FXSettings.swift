@@ -87,6 +87,9 @@ struct ActionAck: Equatable {
     var hit = false
     /// Centre-screen stamp (section change, launch, derez); empty when off.
     var stamp = ""
+    /// A contact's line in the ear ("VESS", "Packet is live. Do not stop."); empty when off.
+    var commsSpeaker = ""
+    var commsText = ""
 }
 
 /// SF Symbol names for the connected pad's buttons (`GCControllerElement.sfSymbolsName`), so the

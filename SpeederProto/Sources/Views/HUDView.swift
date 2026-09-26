@@ -31,6 +31,10 @@ struct HUDView: View {
             .padding(.horizontal, HUDStyle.sideInset)
             .padding(.top, HUDStyle.topInset)
             .padding(.bottom, HUDStyle.bottomInset)
+            // boost state: the readouts breathe outward and brighten with the frame
+            .scaleEffect(controller.ack.boost && !cardUp ? 1.025 : 1)
+            .brightness(controller.ack.boost && !cardUp ? 0.1 : 0)
+            .animation(.easeOut(duration: controller.ack.boost ? 0.15 : 0.4), value: controller.ack.boost)
             missionOverlay
             stampOverlay
         }
@@ -87,6 +91,7 @@ struct HUDView: View {
                 Text(s.matchTarget == Int.max ? "FREE PLAY" : "ROUND \(s.round)  //  FIRST TO \(s.matchTarget)")
                     .font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.2).foregroundStyle(.white.opacity(0.55))
                 HStack(spacing: 6) {
+                    Text(controller.player.callsign).font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.color(controller.player.liveryColor)).padding(.trailing, 2)
                     Text("\(s.wins)").font(HUDStyle.display(HUDStyle.timerSize)).monospacedDigit().foregroundStyle(accent)
                     Text("-").font(HUDStyle.display(HUDStyle.timerSize - 6)).foregroundStyle(.white.opacity(0.5))
                     Text("\(s.losses)").font(HUDStyle.display(HUDStyle.timerSize)).monospacedDigit().foregroundStyle(HUDStyle.rival)
@@ -107,6 +112,7 @@ struct HUDView: View {
                 bar("HULL", m.energy, m.energy > 0.5 ? accent : (m.energy > 0.25 ? HUDStyle.amber : .red), width: 180, low: m.energy <= 0.25)
                 objectiveLine(m)
                 if m.helmetArmed { chip("HELMET", HUDStyle.amber) }
+                commsLine
             }
         } else if isArena && !cardUp, let z = controller.stats.zone {
             VStack(spacing: 2) {
@@ -118,6 +124,23 @@ struct HUDView: View {
                 .font(HUDStyle.display(HUDStyle.headingSize - 2)).monospacedDigit().foregroundStyle(accent)
         } else {
             Color.clear.frame(width: 1, height: 1)
+        }
+    }
+
+    /// The contact's line in the ear: speaker in their colour, the words in white, a hairline under it.
+    @ViewBuilder private var commsLine: some View {
+        let a = controller.ack
+        if !a.commsText.isEmpty {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 10, weight: .semibold))
+                Text(a.commsSpeaker).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5)
+                Text(a.commsText).font(HUDStyle.label(HUDStyle.labelSize + 2)).tracking(0.6).foregroundStyle(.white)
+            }
+            .foregroundStyle(HUDStyle.color(Rival.named(a.commsSpeaker)?.color ?? Rival.vessColor))
+            .padding(.top, 2)
+            .id(a.commsText)
+            .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .opacity))
+            .animation(.easeOut(duration: 0.2), value: a.commsText)
         }
     }
 
@@ -362,7 +385,11 @@ struct HUDView: View {
         switch m.phase {
         case .briefing:
             card {
-                Text("CHAPTER \(m.chapter)  //  \(m.chapterTitle)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                HStack(alignment: .firstTextBaseline) {
+                    Text("CHAPTER \(m.chapter)  //  \(m.chapterTitle)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                    Spacer()
+                    identityRow(m)
+                }
                 inbox(m)
                 HStack(alignment: .top, spacing: 12) {
                     portrait(m.contact, tint: HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor))
@@ -393,7 +420,10 @@ struct HUDView: View {
         case .success:
             card {
                 Text(m.successTitle).font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(accent)
-                Text("\(m.code)  //  \(m.title)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.7))
+                HStack(spacing: 8) {
+                    Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
+                    Text("\(m.code)  //  \(m.title)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.7))
+                }
                 HStack(alignment: .firstTextBaseline, spacing: 14) {
                     stat("PAYOUT", "+\(m.payout)", accent)
                     stat("CREDITS", "\(m.credits)", .white)
@@ -420,6 +450,38 @@ struct HUDView: View {
                 Text(m.failReason).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.8))
                 prompt("RETRY NOW")
             }
+        }
+    }
+
+    /// Callsign, title and livery swatch. Tap the callsign to type a new one; tap the swatch to cycle the livery.
+    @State private var editingCallsign = false
+    @State private var callsignDraft = ""
+    @FocusState private var callsignFocus: Bool
+    private func identityRow(_ m: MissionState) -> some View {
+        HStack(spacing: 8) {
+            if editingCallsign {
+                TextField("CALLSIGN", text: $callsignDraft)
+                    .textFieldStyle(.plain)
+                    .font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5)
+                    .foregroundStyle(HUDStyle.color(m.liveryColor))
+                    .frame(width: 96)
+                    .focused($callsignFocus)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    #endif
+                    .onSubmit { controller.setCallsign(callsignDraft); editingCallsign = false }
+                    .onChange(of: callsignFocus) { _, f in if !f && editingCallsign { controller.setCallsign(callsignDraft); editingCallsign = false } }
+            } else {
+                Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
+                    .contentShape(Rectangle())
+                    .onTapGesture { callsignDraft = m.callsign; editingCallsign = true; callsignFocus = true }
+            }
+            Text(m.playerTitle).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(.white.opacity(0.5))
+            Rectangle().fill(HUDStyle.color(m.liveryColor)).frame(width: 12, height: 12)
+                .overlay(Rectangle().stroke(.white.opacity(0.5), lineWidth: 1))
+                .contentShape(Rectangle().inset(by: -8))
+                .onTapGesture { controller.cycleLivery() }
         }
     }
 
@@ -499,6 +561,7 @@ struct HUDView: View {
                 portrait(r.rival, tint: HUDStyle.color(Rival.named(r.rival)?.color ?? Rival.vessColor))
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
+                        Text(controller.player.callsign).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(controller.player.liveryColor))
                         Text("\(r.wins)").font(HUDStyle.display(HUDStyle.titleSize + 4)).foregroundStyle(accent)
                         Text("-").font(HUDStyle.display(HUDStyle.titleSize)).foregroundStyle(.white.opacity(0.5))
                         Text("\(r.losses)").font(HUDStyle.display(HUDStyle.titleSize + 4)).foregroundStyle(HUDStyle.rival)

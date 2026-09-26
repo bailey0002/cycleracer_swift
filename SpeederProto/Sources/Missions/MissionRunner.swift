@@ -1,4 +1,5 @@
 import Foundation
+import simd
 
 /// One line of the inbox: a job the player can pick (or has cleared).
 struct JobEntry: Equatable {
@@ -103,6 +104,13 @@ struct MissionState: Equatable {
     var upgrades = Upgrades()
     var shopSelection = 0
     var shopNote = ""
+    // identity
+    var callsign = Player.defaultCallsign
+    var playerTitle = "ROOKIE"
+    var liveryName = "CYAN"
+    var liveryColor = SIMD3<Float>(0.12, 0.72, 1.0)
+    /// The job's total distance (for the comms triggers).
+    var distanceTotal: Float = 0
 }
 
 /// The job loop: briefing -> running (timer, hull energy, distance) -> success / failed -> next.
@@ -119,6 +127,7 @@ final class MissionRunner {
     private(set) var phase: MissionState.Phase = .briefing
     private(set) var credits: Int
     private(set) var upgrades: Upgrades
+    private(set) var player: Player
     private(set) var shopSelection = 0
     private var shopNote = ""
     /// Set when a retry should start the run as soon as the world is rebuilt (one-tap retry).
@@ -168,6 +177,7 @@ final class MissionRunner {
         }
         credits = defaults.integer(forKey: "credits")
         upgrades = Upgrades.load(defaults)
+        player = Player.load(defaults)
         index = abs(defaults.integer(forKey: "missionIndex")) % max(1, missions.count)
         if let m = env["SPEEDER_MISSION"], let i = Int(m) {
             index = abs(i) % max(1, missions.count)
@@ -266,6 +276,19 @@ final class MissionRunner {
             return false
         }
     }
+
+    // MARK: - Identity
+
+    func setCallsign(_ raw: String) {
+        player.callsign = Player.sanitise(raw)
+        player.save(defaults)
+    }
+    func cycleLivery() {
+        player.livery = (player.livery + 1) % Player.liveries.count
+        player.save(defaults)
+    }
+    var golds: Int { missions.filter { bestRank(for: $0) == .gold }.count }
+    var playerTitle: String { Player.title(golds: golds, cleared: clearedCount) }
 
     /// Flags earned per job, remembered across launches.
     func flags(for m: Mission) -> Mission.Flags { Mission.Flags(rawValue: defaults.integer(forKey: "flags.\(m.id)")) }
@@ -425,6 +448,8 @@ final class MissionRunner {
                             score: score, streak: streak, rank: rank, bestRank: bestRank(for: m), silverScore: m.silverScore, goldScore: m.goldScore,
                             respawnsLeft: respawnsLeft, helmetArmed: helmetArmed, flags: flags(for: m), newFlags: newFlags,
                             cleared: isCleared(previewIndex), browsing: previewIndex != index, jobs: jobs,
-                            upgrades: upgrades, shopSelection: shopSelection, shopNote: shopNote)
+                            upgrades: upgrades, shopSelection: shopSelection, shopNote: shopNote,
+                            callsign: player.callsign, playerTitle: playerTitle, liveryName: player.liveryName, liveryColor: player.liveryColor,
+                            distanceTotal: m.distance)
     }
 }

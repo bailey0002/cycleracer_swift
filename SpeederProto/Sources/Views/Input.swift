@@ -2,6 +2,7 @@ import Foundation
 import RealityKit
 import GameController
 import CoreHaptics
+import QuartzCore
 #if os(macOS)
 import AppKit
 #else
@@ -115,22 +116,86 @@ final class GamepadInput {
         input.menuWasDown = menu
     }
 
-    /// Short rumble on the controller (and the phone when touch-only).
-    func rumble(intensity: Float, sharpness: Float = 0.5) {
+    // MARK: - Haptics
+
+    /// The engine that should shake: a pad with its own actuators, else the phone itself (touch play,
+    /// and pads without rumble such as the Backbone, which lets the phone do the haptics).
+    private var deviceEngine: CHHapticEngine?
+    private var deviceEngineFailed = false
+    private func activeEngine() -> CHHapticEngine? {
+        if let controller = GCController.current ?? GCController.controllers().first, controller.haptics != nil {
+            if hapticController !== controller || hapticEngine == nil {
+                hapticController = controller
+                hapticEngine = controller.haptics?.createEngine(withLocality: .default)
+                try? hapticEngine?.start()
+            }
+            if let e = hapticEngine { return e }
+        }
         #if os(iOS)
-        if GCController.controllers().isEmpty {
-            let gen = UIImpactFeedbackGenerator(style: intensity > 0.6 ? .heavy : .medium)
-            gen.impactOccurred(intensity: CGFloat(intensity))
+        if deviceEngine == nil && !deviceEngineFailed && CHHapticEngine.capabilitiesForHardware().supportsHaptics {
+            do {
+                let e = try CHHapticEngine()
+                e.resetHandler = { [weak e] in try? e?.start() }
+                try e.start()
+                deviceEngine = e
+            } catch { deviceEngineFailed = true }
+        }
+        return deviceEngine
+        #else
+        return nil
+        #endif
+    }
+
+    private var humPlayer: CHHapticAdvancedPatternPlayer?
+    private var humEngine: CHHapticEngine?
+    private var humStarted: Double = 0
+    private var humLast: (Float, Float) = (-1, -1)
+    private var humFrame = 0
+
+    /// Continuous engine hum, per frame: intensity from speed, sharpness from boost. 0 stops it.
+    /// One long continuous event, restarted before it runs out, steered with dynamic parameters.
+    func engineHum(intensity: Float, sharpness: Float) {
+        humFrame += 1
+        let now = CACurrentMediaTime()
+        if intensity <= 0.01 {
+            if humPlayer != nil { try? humPlayer?.stop(atTime: CHHapticTimeImmediate); humPlayer = nil; humLast = (-1, -1) }
             return
         }
-        #endif
-        guard let controller = GCController.current ?? GCController.controllers().first else { return }
-        if hapticController !== controller || hapticEngine == nil {
-            hapticController = controller
-            hapticEngine = controller.haptics?.createEngine(withLocality: .default)
-            try? hapticEngine?.start()
+        guard let engine = activeEngine() else { return }
+        if humPlayer == nil || humEngine !== engine || now - humStarted > 18 {
+            do {
+                let event = CHHapticEvent(eventType: .hapticContinuous, parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
+                ], relativeTime: 0, duration: 20)
+                let pattern = try CHHapticPattern(events: [event], parameters: [])
+                let player = try engine.makeAdvancedPlayer(with: pattern)
+                player.loopEnabled = false
+                try? humPlayer?.stop(atTime: CHHapticTimeImmediate)
+                try player.start(atTime: CHHapticTimeImmediate)
+                humPlayer = player; humEngine = engine; humStarted = now; humLast = (-1, -1)
+            } catch { humPlayer = nil; return }
         }
-        guard let engine = hapticEngine else { return }
+        // steer it a few times a second, or on a real change
+        let i = max(0, min(1, intensity)), sh = max(0, min(1, sharpness))
+        if humFrame % 4 == 0 || abs(i - humLast.0) > 0.08 || abs(sh - humLast.1) > 0.08 {
+            humLast = (i, sh)
+            try? humPlayer?.sendParameters([
+                CHHapticDynamicParameter(parameterID: .hapticIntensityControl, value: i, relativeTime: 0),
+                CHHapticDynamicParameter(parameterID: .hapticSharpnessControl, value: sh, relativeTime: 0)
+            ], atTime: CHHapticTimeImmediate)
+        }
+    }
+
+    /// Short rumble: the pad's actuators, else the phone's.
+    func rumble(intensity: Float, sharpness: Float = 0.5) {
+        guard let engine = activeEngine() else {
+            #if os(iOS)
+            let gen = UIImpactFeedbackGenerator(style: intensity > 0.6 ? .heavy : .medium)
+            gen.impactOccurred(intensity: CGFloat(intensity))
+            #endif
+            return
+        }
         do {
             let event = CHHapticEvent(eventType: .hapticTransient, parameters: [
                 CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity),
