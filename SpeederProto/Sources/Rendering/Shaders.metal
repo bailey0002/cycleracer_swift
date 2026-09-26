@@ -44,15 +44,23 @@ void trailSurface(realitykit::surface_parameters params)
 
     float alpha = tail;
     float gain = 1.0;
+    float t = params.uniforms().time();
     if (part < 0.5) {
-        gain = 0.95 + white * 1.8 + pulse * 3.0 + cp.w * 0.4;
+        // the wall is hot, not glass (Tron: Ares): a bright rim along the top edge, a faint heat
+        // flicker running along it, and a translucent body so the arena reads through it
+        float rim = smoothstep(0.80, 1.0, v) + smoothstep(0.2, 0.0, v) * 0.5;
+        float flicker = 0.94 + 0.06 * sin(s * 1.3 - t * 14.0) * sin(v * 9.0 + t * 5.0);
+        gain = (0.85 + white * 1.8 + pulse * 3.0 + cp.w * 0.4 + rim * 1.4) * flicker;
+        hot = mix(hot, float3(1.0), rim * 0.35);
         // thin darker seam along the middle of the wall so it reads as a panel, not a flat quad
         float seam = 0.92 + 0.08 * smoothstep(0.0, 0.08, abs(v - 0.5));
         gain *= seam;
+        alpha *= 0.82 + rim * 0.18;
     } else if (part < 1.5) {
         float edge = max(-v, v - 1.0);                        // 0 inside the wall, up to 0.35 outside
         float fall = 1.0 - smoothstep(0.0, 0.35, edge);
-        alpha *= (0.30 + pulse * 0.5) * fall * fall;
+        float shimmer = 0.85 + 0.15 * sin(s * 0.7 + t * 9.0 + v * 6.0);
+        alpha *= (0.30 + pulse * 0.5) * fall * fall * shimmer;
         gain = 1.0 + white * 0.6;
     } else {
         float fall = pow(saturate(1.0 - abs(v)), 1.6);
@@ -63,4 +71,40 @@ void trailSurface(realitykit::surface_parameters params)
     params.surface().set_base_color(out);
     params.surface().set_emissive_color(out);
     params.surface().set_opacity(half(alpha));
+}
+
+// Derez dissolve for a light cycle: the mesh burns away along a 3D noise threshold that the
+// custom parameter drives (x: progress 0...1), with a hot rim in the cycle's colour (y, z, w).
+static inline float hash3(float3 p) {
+    p = fract(p * 0.3183099 + float3(0.1, 0.2, 0.3));
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+static inline float noise3(float3 x) {
+    float3 i = floor(x), f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(hash3(i), hash3(i + float3(1, 0, 0)), f.x), mix(hash3(i + float3(0, 1, 0)), hash3(i + float3(1, 1, 0)), f.x), f.y),
+               mix(mix(hash3(i + float3(0, 0, 1)), hash3(i + float3(1, 0, 1)), f.x), mix(hash3(i + float3(0, 1, 1)), hash3(i + float3(1, 1, 1)), f.x), f.y), f.z);
+}
+
+[[visible]]
+void dissolveSurface(realitykit::surface_parameters params)
+{
+    constexpr sampler smp(filter::linear, address::repeat);
+    auto tex = params.textures();
+    float2 uv = params.geometry().uv0();
+    uv.y = 1.0 - uv.y;
+    half3 tint = half3(params.material_constants().base_color_tint());
+    half3 base = tex.base_color().sample(smp, uv).rgb * tint;
+    float4 cp = params.uniforms().custom_parameter();
+    float3 p = params.geometry().model_position();
+    float n = noise3(p * 9.0) * 0.7 + noise3(p * 31.0) * 0.3;
+    float a = n - cp.x * 1.15;
+    float edge = 1.0 - smoothstep(0.0, 0.14, a);
+    half3 glow = half3(cp.y, cp.z, cp.w) * half(edge * 5.0);
+    params.surface().set_base_color(mix(base, half3(1.0), half(edge * 0.6)));
+    params.surface().set_emissive_color(glow);
+    params.surface().set_roughness(half(0.45));
+    params.surface().set_metallic(half(0.3));
+    params.surface().set_opacity(a < 0.0 ? half(0.0) : half(1.0));
 }

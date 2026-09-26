@@ -30,6 +30,9 @@ struct FXSettings: Equatable {
     var bloom       = true
     var streaks     = true
     var colorGrade  = true
+    var motionBlur  = true      // depth-aware radial blur in the outer ring
+    var lensFX      = true      // ghost flares + lens dirt from the bright pass
+    var weather     = true      // rain and lightning where the world has them
     var cruiseSpeed: Float = 45  // m/s
     // The Grid (arena mode)
     var steeringMode = 0        // 0 analog velocity steering, 1 ninety-degree snap turns
@@ -39,6 +42,8 @@ struct FXSettings: Equatable {
     var grinding     = true     // proximity speed surge + energy
     // missions
     var missions     = true     // corridor worlds run the job loop; off = free play
+    var sound        = true     // synthesised cues and loops (SoundEngine)
+    var music        = true     // generative music layers per world
 }
 
 struct FrameStats {
@@ -69,6 +74,9 @@ struct FrameStats {
     var rival = "RIVAL"
     var matchTarget = 3
     var zone: String? = nil
+    // corridor: the next section change ahead (label and metres to its mouth)
+    var upcoming: String? = nil
+    var upcomingDistance: Float = 0
 }
 
 /// Same-frame acknowledgement of player actions for the HUD. Published only when it changes.
@@ -82,4 +90,19 @@ struct ActionAck: Equatable {
     var hit = false
     /// Centre-screen stamp (section change, launch, derez); empty when off.
     var stamp = ""
+    /// A contact's line in the ear ("VESS", "Packet is live. Do not stop."); empty when off.
+    var commsSpeaker = ""
+    var commsText = ""
+}
+
+/// SF Symbol names for the connected pad's buttons (`GCControllerElement.sfSymbolsName`), so the
+/// HUD shows the right art for an Xbox-layout Backbone, a PlayStation pad or nothing at all.
+struct ControllerGlyphs: Equatable {
+    var connected = false
+    var a = "a.circle"
+    var b = "b.circle"
+    var y = "y.circle"
+    var boost = "r2.rectangle.roundedtop"
+    var stick = "l.joystick"
+    var menu = "line.3.horizontal.circle"
 }

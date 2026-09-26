@@ -510,6 +510,45 @@ enum ProceduralTextures {
 
     // MARK: - Environment (equirectangular)
 
+    /// Hash-grid star field, O(1) per pixel: one candidate star per cell, kept with probability `density`.
+    static func stars(u: Float, v: Float, elev: Float, density: Float, seed: UInt32) -> Float {
+        guard elev > 0.03 else { return 0 }
+        let cells: Float = 160
+        let gx = u * cells, gy = v * cells * 0.5
+        let cx = floor(gx), cy = floor(gy)
+        var h = UInt32(truncatingIfNeeded: Int(cx)) &* 374761393 &+ UInt32(truncatingIfNeeded: Int(cy)) &* 668265263 &+ seed
+        h = (h ^ (h >> 13)) &* 1274126177; h ^= h >> 16
+        if Float(h & 0xffff) / 65535 > density { return 0 }
+        let ox = Float((h >> 16) & 0xff) / 255, oy = Float((h >> 8) & 0xff) / 255
+        let px = (gx - cx) - ox, py = (gy - cy) - oy
+        let d = sqrt(px * px + py * py)
+        let bright = 0.35 + 0.65 * Float((h >> 4) & 0xff) / 255
+        let fade = clamp01((elev - 0.03) / 0.18)
+        return max(0, 1 - d / 0.32) * bright * fade
+    }
+
+    /// Lens dirt mask: a few soft smudges and specks that light up with the bloom (Asphalt).
+    static func lensDirt(size: Int = 512) -> CGImage {
+        makeImage(width: size, height: size) { x, y in
+            let u = Float(x) / Float(size), v = Float(y) / Float(size)
+            let n = fbm(u * 5, v * 5, octaves: 4, seed: 77, wrap: 5)
+            var m = clamp01((n - 0.60) / 0.16) * 0.55
+            // specks
+            let cells: Float = 24
+            let cx = floor(u * cells), cy = floor(v * cells)
+            var h = UInt32(truncatingIfNeeded: Int(cx)) &* 2654435761 &+ UInt32(truncatingIfNeeded: Int(cy)) &* 40503 &+ 99
+            h = (h ^ (h >> 13)) &* 1274126177; h ^= h >> 16
+            if Float(h & 0xffff) / 65535 < 0.22 {
+                let ox = Float((h >> 16) & 0xff) / 255, oy = Float((h >> 8) & 0xff) / 255
+                let d = sqrt(pow(u * cells - cx - ox, 2) + pow(v * cells - cy - oy, 2))
+                let r = 0.05 + 0.18 * Float((h >> 4) & 0xff) / 255
+                m += max(0, 1 - d / r) * 0.9
+            }
+            m = clamp01(m)
+            return SIMD4<Float>(m, m, m, 1)
+        }
+    }
+
     /// Night sky with a coloured haze band at the horizon and neon "city light" spikes.
     /// Used both as the skybox and as the image-based light that the wet road reflects.
     static func environment(width: Int = 1024, height: Int = 512) -> CGImage {
@@ -535,6 +574,17 @@ enum ProceduralTextures {
                 c += SIMD3<Float>(0.02, 0.012, 0.03) * cl * t
             } else {
                 c = SIMD3<Float>(0.008, 0.008, 0.014)
+            }
+            // stars and a moon (the far layer the corridor never had); the moon also feeds the IBL
+            c += SIMD3<Float>(0.85, 0.9, 1.0) * stars(u: u, v: v, elev: elev, density: 0.13, seed: 7) * 0.9
+            do {
+                var du = abs(u - 0.66); du = min(du, 1 - du)
+                let de = elev - 0.40
+                let d = sqrt(du * du * 4 + de * de)
+                let disc = 1 - clamp01((d - 0.028) / 0.006)
+                let crater = 0.85 + 0.15 * fbm(u * 60, v * 60, octaves: 3, seed: 41, wrap: 60)
+                let halo = exp(-pow(d / 0.14, 2)) * 0.22
+                c += SIMD3<Float>(0.80, 0.86, 1.0) * (disc * 1.1 * crater + halo)
             }
             // haze band hue cycles around azimuth
             let hue = 0.5 + 0.5 * sin(u * Float.pi * 2 * 3 + 0.7)
@@ -625,6 +675,7 @@ enum ProceduralTextures {
             } else {
                 c = SIMD3<Float>(0.004, 0.008, 0.014)
             }
+            c += SIMD3<Float>(0.5, 0.8, 1.0) * stars(u: u, v: v, elev: elev, density: 0.07, seed: 19) * 0.5
             let band = exp(-pow((elev - 0.01) / 0.03, 2)) * 0.7 + exp(-pow((elev - 0.02) / 0.12, 2)) * 0.18
             let pulse = 0.85 + 0.15 * sin(u * Float.pi * 2 * 6)
             c += SIMD3<Float>(0.15, 0.75, 1.0) * band * pulse

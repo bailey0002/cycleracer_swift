@@ -1,5 +1,6 @@
 import Foundation
 import RealityKit
+import Metal
 import simd
 
 /// Gameplay root for the vehicle. The imported model sits in a holder that fixes
@@ -12,6 +13,8 @@ final class SpeederController {
     private let holder = Entity()
     private var glows: [ModelEntity] = []
     private var underGlow: ModelEntity?
+    private var shadow: ModelEntity?
+    private var rearZ: Float = 1
     private var trail: Entity?
 
     private(set) var x: Float = 0
@@ -54,6 +57,7 @@ final class SpeederController {
         root.position = [0, restHeight, 0]
 
         let rearZ = bounds.extents.x * 0.5 * scale     // asset length axis becomes Z
+        self.rearZ = rearZ
         // engine halos: bright cyan core + wide magenta halo
         for (offset, color, size, alpha) in [
             (SIMD3<Float>( 0.02, 0.18, rearZ * 0.96), Neon.cyan, Float(0.95), Float(0.95)),     // main nozzle core
@@ -71,6 +75,11 @@ final class SpeederController {
         pool.position = [0, -restHeight + 0.04, 0.2]
         root.addChild(pool)
         underGlow = pool
+        // contact shadow: a soft dark blob on the road that shrinks and fades with altitude
+        let blob = ModelEntity(mesh: .generatePlane(width: 2.6, depth: 4.2), materials: [materials.glow(SIMD3<Float>(0, 0, 0), opacity: 0.6)])
+        blob.position = [0, -restHeight + 0.03, 0.1]
+        root.addChild(blob)
+        shadow = blob
 
         engineLight.light.color = .rgb(Neon.cyan)
         engineLight.light.intensity = 18000
@@ -126,7 +135,25 @@ final class SpeederController {
     private(set) var smoothBank: Float = 0
     private var lastTrailRate = -1
 
-    func update(dt: Float, time: Float, steerInput: Float, climbInput: Float, speedNorm: Float, roadShift: Float) {
+    /// World position of the main nozzle (for the post pass's heat haze).
+    var thrusterWorldPosition: SIMD3<Float> { root.convert(position: [0.02, 0.15, rearZ * 1.0], to: nil) }
+
+    /// Shadow and ground glow on the road plane under the vehicle: the glow grows with throttle, the
+    /// shadow shrinks and fades as the vehicle climbs (contact reads on a phone screen).
+    private func placeGround(height: Float, inverse: simd_quatf, throttle: Float, hidden: Bool) {
+        let above = max(0, height - restHeight)
+        let lift = 1 / (1 + above * 0.45)
+        underGlow?.orientation = inverse
+        underGlow?.position = inverse.act([0, -height + 0.04, 0.2])
+        underGlow?.scale = SIMD3<Float>(repeating: 0.85 + throttle * 0.55) * (0.7 + 0.3 * lift)
+        underGlow?.isEnabled = !hidden
+        shadow?.orientation = inverse
+        shadow?.position = inverse.act([0, -height + 0.03, 0.1])
+        shadow?.scale = SIMD3<Float>(repeating: lift)
+        shadow?.isEnabled = !hidden
+    }
+
+    func update(dt: Float, time: Float, steerInput: Float, climbInput: Float, speedNorm: Float, roadShift: Float, boost: Float = 0) {
         steer = damp(steer, steerInput, 8.0, dt)
         // velocity-based steering; curves tug the vehicle toward the outside
         let steerSpeed: Float = 7.5 + 7.0 * speedNorm
@@ -193,18 +220,17 @@ final class SpeederController {
                          * simd_quatf(angle: pitch, axis: [1, 0, 0])
                          * simd_quatf(angle: bank, axis: [0, 0, 1])
 
-        underGlow?.orientation = root.orientation.inverse
-        underGlow?.position = root.orientation.inverse.act([0, -(altitude + hover + vibration) + 0.04, 0.2])
-        underGlow?.isEnabled = !inTube
-        let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5
+        placeGround(height: altitude + hover + vibration, inverse: root.orientation.inverse, throttle: speedNorm + boost * 0.6, hidden: inTube)
+        let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5 + boost * 0.55
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
-        engineLight.light.intensity = 14000 + speedNorm * 18000
-        // the exhaust idles when parked instead of blasting at full rate
-        let trailRate = Int((30 + speedNorm * 160) / 10)
+        engineLight.light.intensity = 14000 + speedNorm * 18000 + boost * 14000
+        // the exhaust idles when parked instead of blasting at full rate; boost stretches it
+        let trailRate = Int((30 + speedNorm * 160 + boost * 80) / 10)
         if trailRate != lastTrailRate, let t = trail, var e = t.components[ParticleEmitterComponent.self] {
             lastTrailRate = trailRate
             e.mainEmitter.birthRate = Float(trailRate * 10)
-            e.speed = 6 + speedNorm * 18
+            e.speed = 6 + speedNorm * 18 + boost * 16
+            e.mainEmitter.lifeSpan = Double(0.22 + boost * 0.16)
             t.components.set(e)
         }
     }
@@ -221,9 +247,7 @@ final class SpeederController {
         root.orientation = simd_quatf(angle: heading, axis: [0, 1, 0])
                          * simd_quatf(angle: pitch, axis: [1, 0, 0])
                          * simd_quatf(angle: lean, axis: [0, 0, 1])
-        underGlow?.orientation = root.orientation.inverse
-        underGlow?.position = root.orientation.inverse.act([0, -(restHeight + hover + vibration + position.y) + 0.04, 0.2])
-        underGlow?.isEnabled = !airborne
+        placeGround(height: restHeight + hover + vibration + position.y, inverse: root.orientation.inverse, throttle: speedNorm, hidden: airborne)
         let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
         engineLight.light.intensity = 14000 + speedNorm * 18000
@@ -243,5 +267,64 @@ final class SpeederController {
         }
     }
 
-    func setVisible(_ on: Bool) { holder.isEnabled = on; for g in glows { g.isEnabled = on }; underGlow?.isEnabled = on; trail?.isEnabled = on }
+    func setVisible(_ on: Bool) {
+        if on { endDissolve() }
+        holder.isEnabled = on; for g in glows { g.isEnabled = on }; underGlow?.isEnabled = on; shadow?.isEnabled = on; trail?.isEnabled = on
+    }
+
+    // MARK: - Derez dissolve
+
+    private var dissolveOriginals: [(ModelEntity, [any Material])] = []
+    private var dissolveMaterials: [(ModelEntity, [CustomMaterial?])] = []
+
+    /// Swap the model's materials for the dissolve shader (keeps each material's base colour texture
+    /// and tint). `color` is the hot rim. No-op when the Metal library is missing.
+    func beginDissolve(color: SIMD3<Float>, library: MTLLibrary?) {
+        guard dissolveOriginals.isEmpty, let library else { return }
+        let shader = CustomMaterial.SurfaceShader(named: "dissolveSurface", in: library)
+        var models: [ModelEntity] = []
+        func walk(_ e: Entity) { if let m = e as? ModelEntity { models.append(m) }; for c in e.children { walk(c) } }
+        walk(holder)
+        for m in models {
+            guard let model = m.model else { continue }
+            dissolveOriginals.append((m, model.materials))
+            var custom: [CustomMaterial?] = []
+            var replaced: [any Material] = []
+            for mat in model.materials {
+                if let pbm = mat as? PhysicallyBasedMaterial, var cm = try? CustomMaterial(from: pbm, surfaceShader: shader) {
+                    cm.custom.value = SIMD4<Float>(0, color.x, color.y, color.z)
+                    cm.opacityThreshold = 0.5
+                    custom.append(cm); replaced.append(cm)
+                } else {
+                    custom.append(nil); replaced.append(mat)
+                }
+            }
+            var mm = model; mm.materials = replaced; m.model = mm
+            dissolveMaterials.append((m, custom))
+        }
+        for g in glows { g.isEnabled = false }
+        trail?.isEnabled = false
+    }
+
+    /// Advance the burn: 0 whole, 1 gone. Materials are values, so they are re-assigned each call.
+    func updateDissolve(progress: Float) {
+        guard !dissolveMaterials.isEmpty else { return }
+        for (m, mats) in dissolveMaterials {
+            guard var model = m.model else { continue }
+            var out = model.materials
+            for (i, cm) in mats.enumerated() {
+                guard var c = cm else { continue }
+                var v = c.custom.value; v.x = progress; c.custom.value = v
+                out[i] = c
+            }
+            model.materials = out
+            m.model = model
+        }
+    }
+
+    func endDissolve() {
+        guard !dissolveOriginals.isEmpty else { return }
+        for (m, mats) in dissolveOriginals { if var model = m.model { model.materials = mats; m.model = model } }
+        dissolveOriginals.removeAll(); dissolveMaterials.removeAll()
+    }
 }

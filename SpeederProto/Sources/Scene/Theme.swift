@@ -66,6 +66,14 @@ enum Theme: Int, CaseIterable {
         case .theGrid: return (SIMD4(0.7, 0.95, 1.0, 0.5), SIMD4(0.3, 0.6, 1.0, 0.0))
         }
     }
+    /// The HUD accent is the world's road colour (Horizon Chase: HUD colours must not collide with track colours).
+    var hudAccent: SIMD3<Float> {
+        switch self { case .neonCity: return SIMD3(0.35, 0.9, 1.0); case .sunsetCanyon: return SIMD3(1.0, 0.76, 0.36); case .theGrid: return SIMD3(0.78, 0.97, 1.0) }
+    }
+    /// Weather: rain streaks and lightning (Neon City only).
+    var rain: Bool { self == .neonCity }
+    /// Ghost flares and lens dirt strength (the canyon sun ghosts most).
+    var lensScale: Float { switch self { case .neonCity: return 0.55; case .sunsetCanyon: return 0.8; case .theGrid: return 0.35 } }
     var speedParticleSize: Float { self == .sunsetCanyon ? 0.06 : 0.035 }
 
     /// Defaults that make sense for the environment (applied when switching).

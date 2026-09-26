@@ -47,6 +47,8 @@ final class RoadSegment {
     let tubeGroup = Entity()
     let obstacleGroup = Entity()
     let portalGroup = Entity()        // section mouths (entry / exit frames per style)
+    let overpassGroup = Entity()      // landmark dressing: a crossing deck over the road
+    let gatewayGroup = Entity()       // landmark dressing: twin pylons with a lit crossbar
     private var entryPortals: [SegmentStyle: Entity] = [:]
     private var exitPortals: [SegmentStyle: Entity] = [:]
     private var strobes: [Entity] = []
@@ -97,7 +99,7 @@ final class RoadSegment {
         buildingGroup.addChild(secondRowGroup)
         buildingGroup.addChild(altRowGroup)
         [surface, wideSurface, laneGroup, roadsideGroup, buildingGroup, signGroup, reflectionGroup,
-         tunnelGroup, elevatedGroup, forkGroup, tubeGroup, obstacleGroup, portalGroup].forEach { root.addChild($0) }
+         tunnelGroup, elevatedGroup, forkGroup, tubeGroup, obstacleGroup, portalGroup, overpassGroup, gatewayGroup].forEach { root.addChild($0) }
         var rng = SeededRNG(seed: UInt64(1000 + index * 7919))
         buildLanes()
         buildBarriers()
@@ -109,6 +111,7 @@ final class RoadSegment {
         buildFork()
         buildTube()
         buildPortals()
+        buildLandmarks(&rng)
         buildObstaclePool()
     }
 
@@ -148,6 +151,8 @@ final class RoadSegment {
         tunnelGroup.isEnabled = style == .tunnel
         elevatedGroup.isEnabled = style == .elevated
         forkGroup.isEnabled = style == .fork
+        overpassGroup.isEnabled = city && block.dressing == .overpass
+        gatewayGroup.isEnabled = city && block.dressing == .gateway
         obstacleGroup.isEnabled = s.obstacles
         for m in hazardMarks { m.isEnabled = s.hazardX }
         storefrontGroup.isEnabled = s.storefronts
@@ -276,6 +281,26 @@ final class RoadSegment {
                 let dash = ModelEntity(mesh: .generateBox(size: [0.1, 0.015, 2.0]), materials: [laneMat])
                 dash.position = [x, 0.012, -8 - Float(k) * 8]
                 laneGroup.addChild(dash)
+            }
+        }
+        // edge cadence (Horizon Chase, Wipeout): studs every 5 m on both edges; at speed their strobe is
+        // the speedometer the player feels, and in the open canyon stretches they carry the pace
+        for x in [-8.35, 8.35] as [Float] {
+            for k in 0..<8 {
+                let stud = ModelEntity(mesh: .generateBox(size: [0.34, 0.07, 0.55]), materials: [materials.neon(Neon.cyan, intensity: 3.0)])
+                stud.position = [x, 0.035, -2.5 - Float(k) * 5]
+                laneGroup.addChild(stud)
+                roadPrimary.append((stud, 3.0))
+            }
+        }
+        // road chevrons: two per segment pointing down the road, in the secondary road colour
+        for zc in [-14, -34] as [Float] {
+            for side in [-1, 1] as [Float] {
+                let arm = ModelEntity(mesh: .generateBox(size: [0.16, 0.012, 2.6]), materials: [materials.neon(Neon.magenta, intensity: 1.6)])
+                arm.position = [side * 1.0, 0.011, zc + 1.0]
+                arm.orientation = simd_quatf(angle: side * 0.62, axis: [0, 1, 0])
+                laneGroup.addChild(arm)
+                roadSecondary.append((arm, 1.6))
             }
         }
     }
@@ -848,6 +873,83 @@ final class RoadSegment {
         }
     }
 
+    // MARK: Landmarks (block dressing)
+
+    /// Two landmark dressings a composed track can put on a city block. Both are built once and
+    /// toggled by `apply`: an overpass (a deck crossing the road on piers, lit underneath, a
+    /// hologram hanging from it; in the canyon the same shape reads as a rock arch) and a gateway
+    /// (twin pylons with a lit crossbar and glyph panels). Nothing here enters the lane.
+    private func buildLandmarks(_ rng: inout SeededRNG) {
+        let z = mid
+        // overpass
+        var deckMat = materials.facades[index % materials.facades.count]
+        deckMat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(44 / 24, 9 / 36), rotation: 0)
+        let deck = ModelEntity(mesh: .generateBox(width: 44, height: 1.8, depth: 9, cornerRadius: 0.3), materials: [deckMat])
+        deck.position = [0, 12.5, z]
+        overpassGroup.addChild(deck)
+        for side in [-1, 1] as [Float] {
+            let pier = ModelEntity(mesh: .generateBox(size: [1.8, 12, 3]), materials: [materials.concrete])
+            pier.position = [side * 12.2, 6, z]
+            overpassGroup.addChild(pier)
+            let beacon = ModelEntity(mesh: .generateBox(size: [0.5, 0.5, 0.5]), materials: [materials.neon(Neon.red, intensity: 5)])
+            beacon.position = [side * 21, 13.7, z]
+            overpassGroup.addChild(beacon)
+        }
+        for dz in [-4.3, 4.3] as [Float] {
+            let strip = ModelEntity(mesh: .generateBox(size: [40, 0.12, 0.12]), materials: [materials.neon(Neon.cyan, intensity: 4)])
+            strip.position = [0, 11.55, z + dz]
+            overpassGroup.addChild(strip)
+            roadPrimary.append((strip, 4))
+        }
+        let rail = ModelEntity(mesh: .generateBox(size: [44, 0.1, 0.1]), materials: [materials.neon(Neon.magenta, intensity: 3)])
+        rail.position = [0, 13.6, z + 4.5]
+        overpassGroup.addChild(rail)
+        cityNeon.append((rail, 3))
+        if materials.theme == .neonCity {
+            let sign = ModelEntity(mesh: .generatePlane(width: 8, height: 4), materials: [materials.hologramSigns[(index + 1) % materials.hologramSigns.count]])
+            sign.position = [rng.float(-3, 3), 9.3, z + 4.7]
+            overpassGroup.addChild(sign)
+        }
+        let pool = ModelEntity(mesh: .generatePlane(width: 16, depth: 10), materials: [materials.reflection(Neon.cyan, opacity: 0.22)])
+        pool.position = [0, 0.03, z]
+        overpassGroup.addChild(pool)
+        roadReflections.append((pool, 0.22))
+        overpassGroup.isEnabled = false
+
+        // gateway
+        for side in [-1, 1] as [Float] {
+            let pylon = ModelEntity(mesh: .generateBox(size: [1.4, 26, 1.4]), materials: [materials.concrete])
+            pylon.position = [side * 10.8, 13, z]
+            gatewayGroup.addChild(pylon)
+            let strip = ModelEntity(mesh: .generateBox(size: [0.2, 24, 0.2]), materials: [materials.neon(Neon.cyan, intensity: 4)])
+            strip.position = [side * 10.8 - side * 0.8, 13, z]
+            gatewayGroup.addChild(strip)
+            roadPrimary.append((strip, 4))
+            let cap = ModelEntity(mesh: .generateBox(size: [0.7, 0.7, 0.7]), materials: [materials.neon(Neon.red, intensity: 5)])
+            cap.position = [side * 10.8, 26.4, z]
+            gatewayGroup.addChild(cap)
+        }
+        let bar = ModelEntity(mesh: .generateBox(size: [23, 0.6, 0.6]), materials: [materials.concrete])
+        bar.position = [0, 24, z]
+        gatewayGroup.addChild(bar)
+        let barLight = ModelEntity(mesh: .generateBox(size: [22, 0.14, 0.14]), materials: [materials.neon(Neon.magenta, intensity: 4)])
+        barLight.position = [0, 23.6, z + 0.35]
+        gatewayGroup.addChild(barLight)
+        cityNeon.append((barLight, 4))
+        if materials.theme == .neonCity {
+            for (k, x) in ([-5.5, 5.5] as [Float]).enumerated() {
+                let panel = ModelEntity(mesh: .generatePlane(width: 2.4, height: 7), materials: [materials.glyphSigns[(index + k * 3) % materials.glyphSigns.count]])
+                panel.position = [x, 19.5, z + 0.4]
+                gatewayGroup.addChild(panel)
+            }
+        }
+        let gpool = ModelEntity(mesh: .generatePlane(width: 18, depth: 8), materials: [materials.reflection(Neon.cyan, opacity: 0.2)])
+        gpool.position = [0, 0.03, z]
+        gatewayGroup.addChild(gpool)
+        roadReflections.append((gpool, 0.2))
+        gatewayGroup.isEnabled = false
+    }
+
     // MARK: Obstacles
 
     /// Red X mark: two crossed emissive bars on the face of a barrier.
@@ -1089,33 +1191,83 @@ final class RoadSegment {
 @MainActor
 final class SkylineLayer {
     let root = Entity()
-    private var towers: [Entity] = []
-    private let wrapLength: Float = 260
-    private let nearZ: Float = -140
+    private var mid: [Entity] = []
+    private var far: [Entity] = []
+    private let midWrap: Float = 260
+    private let midNear: Float = -140
+    private let farWrap: Float = 640
+    private let farNear: Float = -330
 
+    /// Two parallax rings behind the corridor (Horizon Chase, Cyberpunk sign layers): a mid ring of
+    /// towers or mesas and a far ring of wide silhouettes with brand mega-signs, each scrolling slower
+    /// than the road so the horizon has depth. The haze between them is the depth fog.
     init(materials: SceneMaterials) {
         var rng = SeededRNG(seed: 555)
+        let canyon = materials.theme == .sunsetCanyon
+        // mid ring
         for i in 0..<22 {
             let side: Float = i % 2 == 0 ? -1 : 1
-            let w = rng.float(14, 40), d = rng.float(14, 40), h = rng.float(70, 230)
+            let w = canyon ? rng.float(50, 140) : rng.float(14, 40)
+            let d = canyon ? rng.float(40, 90) : rng.float(14, 40)
+            let h = canyon ? rng.float(40, 120) : rng.float(70, 230)
             var mat = materials.skyline
             mat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(w / 12, h / 12), rotation: 0)
-            let t = ModelEntity(mesh: .generateBox(width: w, height: h, depth: d), materials: [mat])
-            t.position = [side * rng.float(30, 170), h / 2 - 2, nearZ - rng.float(0, wrapLength)]
+            let t = ModelEntity(mesh: .generateBox(width: w, height: h, depth: d, cornerRadius: canyon ? 3 : 0), materials: [mat])
+            t.position = [side * rng.float(canyon ? 60 : 30, canyon ? 220 : 170), h / 2 - 2, midNear - rng.float(0, midWrap)]
             root.addChild(t)
-            towers.append(t)
-            if rng.chance(0.5) {
+            mid.append(t)
+            if !canyon && rng.chance(0.5) {
                 let tip = ModelEntity(mesh: .generateBox(size: [1.2, 1.2, 1.2]), materials: [materials.neon(rng.chance(0.5) ? Neon.red : Neon.cyan, intensity: 3)])
                 tip.position = [0, h / 2 + 0.6, 0]
                 t.addChild(tip)
             }
         }
+        // far ring: wide, dark silhouettes; the city gets mega-signs on a few of them
+        var farMat = materials.skyline
+        farMat.baseColor = .init(tint: canyon ? .rgb(0.55, 0.38, 0.34) : .rgb(0.45, 0.45, 0.6), texture: materials.skyline.baseColor.texture)
+        if !canyon { farMat.emissiveIntensity = 0.8 }
+        for i in 0..<16 {
+            let side: Float = i % 2 == 0 ? -1 : 1
+            let w = canyon ? rng.float(140, 320) : rng.float(50, 130)
+            let d = rng.float(40, 90)
+            let h = canyon ? rng.float(90, 200) : rng.float(150, 380)
+            var mat = farMat
+            mat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(w / 16, h / 16), rotation: 0)
+            let t = ModelEntity(mesh: .generateBox(width: w, height: h, depth: d, cornerRadius: canyon ? 6 : 0), materials: [mat])
+            t.position = [side * rng.float(canyon ? 120 : 90, 360), h / 2 - 4, farNear - rng.float(0, farWrap)]
+            root.addChild(t)
+            far.append(t)
+            if !canyon {
+                if rng.chance(0.5) {
+                    let tip = ModelEntity(mesh: .generateBox(size: [2, 2, 2]), materials: [materials.neon(Neon.red, intensity: 3)])
+                    tip.position = [0, h / 2 + 1, 0]
+                    t.addChild(tip)
+                }
+                if rng.chance(0.45), !materials.signs.isEmpty {
+                    // brand mega-sign on the road-facing face (Wipeout: typography as world-building)
+                    let sw = min(w * 0.8, 70), sh = sw * 0.5
+                    let sign = ModelEntity(mesh: .generateBox(width: sw, height: sh, depth: 0.6), materials: [rng.pick(materials.signs)])
+                    sign.position = [0, rng.float(-h * 0.3, h * 0.35), d / 2 + 0.4]
+                    t.addChild(sign)
+                }
+                if rng.chance(0.6) {
+                    let strip = ModelEntity(mesh: .generateBox(size: [0.8, h * rng.float(0.4, 0.9), 0.8]), materials: [materials.neon(rng.pick(Neon.all), intensity: 2.2)])
+                    strip.position = [rng.float(-w * 0.45, w * 0.45), 0, d / 2 + 0.5]
+                    t.addChild(strip)
+                }
+            }
+        }
     }
 
+    /// `travel` is already scaled by the scroller (0.22x of the road); the far ring moves at a third of that.
     func advance(_ travel: Float) {
-        for t in towers {
+        for t in mid {
             t.position.z += travel
-            if t.position.z > nearZ { t.position.z -= wrapLength }
+            if t.position.z > midNear { t.position.z -= midWrap }
+        }
+        for t in far {
+            t.position.z += travel * 0.35
+            if t.position.z > farNear { t.position.z -= farWrap }
         }
     }
 }
@@ -1167,6 +1319,21 @@ final class WorldScroller {
     /// Past the fork's nose the V divider is a wall: (side the player is on, minimum |x| from the
     /// road centre on that side). The vehicle scrapes along it instead of passing through.
     private(set) var wedgeLimit: (side: Float, limit: Float)? = nil
+    /// The next section change ahead of the player (stamp label, metres to its mouth), within
+    /// `upcomingRange`, for the HUD's "coming up" chip and the approach cue.
+    private(set) var upcoming: (label: String, distance: Float)? = nil
+    static let upcomingRange: Float = 140
+
+    /// Centre-screen stamp text for a section entry.
+    static func sectionLabel(_ style: SegmentStyle) -> String? {
+        switch style {
+        case .tube: return "CONDUIT"
+        case .tunnel: return "UNDERCITY"
+        case .elevated: return "SKYWAY"
+        case .fork: return "SPLIT"
+        default: return nil
+        }
+    }
 
     init(materials: SceneMaterials, settings: FXSettings, program: TrackProgram = TrackProgram()) {
         root.name = "WorldRoot"
@@ -1306,6 +1473,19 @@ final class WorldScroller {
     private func updateSectionBlends() {
         tubeBlend = blend(for: [.tube], lead: Self.tubeLead)
         enclosure = blend(for: [.tube, .tunnel], lead: Self.enclosureLead)
+        upcoming = nil
+        if let ci = segments.firstIndex(where: { $0.root.position.z >= 0 && $0.root.position.z - segmentLength < 0 }) {
+            var prev = segments[ci].block.style
+            for seg in segments[(ci + 1)...] {
+                let st = seg.block.style
+                if st != prev, let label = Self.sectionLabel(st) {
+                    let d = -seg.root.position.z
+                    if d <= Self.upcomingRange { upcoming = (label, max(0, d)) }
+                    break
+                }
+                prev = st
+            }
+        }
         wedgeLimit = nil
         if forkTarget != 0, let fork = segmentAt(worldZ: 0), fork.block.style == .fork {
             let t = fork.root.position.z / segmentLength            // 0 near edge ... 1 far edge

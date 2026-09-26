@@ -41,7 +41,7 @@ as the Mac build with working touch steering and two-finger boost.
 |---|---|---|---|---|---|
 | Gamepad (Backbone, PS, Xbox) | left stick or d-pad | R2 or R1 | A, X or L2 | Y / B | – |
 | macOS keyboard | ← → ↑ ↓ or WASD, or drag the mouse | Shift or Space | F or Return | ] / [ | P (PNG to Desktop) |
-| iOS touch | position left/right and up/down | two fingers | – | HUD slider | – |
+| iOS touch | position left/right and up/down | two fingers | quick tap | HUD slider | – |
 
 The vehicle climbs while you push up and settles back toward hover height when you let go.
 Inside a conduit there is no floor pull: you fly anywhere in the cross-section.
@@ -60,6 +60,14 @@ judged in isolation. On iOS the RealityKit view does not take touches at all: Sw
   `Captures/polish/capture.sh <dir> <seconds> ENV=VAL ...` runs and kills it.
 - `SPEEDER_CAMERA=overview` — high camera behind the vehicle (corridor layout captures).
 - `SPEEDER_SWEEP=1` (with capture dir) — one frame per disabled technique, plus `source.png`, the raw render before the post pass.
+- `SPEEDER_MISSION=<n>` also marks the jobs before `n` as cleared (the inbox lists the chain and
+  the loop continues from `n`); `SPEEDER_RESET_PROGRESS=1` first for a clean slate.
+- In demo mode the accept button pulses (0.5 s on, 1 s off) so cards are accepted on their edge;
+  `SPEEDER_HOLD_BRIEFING=1` / `SPEEDER_HOLD_RESULT=1` keep a card up for screenshots.
+- Simulator HUD screenshots: `Captures/polish/simshot.sh <outprefix> "<delays>" ENV=VAL ...`
+  launches the installed simulator build with `SIMCTL_CHILD_` env vars and screenshots at each
+  delay from launch. The simulator runs slower than wall clock (about 25 m of track per second,
+  scene time starts ~14 s after launch); take several delays.
 
 ## What is in the scene
 
@@ -258,7 +266,7 @@ the level below with the normal airborne logic. Capture scripts: `ramp` (up, alo
 |---|---|---|---|---|---|---|
 | Gamepad | left stick / d-pad (flick in snap mode) | stick up | stick down | R2 / R1 | A | Menu |
 | Mac keyboard | ← → / A D | ↑ / W | ↓ / S | shift / space | F / return | – |
-| iOS touch | left / right half | touch top | – | two fingers | – | top-right corner |
+| iOS touch | left / right half | touch top | – | two fingers | quick tap | gear |
 
 ### Capture hooks (arena)
 
@@ -343,8 +351,133 @@ of what to build next. The pieces the code now has:
   outside drains it and an empty bar derezzes (rival included). The AI heads for the zone.
 
 Capture hooks: `SPEEDER_ARENA_RIVAL=<name>`, `SPEEDER_HOLD_RESULT=1`, `SPEEDER_DEMO_BOOST=always`,
-`SPEEDER_ARENA_ZONE_AT=<s>`.
-Captures: `Captures/polish/p5/`.
+`SPEEDER_ARENA_ZONE_AT=<s>`, `SPEEDER_ARENA_KILL_RIVAL=<run s>` (force-derez the rival each round,
+wins a mission duel for the demo), `SPEEDER_ARENA_IMMORTAL=1` (the player drives through walls, for
+watching the rival over a whole run).
+Captures: `Captures/polish/p5/`, `Captures/polish/p6/` (18 Sep verification).
+
+## Assessment pass (18 Sep 2026)
+
+`docs/assessment-2026-09-18.md` is the mechanics / UI / sequencing / code assessment (six agent
+reports merged; round-2 research appended to `docs/research-comparables.md`). What it changed
+(built and verified on the Mac and the simulator later the same day; `docs/polish-log.md`, third
+pass, and `Captures/polish/p6/`):
+
+- **Full-length tracks**: `TrackComposer` (in `Scene/TrackProgram.swift`) composes every corridor
+  job from phrases (straight, bend, S-bend, obstacle field, split, conduit, undercity, skyway,
+  landmark) over the whole distance, seeded per job, keeping the road centred. Before, a job
+  authored 8-14 blocks and repeated its last one for the remaining 85 %. Two new landmark
+  dressings on city blocks (`TrackBlock.dressing`): an **overpass** (deck on piers, lit
+  underneath, a hologram hanging from it; a rock arch in the canyon) and a **gateway** (twin
+  pylons, lit crossbar, glyph panels). `.tunnel` and `.elevated` blocks now appear directly in
+  mission tracks, not only behind a fork.
+- **Sound** (`Sources/Audio/SoundEngine.swift`): everything synthesised at launch, no assets.
+  Cues on the same frame as the pips and haptics (accept, GO, hit, fire, kill, beacon, gate with
+  pitch by streak, section entry, approach, respawn, success, fail, last-five-seconds ticks,
+  snap, jump, land, derez, pickups, surge, zone, round and match beats) and five loops (engine
+  by speed, boost, grind, scrape, alarm for low hull / closing pursuer / low edge). HUD `sound`
+  toggle; `SPEEDER_SOUND=0` or `SPEEDER_DEMO=1` keeps captures silent (`SPEEDER_SOUND=1` to hear a demo).
+- **HUD**: km/h in the corridor block; HULL / ENERGY / EDGE in three states (accent, amber under
+  50 %, red under 25 %) with a breathing low state; the timer goes amber under 20 s, red under
+  10 s and pulses with a tick under 5 s; the escape kind shows a GAP bar; a "CONDUIT IN 84 m"
+  chip from 140 m before a section change; pickups say what they do; three **flags** per job
+  (CLEAN, FAST, GOLD) on the briefing and result cards, remembered per job; the controls hint
+  shows for the first 30 s and with the settings panel; cards no longer block the gear.
+- **Input**: a quick still **tap fires** (corridor), uses the pickup (arena) and accepts cards;
+  an idle pad no longer disables touch and keyboard; the phone's idle timer is off.
+- **Logic fixes**: a theme change from The Grid now rebuilds (the loop dead-ended after every
+  duel); boost has hysteresis at an empty hull; cruise is locked during a live job;
+  `SPEEDER_RESET_PROGRESS` clears ranks and flags; payouts are banked with the job index; a
+  respawn in the last 4 s no longer stamps on a failed run; search score ceilings count beacons
+  at the capped streak. Arena: PHASE survives picking up another item, the break-away kick needs
+  a real grind, grinds pay less energy while boosting, the rival's ceiling is 62 m/s, a player
+  cannot derez twice in one frame, free play gets its match target back after a duel.
+
+## The game (18 Sep 2026, second pass): an arc, an inbox, a garage, a sharper rival, music
+
+Built on the assessment pass (verified with the assessment pass; see the third-pass section of
+`docs/polish-log.md`):
+
+- **Three chapters, eighteen jobs** (`Missions/Mission.swift`): DOWNTOWN with VESS (five corridor
+  jobs and the duel with KADE), OUTLANDS with KADE as the contact (the canyon, a salvage run, a
+  dive, the duel with ORIN), THE CORE with ORIN (VESS has been selling the packets to SABLE; an
+  escape from the first metre, a twelve-target salvage, the deep-line dive, the ledger sweep, the
+  duel with SABLE to three and the last duel with VESS on a cycle). Every job has a `debrief`,
+  the contact's line on the result card, which is how the story is told. Two new kinds:
+  **salvage** (destroy N targets before the drop; `TARGETS k/N` on the strip) and **dive** (no
+  weapons, hull bruises twice as hard, precision pays twice). Chapter density scales the
+  obstacle rows 0.8 / 1.0 / 1.3.
+- **Inbox**: the briefing card lists every unlocked job as a chip (cleared ones ticked); stick
+  left / right or a tap browses, A loads the chosen job (the world rebuilds) and A again launches.
+  Jobs unlock in order; cleared jobs can be replayed for flags and gold at half pay.
+- **Garage**: four upgrades bought with credits on the briefing card (stick up / down highlights,
+  Y / `]` / tap buys): HULL PLATING I/II (hits cost 20 / 16 %), BOOST COIL I/II (boost burns 9 /
+  7 %/s), SPARE CORE (+1 respawn), HELMET (the first hit of every job is free, with a HELMET
+  stamp). Persisted as one integer (`upgrades`); `SPEEDER_RESET_PROGRESS` clears it.
+- **Time as a resource**: every 200 m gate adds 1.5 s to the window (`+50 x3  +1.5 s`), so a
+  clean fast run keeps buying time; the windows were tightened by about 6 %.
+- **One-tap retry**: A on the failed card rebuilds the job and launches it as the curtain opens.
+- **The rival** (`Arena/ArenaAI.swift`, `Arena/TrailSystem.swift`): a 6 m occupancy grid of
+  every live wall and a flood fill from one tick ahead give each candidate heading a
+  reachable-space term, and a pocket is rejected outright; a loop guard penalises a fourth turn
+  the same way unless the inside is the bigger space; **skill tiers** on `Rival.skill` set the
+  tick (0.30 / 0.16 / 0.10 s), probe range, noise and a blink chance, never speed: KADE is STEADY,
+  ORIN SHARP, SABLE and VESS KEEN. A **double derez is a void round** (no score either way).
+- **Music** (`Audio/SoundEngine.swift`): three generative layers per world (pad, bass, arp) at
+  112 bpm over four bars, rendered at launch from a chord progression per world (Am F C G neon,
+  Dm F C Am canyon, Em C D Bm grid); the pad plays under the cards, the bass on the run, the
+  arp when it gets hot (boost, streak x4, a close pursuer, a grind, the zone). HUD `music` toggle.
+
+## Market assessment (26 Sep 2026)
+
+`docs/assessment-2026-09-26-market.md` compares the game with contemporary futuristic racers and
+short-session mobile games (Asphalt, Redout 2, Wipeout, Fast RMX, Distance, Horizon Chase 2, Thumper,
+Sayonara Wild Hearts, Tron: Ares / Catalyst, Hades, Ridge Racer Type 4, F-Zero 99 and others), lists the
+gaps by layer and ranks the fixes in four workstreams: the viewing space (layered horizon, edge cadence,
+vehicle contact, brand typography, rain, hot Grid trails), the post pass (one boost scalar, depth +
+velocity prologue, outer-ring blur, lens dirt, LUT, MSAA via RealityView), HUD and screens (display face,
+no boxes, controller glyphs, motion language, title screen, briefing and result redesign) and the cast /
+story / sound layer (reactive debrief lines, callsign and livery, rival cards, Character Creator 5 +
+iClone 8 characters, comms stamps, a bar-quantised music state machine, ambience beds, continuous
+haptics, Game Center). The full research reports are in `docs/research-2026-09-26-reports.md`.
+
+## Pass 1 of the assessment: presentation foundation (26 Sep 2026)
+
+Built and capture-verified the same day (`docs/polish-log.md`, `Captures/polish/p7/`): the HUD type
+system (Chakra Petch, bundled under the SIL OFL in `Resources/Fonts`), the box-free HUD layout by zone
+with the world's road colour as the accent, controller glyphs from the pad (`sfSymbolsName`) and touch
+BOOST / FIRE buttons with press states, one boost scalar driving the post pass (vignette, centre-weighted
+grade, streaks, aberration, thruster heat haze), the exhaust and the HUD, a contact shadow and throttle
+ground glow under the bike, edge studs and road chevrons, the rider's identity (`Missions/Player.swift`:
+callsign, livery, rank title; tap the name or the swatch on the briefing), contact comms lines in the
+run (`Mission.comms`), and a haptics director with a continuous engine hum that falls back to the
+phone's own haptics for pads without rumble.
+
+## Pass 2 of the assessment: the world (26 Sep 2026)
+
+Stars and a moon in the night sky, a theme-aware two-ring parallax skyline with brand mega-signs
+(mesas in the canyon), screen-space rain with lightning in Neon City, a post pass that computes linear
+depth once and adds reprojection motion blur in the outer ring (never on the bike), ghost flares, lens
+dirt and dither, hot translucent trail walls on The Grid and a dissolve derez on the cycles
+(`dissolveSurface`). Log and captures: `docs/polish-log.md` pass 2, `Captures/polish/p7/`.
+
+## Pass 3 of the assessment, code half: the cast on screen (26 Sep 2026)
+
+A title screen, a rival card before every duel (record, temper, tier, a taunt from the record), a
+staged result card with a reactive debrief line per contact (`Missions/Debrief.swift`, Hades' rule:
+essential beat, then a line that saw what you did, never repeated until the rest are spent), failed
+cards with a cause line, and a two-column briefing with the contact and the rival. Head-to-head records
+persist (`record.<rival>`). The cast itself (Character Creator 5 / iClone 8) is the owed half: see
+`docs/research-2026-09-26-reports.md`, report E, for the pipeline and the first proof.
+
+## Pass 4 of the assessment, audio half (26 Sep 2026)
+
+A music state machine on the synthesised stems: a drum layer that enters while boosting, on a streak or
+when leading a duel, the arp held back until the first gate, a tempo-and-pitch lift in the final
+stretch, a one-bar duck and slam on the finish, a detuned cut on a fail or a derez, every change on a
+bar line. Per-world ambience beds (hum and rain, wind, a pure tone) and a reverb on the vehicle's own
+sounds that opens in tunnels and the conduit. Not built from pass 4: the RealityView migration,
+building batching, Game Center.
 
 ## Next steps (brief milestones 7–8)
 

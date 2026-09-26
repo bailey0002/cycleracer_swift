@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct SpeederApp: App {
     @StateObject private var controller = GameController()
-    init() { setvbuf(stdout, nil, _IOLBF, 0) }
+    init() { setvbuf(stdout, nil, _IOLBF, 0); HUDStyle.registerFonts() }
 
     var body: some Scene {
         WindowGroup("Speeder") {
@@ -37,6 +37,7 @@ struct ContentView: View {
         #if os(iOS)
         .persistentSystemOverlays(.hidden)
         .statusBarHidden(true)
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         #endif
     }
 }

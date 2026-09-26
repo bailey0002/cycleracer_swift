@@ -102,6 +102,54 @@ arena log line now carries the rival's position, speed and its derez cause.
 The rival's trail keeps the orange opponent role colour; only the tag, portrait and badge carry the
 rival's own colour. Not done: feel tuning of the accel constants on the phone (the user's call).
 
+## 18 Sep 2026: assessment pass (see `assessment-2026-09-18.md`; built and verified the same day, third pass below)
+
+| Was wrong | Changed | Verify with |
+|---|---|---|
+| Every corridor job authored 8-14 blocks (320-560 m) and repeated its last block for the rest: RELAY 01 had no obstacles for its last 2 km, all beacons sat on the empty "sweep end" block, and a scripted demo earned gold. | `TrackComposer` composes the whole distance from a per-job recipe (bends kept centred, fields, split, conduit, undercity, skyway, landmarks) plus a two-block finish. | `SPEEDER_MISSION=0 SPEEDER_CAMERA=overview` at 9 / 20 / 40 s |
+| Only the fork could reach the tunnel and skyway; the canyon jobs had no landmarks. | `.undercity` and `.skyway` phrases place those blocks directly; `TrackBlock.dressing` adds the overpass (rock arch in the canyon) and the gateway on city blocks. | `SPEEDER_MISSION=6` at 12 / 30 s |
+| No audio. | `SoundEngine`: synthesised cues and loops, wired on the same frame as the acks. | phone, sound toggle |
+| Meters two-state, timer red-only, pursuer a number, no speed, no lead on sections. | Three-state pulsing meters, timer amber / red / pulse + ticks, GAP bar, km/h, "IN n m" chip with an approach tone. | simulator HUD screenshots |
+| Touch could not fire or use a pickup; cards blocked the gear; a stale card stayed up in free play; an idle pad disabled touch. | Quick tap = A; tap target is the card; state cleared when the loop is off; idle pad yields. | simulator |
+| Theme change from The Grid never rebuilt (`world != nil` guard), so the loop dead-ended after a duel. | Guard on world or arena. | play DUEL 01 to the end |
+| Boost flickered at an empty hull; cruise adjustable mid-job; reset kept ranks; payout replayable; respawn stamped on a time-out; negative mission env crashed. | Hysteresis, cruise lock, full reset, payout banked with the index, order fixed, `abs`. | headless reasoning; play |
+| Arena: PHASE lost on a second pickup, farmable kick, tunnel grind out-earned boost, rival ceiling 96, double derez. | Fixed in `ArenaController`. | `grind` and `wall` demo scripts |
+
+## 18 Sep 2026 (second pass): the game (verified in the third pass below)
+
+| Was thin | Changed | Verify with |
+|---|---|---|
+| Nine jobs in a row, no story, credits with no use, a passed job finished. | Three chapters, eighteen jobs, a debrief line per job; salvage and dive kinds; inbox with replay at half pay; garage with four upgrades; flags kept. | `SPEEDER_MISSION=8` (salvage), `=10` (dive), `=17` (VESS); simulator screenshots of the briefing with the inbox and garage |
+| Time only counted down; a failure was a card round-trip. | Gates add 1.5 s; the failed card's A relaunches after the rebuild. | play |
+| The rival died in its own pockets; one competence level; a double derez was a player loss. | Occupancy grid + flood fill area term, loop guard, skill tiers by reaction, void round. | `drive` script from `-40,40,0` against KADE / ORIN / SABLE: rounds survived before vs after |
+| No music. | Three generative layers per world, intensity-driven. | phone |
+
+## 18 Sep 2026 (third pass): built, verified, fixed (captures in `Captures/polish/p6/`)
+
+The two blind passes compiled first time on Xcode 26.6 (Mac and iOS simulator), no compiler
+fixes needed. Verification, what it showed, and what changed:
+
+| Checked | Result | Capture |
+|---|---|---|
+| RELAY 01 stays varied over its length. | Overpass with a hanging hologram at 9 s, gateway + obstacle rows at 20 s, gateway (NEXUS) + bend + rows at 40 s (1.7 km). | `p6/m0-overview/frame-9,20`, `p6/m0-overview-40/frame-40` |
+| RELAY 03 has two conduits. | Portal at 6 s, inside the tube at 10 s, second tube at 20 s, gateway between. | `p6/m4-conduits/frame-6,10,20,26` |
+| RELAY 04: canyon undercity, rock-arch overpass, split. | Undercity roof at 12 s, arch at 18 s and 30 s, the split's skyway branch (hoops, billboards) at 24 s. | `p6/m6-canyon/frame-12,18,24,30,38` |
+| SWEEP 02 skyway and beacons. | Skyway lead-in at 10 s, beacon rings on the canyon road at 15 / 26 s. | `p6/m7-skyway/frame-10,15,26` |
+| SALVAGE 01, DIVE 01, DUEL 04. | Canyon rows with the arch; the dive's conduit-first track (rock-pipe look) and a checkpoint respawn in the log; DUEL 04 vs VESS runs rounds and ends MATCH LOST 0-3 for the scripted drive. | `p6/m8-salvage`, `p6/m10-dive`, `p6/m17-vess` |
+| DUEL 01 -> RELAY 04 (the old dead end). | `SPEEDER_ARENA_KILL_RIVAL=2`: match won 2-0, the success card accepted, the world rebuilt into the canyon (entities 4467), RELAY 04 briefing accepted and running at t=15. | `p6/duel01-flow/log.txt` |
+| The rival's own-trail deaths. | New hook `SPEEDER_ARENA_IMMORTAL=1` (the player drives through walls) so the rival is watched for a whole run: KADE 3 derezzes (player trail), ORIN 3 (boundary x2, player trail), SABLE 3 (player trail); no own-trail death in nine. Rounds last 20-30 s in a trail maze. `p5/temper-*` had one hazard death in three short rounds, so the numbers are not comparable; the own-trail cause is what mattered. | `p6/immortal-*/log.txt` |
+| Simulator HUD: briefing with chapter line, inbox chips, garage rows. | All present. Two fixes: the card overlapped the race block on the 390 pt phone (the block is now hidden while any card is up); with a forced `SPEEDER_MISSION` the inbox showed only RELAY 01 (a forced job now counts as reached, so the chain up to it is listed and the chip scrolls into view). | `p6/sim/briefing-m8-20`, `briefing-m12-18` |
+| Running strip: hull amber / red, streak, respawns, gate stamp with `+1.5 s`. | Reads on the phone. | `p6/sim/relay01-22`, `run01-26` |
+| Escape GAP bar. | Present, but the strip ran into the gear button; the pursuer block is now two lines (pursuer + distance, gap bar) and the strip spacing is 12. | `p6/sim/probe-m3-34` |
+| Failed card with RETRY NOW; result card with flags and debrief; the CONDUIT chip. | Failed card (HULL BREACHED, race block hidden); result card DELIVERED with payout, SILVER + NEW BEST, flags with the new ones bracketed, VESS's debrief line; `CONDUIT IN 66 m` chip above the pips at 193 m. | `p6/sim/dive01-failed-110`, `relay01-result-180`, `relay03-chip-20` |
+| Demo accept. | In demo mode the accept was a held button, so a result card in the arena never got its edge and the corridor loop stalled after a rebuild; the demo now pulses the accept (0.5 s on, 1 s off), which also fixes DUEL -> next job in captures. | `p6/duel01-flow` |
+| Death attribution on The Grid (kickoff step 3). | The centre state reads `CUT OFF BY KADE` / `BOXED YOURSELF` instead of `DEREZZED - OPPONENT TRAIL` / `OWN TRAIL`. | log `state=` |
+
+Not verified here: sound and music levels, the Backbone browse / buy on the briefing, and the
+balance numbers (all need the phone; the phone was asleep during this pass). The void round is
+verified by reading (`ArenaController` tests both collisions on the same frame) but not by a
+capture: the scripted drives cannot make both bikes hit a wall on the same frame.
+
 ## Still open (noted, not done)
 
 - The camera up-vector stays world-up in the conduit; F-Zero-style surface-normal tracking would
@@ -110,3 +158,80 @@ rival's own colour. Not done: feel tuning of the accel constants on the phone (t
   fade in.
 - The result card ends the run on the frame the distance is reached; a short coast-down with the
   drop marker in view would be the next step (research shortlist item 1).
+
+## Pass 1 of the market assessment: the presentation foundation (26 Sep 2026)
+
+Built from `docs/assessment-2026-09-26-market.md` section 7, pass 1 (C1, C2, B1, A2, A3, D2, D5, D8).
+Mac captures in `Captures/polish/p7/`, simulator HUD shots in `Captures/polish/p7/sim/`. The device
+binary is in `build-device/` (the phone was locked; install pending).
+
+| Item | What changed | Capture |
+|---|---|---|
+| C1 type and chrome | Chakra Petch (SIL OFL, `Resources/Fonts`, registered at launch by `HUDStyle.registerFonts`) for display and labels; no translucent boxes: hairlines, gradients, cut-corner chips and cards (`CutCorner`); HUD zones per the spec: job code + timer top-left, HULL bar + objective top-centre, score + streak chip + respawn pips top-right, speed + altitude ladder + section bottom-left, "coming up" chip bottom-centre, actions bottom-right; distance / hits / kills and the fps block moved into the settings panel; the HUD accent is the world's road colour (`Theme.hudAccent`); numeric roll on score, timer and objective; the streak chip springs on increase | `p7/sim/relay01-22`, `relay01-30`, `panel-22` |
+| C2 glyphs and touch | Button art from `GCControllerElement.sfSymbolsName` (`ControllerGlyphs`, published by the game controller) on pips, prompts, garage and hint; touch play (no pad) gets 56 pt BOOST / FIRE buttons with a press state and a light impact (`TouchButton`), feeding `InputState.buttonBoost / buttonFire`; the hint shows for 8 s, again when a pad connects, and while the panel is open | `p7/sim/relay01-22` (the simulator exposes a virtual "Gamepad", so it shows pad pips) |
+| B1 boost scalar | `GameController.boostLevel` (150 ms in, 400 ms out) reaches the post pass (`PostUniforms.section.w`): vignette tightens, the outer ring desaturates and darkens while the centre lifts (Thumper), streaks and aberration rise; the exhaust lengthens and the thruster glow and engine light rise with it; the HUD scales 2.5 % and brightens | `p7/boost/frame-9` vs `p7/cruise/frame-9` |
+| A3 vehicle contact | A contact shadow (black glow sprite) under the bike that shrinks with altitude; the ground glow grows with throttle; thruster heat haze in the composite pass (`PostUniforms.haze`, value-noise refraction around the projected nozzle, radius and strength with boost) | `p7/cruise/frame-4` |
+| A2 edge cadence | Emissive studs every 5 m on both road edges (in `roadPrimary`, so they follow the palette) and two chevrons per segment on the road centre (`roadSecondary`); painted in the canyon | `p7/lanes/frame-4`, `p7/canyon/frame-12` |
+| D2 identity | `Missions/Player.swift`: callsign (typed once on the briefing, tap the name; `callsign` in UserDefaults), livery (tap the swatch to cycle; tints the bike's glows and lights and the arena trail via `ArenaController.playerColor`), a rank title (ROOKIE / COURIER / GATE-RUNNER / UNBOXED); shown on the briefing header, the result card, the duel score and the match card | `p7/sim/brief2-18` |
+| D5 comms | `Mission.comms(contact:kind:trigger:)`: one register per contact (VESS clipped, KADE blunt, ORIN sharp), at most three lines per job (launch at 1.6 s, one event: section ahead / pursuer close / halfway, the last 320 m), eight words or fewer, shown under the objective with a comms blip (`ActionAck.commsSpeaker / commsText`) | `p7/sim/comms2-17` |
+| D8 haptics | `GamepadInput.activeEngine()`: a pad's own actuators, else the phone's `CHHapticEngine` (touch play and pads without rumble such as the Backbone, which had no haptics at all before); `engineHum` is one continuous event restarted every 18 s and steered with dynamic intensity / sharpness from speed and boost; off while parked | phone only |
+
+Not verified here: the haptics and the on-screen buttons (need the phone), the callsign keyboard on
+the phone, the livery tint on The Grid by play. Pad browsing of the livery / callsign is not built
+(touch or click only); a pad flow belongs with the title screen in pass 3.
+
+## Pass 2 of the market assessment: the world (26 Sep 2026)
+
+Assessment section 7, pass 2 (A1, A4, A5, B2 in its lightweight form, B3, A7). Captures in
+`Captures/polish/p7/world-*`, `rain2`, `grid-side`, `grid-crash2`.
+
+| Item | What changed | Capture |
+|---|---|---|
+| A1 sky and far layer | Night sky gains a hash-grid star field and a moon with a halo (also in the IBL); the Grid sky faint stars. `SkylineLayer` is theme-aware and has two parallax rings: the mid ring (towers, or wide mesas in the canyon) and a new far ring of dark wide silhouettes (150 to 380 m tall city slabs with antenna tips and neon strips; 90 to 200 m mesas) scrolling at a third of the mid ring's rate; the depth fog is the haze between them | `world-overview2/frame-6`, `world-canyon/frame-6` (far mesas replace the city towers the canyon used to show) |
+| A4 brand typography | Brand mega-signs (up to 70 m wide, the existing procedural sign atlas) on the road-facing faces of far-ring slabs | `world-overview2/frame-6` (top right) |
+| A5 weather | Screen-space rain in the composite pass (two hashed streak layers, slanted, faster and wider near; strength eases out inside the tunnels and the conduit; `weather` toggle) and lightning every 9 to 17 s (a cool lift on the haze and the frame for ~150 ms, a soft rumble; `SPEEDER_LIGHTNING_AT=<s>` for captures). A particle-emitter version was tried first and produced almost nothing on screen; the post pass version is deterministic and also shows in the simulator | `rain2/frame-5`, `rain3/frame-9.0` |
+| B2 / B3 post pass | Linear depth is computed once per pixel and shared. Motion blur by reprojection: the world moves rigidly toward the camera, so last frame's position of a pixel is `travel` further away; six taps from here toward there, weighted to the outer ring, never on the vehicle (a mask around its projected centre and a depth test) with a shutter that opens with boost. The chromatic offset is applied inside every sample (`fetchCA`), which fixed a first cut where red and blue were re-sampled unblurred and fringed every blurred pixel. Ghost flares (three mirrored samples of the wide bloom, tinted) and a procedural lens-dirt mask lit by the bloom (`Theme.lensScale`); interleaved-gradient dither before the 8-bit write. The thruster haze now only refracts what is behind the bike | `world-neon2/frame-9` (cruise), `world-boost2/frame-9` (boost) |
+| A7 The Grid | Trail walls are hot, not glass: a bright rim along the top edge, a heat flicker along the length, a translucent body; the glow skirt shimmers. Derez is a dissolve: the cycle's materials are swapped for `dissolveSurface` (a `CustomMaterial(from:)` per PBR material, so textures and tints survive) and burn away along a 3D noise front with a rim in the trail colour over 0.55 s, then the model hides; the shard burst and the light remain. `SpeederController.beginDissolve / updateDissolve / endDissolve`; `setVisible(true)` restores the originals | `grid-side/frame-8`, `grid-crash2/frame-5.2` |
+
+Not built from pass 2: A6 (building archetypes and batching) is deferred to pass 4 with the
+instancing gate; the volumetric fog slices and the datamosh glitch from the technique table were not
+started. Not verified here: phone frame time with the blur (six full-resolution taps in the outer
+ring; `motionBlur` and `lensFX` are HUD toggles so the phone pass can turn them off).
+
+## Pass 3 of the market assessment: the cast, the code half (26 Sep 2026)
+
+Assessment section 7, pass 3 items that are code (D1, D3, C4, C5, C6). D4 (the cast through
+Character Creator 5 / iClone 8) needs the Windows machine and is Mark's; the pipeline and the proof
+are in `docs/research-2026-09-26-reports.md`, report E. Simulator shots in `Captures/polish/p7/sim/`.
+
+| Item | What changed | Capture |
+|---|---|---|
+| D1 reactive debrief | `Missions/Debrief.swift`: a reactive line per contact chosen from the run's outcome (two respawns > one > hull low > clean and fast > gold > new best > fast > sloppy > clean > evergreen; duels: sweep / boxed yourself / close), never repeated until the contact's others are spent (`said.<contact>.<key>` in UserDefaults); the job's own debrief stays as the essential beat under it. Failed cards get a per-contact, per-cause line (`Debrief.failure`) | `sim/result-93` ("A core burned. It comes off the fee."), `sim/intro-18` (failed card) |
+| D3 rival card | A `.rivalIntro` phase between the duel briefing and the run (3.6 s, A skips it after 2.8 s, not in the demo): the rival's name huge in its colour, temper and tier ticks, its line, the head-to-head record (`record.<rival>.w/.l`, updated by duels and free-play matches), a taunt from the record (`Debrief.taunt`), a countdown hairline; slams in from the right; ROUND 1 stamps when it leaves. The briefing's right column shows contact and rival with the record | `sim/intro2-22` |
+| C4 result reveal | `StagedCard`: title, then the rank letter (large), score and NEW BEST, flags, payout and credits, the reactive line, the debrief, 150 ms apart with springs | `sim/result-92`, `result-93` |
+| C5 title screen | `titleVisible` at launch (off for the demo and with `SPEEDER_TITLE=0`): the parked scene behind a left gradient, the wordmark, the tagline, callsign / title / credits, the next job, a START prompt pulsing at 112 bpm; A / F / tap starts (the same press does not also accept the briefing) | `sim/title-17` |
+| C6 briefing | Two columns: the job (title, job / pay / credits, brief, goal, ranks, flags) left and the contact (portrait, name, role) right, with VS + rival + record on duels; a LOADOUT row of owned upgrades; the inbox strip above a footer with ACCEPT pinned under a scrolling body (`HUDStyle.cardMaxHeight`), so a tall duel card never hides the button; the duel HUD reads DUEL // FIRST TO n with the callsign and the rival's name in their colours; stamps no longer draw over cards | `sim/duel-brief3-17`, `sim/intro2-17.5` |
+
+`SPEEDER_RESET_PROGRESS=1` now also clears the records and the said-line sets (the callsign and
+livery stay). Not verified here: the title on the phone with the Backbone, the rival card's sting.
+
+## Pass 4 of the market assessment: the audio systems (26 Sep 2026)
+
+Assessment section 7, pass 4, the audio items (D6, D7). B4 (RealityView migration), A6 (building
+archetypes and batching) and D9 (Game Center) were not started: the migration carries touch and
+capture-pipeline risk that wants its own thread, batching is gated on the iOS 26 instancing path,
+and Game Center needs App Store Connect leaderboards that only Mark can create.
+
+| Item | What changed |
+|---|---|
+| D6 music state machine | A fourth generative layer, drums (kick on 1 and 3 plus the "and" of 4 on the last bar, hats on the eighths, a clap on 2 and 4), rendered with the other three. All four layers sum into one mixer and one varispeed. `setMusic(intensity:lead:finalStretch:gated:)`: the arp waits for the first gate, the drums enter while boosting, on a streak of four, or when leading a duel; the final quarter of a job (or match point either way on The Grid) lifts the rate by 5.4 % (tempo and about a semitone together); every change lands on a bar line (the player time modulo the bar). `musicSlam()` on a finish: a one-bar duck and the slam back. `musicCut()` on a fail or a derez: the layers drop to the pad, detuned to 0.94 for 1.6 s |
+| D7 ambience and room | An `ambience` loop per world, four seconds and crossfaded: Neon City hum with rain hiss and a muffled murmur, the canyon a breathing wind with gusts, The Grid a pure tone bed with a drifting whine; level 0.5 in the open, less in enclosed sections (`setAmbience`). The engine, boost and scrape loops pass through a large-hall reverb whose wet mix follows the enclosure (`setEnclosure`), so tunnels and the conduit are audible before they are seen |
+
+Verified: both worlds run with sound on, through a Grid crash, without engine errors in the log
+(`Captures/polish/p7/audio-*`). Two graph gotchas cost a bisect: a sub-mixer must have its sources
+connected before it is connected forward, and `AVAudioUnitReverb` must be connected with `format: nil`
+(forcing the mono format raises an ObjC exception that SwiftUI swallows, so the app sits idle with no
+scene and no log).
+Not verified: the mix itself (levels, the drum layer against the pad, the lift at the final stretch,
+the beds under the music) needs the phone and ears; the `gain` constants in `renderMusic`,
+`ambienceLoop` and the `setAmbience` levels are the knobs.

@@ -30,6 +30,57 @@ struct TrailSegment {
     var yMax: Float { max(a.y + heightA, b.y + heightB) }
 }
 
+/// Coarse occupancy of the arena floor (one cell per tick of travel) for the AI's reachable-space
+/// term: cells crossed by a live wall are blocked; outside the arena counts as blocked.
+struct OccupancyGrid {
+    let halfSize: Float
+    let cell: Float
+    let n: Int
+    private(set) var blocked: [Bool]
+
+    init(halfSize: Float, cell: Float) {
+        self.halfSize = halfSize
+        self.cell = cell
+        n = Int((2 * halfSize / cell).rounded(.up)) + 1
+        blocked = Array(repeating: false, count: n * n)
+    }
+
+    func index(_ p: SIMD2<Float>) -> Int? {
+        let x = Int((p.x + halfSize) / cell), y = Int((p.y + halfSize) / cell)
+        guard x >= 0, y >= 0, x < n, y < n else { return nil }
+        return y * n + x
+    }
+
+    mutating func mark(from a: SIMD2<Float>, to b: SIMD2<Float>) {
+        let len = simd_length(b - a)
+        let steps = max(1, Int(len / (cell * 0.5)))
+        for k in 0...steps {
+            let p = a + (b - a) * (Float(k) / Float(steps))
+            if let i = index(p) { blocked[i] = true }
+        }
+    }
+
+    /// Cells reachable from `p` (four-neighbour flood fill), capped at `limit`; 0 when `p` is
+    /// blocked or outside.
+    func reachable(from p: SIMD2<Float>, limit: Int) -> Int {
+        guard let start = index(p), !blocked[start] else { return 0 }
+        var seen = [Bool](repeating: false, count: n * n)
+        var stack = [start]
+        seen[start] = true
+        var count = 0
+        while let i = stack.popLast() {
+            count += 1
+            if count >= limit { return count }
+            let x = i % n, y = i / n
+            if x > 0 { let j = i - 1; if !seen[j] && !blocked[j] { seen[j] = true; stack.append(j) } }
+            if x < n - 1 { let j = i + 1; if !seen[j] && !blocked[j] { seen[j] = true; stack.append(j) } }
+            if y > 0 { let j = i - n; if !seen[j] && !blocked[j] { seen[j] = true; stack.append(j) } }
+            if y < n - 1 { let j = i + n; if !seen[j] && !blocked[j] { seen[j] = true; stack.append(j) } }
+        }
+        return count
+    }
+}
+
 struct SegRef: Hashable {
     let trail: Int
     let index: Int      // global segment index within the trail
@@ -242,6 +293,22 @@ final class TrailSystem {
     }
 
     func breakStrand(owner: Int) { trails[owner].breakStrand() }
+
+    /// Rasterise every live wall that overlaps `yBand` into a grid of `cell` metres. The newest
+    /// few segments of each dynamic trail are left out so a cycle's own fresh tail does not block
+    /// the cell it is about to leave.
+    func occupancy(cell: Float, yBand: ClosedRange<Float>, skipNewest: Int = 3) -> OccupancyGrid {
+        var g = OccupancyGrid(halfSize: halfSize, cell: cell)
+        for t in trails {
+            let last = t.isStatic ? t.newestIndex : t.newestIndex - skipNewest
+            guard last >= t.firstAlive else { continue }
+            for i in t.firstAlive...last {
+                guard let seg = t.segment(global: i), seg.live, seg.yMax > yBand.lowerBound, seg.yMin < yBand.upperBound else { continue }
+                g.mark(from: SIMD2<Float>(seg.a.x, seg.a.z), to: SIMD2<Float>(seg.b.x, seg.b.z))
+            }
+        }
+        return g
+    }
 
     func decay(maxLength: Float) {
         for t in trails where !t.isStatic {

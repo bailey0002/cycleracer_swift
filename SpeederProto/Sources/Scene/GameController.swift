@@ -12,24 +12,54 @@ final class GameController: ObservableObject {
 
     @Published var settings = FXSettings() {
         didSet {
-            if settings.environment != oldValue.environment, world != nil {
+            if settings.environment != oldValue.environment, world != nil || arena != nil {
                 var s = settings
                 (Theme(rawValue: s.environment) ?? .neonCity).adjust(&s)
                 settings = s
                 requestRebuild()
                 return
             }
+            // a cruise-speed nudge is per frame while the key is held: it does not re-apply the world
+            var a = settings, b = oldValue
+            a.cruiseSpeed = 0; b.cruiseSpeed = 0
+            if a == b { return }
             applySettings()
         }
     }
+    /// Synthesised sound: cues on the same frame as the visual and haptic acks, loops per frame.
+    let sound = SoundEngine()
+    /// The controls hint shows for the first half minute and whenever the settings panel opens.
+    @Published var hintVisible = true
+    private var hintTimer: Float = 0
+    /// Button art for the connected pad (published when it changes).
+    @Published var glyphs = ControllerGlyphs()
+    private var lastTickSecond = -1
+    /// Edge detection for the briefing's inbox (steer) and garage (climb, buy) controls.
+    private var briefPrev = (steer: Float(0), climb: Float(0), buy: false)
+    private var lastUpcoming: String? = nil
+    #if os(iOS)
+    private var touchStarts: [SpatialEventCollection.Event.ID: (CGPoint, Double)] = [:]
+    #endif
     @Published var stats = FrameStats()
     @Published var loadError: String? = nil
     /// Same-frame action acknowledgement for the HUD.
     @Published var ack = ActionAck()
     private var ackTimers = (fire: Float(0), jump: Float(0), pickup: Float(0), snap: Float(0), beacon: Float(0), hit: Float(0), stamp: Float(0), boost: Float(0))
     private var stampText = ""
+    /// Comms: the contact's line in the ear, at most three per job (launch, one event, the last stretch).
+    private var commsTimer: Float = 0
+    private var commsSpeaker = "", commsText = ""
+    private var commsSlots = (launch: false, event: false, last: false)
+    private var runClock: Float = 0
+    /// The rider's identity, published for the HUD.
+    @Published var player = Player()
+    /// The title screen: the world's front door. A / F / tap starts. Off for the demo and captures.
+    @Published var titleVisible = !(ProcessInfo.processInfo.environment["SPEEDER_DEMO"] == "1") && ProcessInfo.processInfo.environment["SPEEDER_TITLE"] != "0"
+    private var titleFirePrev = false
     private var lastStyle: SegmentStyle? = nil
     private var boostPrev = false
+    /// Held boost, eased: 150 ms in, 400 ms out. One scalar for the post pass, the exhaust and the HUD.
+    private var boostLevel: Float = 0
     /// Hit-stop: the simulation runs at 15 % for a few frames after an obstacle hit.
     private var hitStop: Float = 0
     /// Fade to black that covers scene rebuilds (and the launch). 0 clear ... 1 black.
@@ -72,6 +102,12 @@ final class GameController: ObservableObject {
     private var rebuilding = false
     private let rim = DirectionalLight()
     private let speedParticles = Entity()
+    /// Rain (screen-space, in the post pass) and the lightning clock.
+    private var rainLevel: Float = 0
+    /// SPEEDER_LIGHTNING_AT=<s> forces the first flash at that scene time (captures).
+    private var lightningTimer: Float = Float(ProcessInfo.processInfo.environment["SPEEDER_LIGHTNING_AT"] ?? "") ?? 7
+    private var lightning: Float = 0
+    private var weatherRNG = SeededRNG(seed: 4242)
     private var updateSub: Cancellable?
 
     private var time: Float = 0
@@ -199,12 +235,18 @@ final class GameController: ObservableObject {
         post.captureRequest = nil
         await build()
         rebuilding = false
+        if missions.autoStart {
+            // one-tap retry: the failed card's accept rebuilt the job; launch it as the curtain opens
+            missions.autoStart = false
+            acceptMission()
+        }
     }
 
     private func build() async {
         do {
             theme = Theme(rawValue: settings.environment) ?? .neonCity
             post.theme = theme
+            sound.setMusic(world: theme.rawValue)
             let device = MTLCreateSystemDefaultDevice()
             let materials = try SceneMaterials(device: device, theme: theme)
             self.materials = materials
@@ -216,6 +258,9 @@ final class GameController: ObservableObject {
             let speeder = try await SpeederController.load(materials: materials)
             worldAnchor.addChild(speeder.root)
             self.speeder = speeder
+            player = missions.player
+            if player.tintsBike { speeder.tint(player.liveryColor, materials: materials) }
+            ArenaController.playerColor = player.liveryColor
 
             if theme.mode == .arena {
                 let arena = ArenaController(materials: materials, settings: settings, vehicle: speeder)
@@ -363,6 +408,8 @@ final class GameController: ObservableObject {
 
     private func applySettings() {
         post.settings = settings
+        sound.enabled = settings.sound
+        sound.musicEnabled = settings.music
         print("settings applied: fog=\(settings.fogLevel) bloom=\(settings.bloomLevel) skin=\(settings.obstacleSkin) secondRow=\(settings.secondRow) storefronts=\(settings.storefronts) windowsBright=\(settings.windowsBright) world=\(world != nil)")
         world?.apply(settings)
         arena?.apply(settings)
@@ -384,6 +431,11 @@ final class GameController: ObservableObject {
         updateCurtain(dt: dt)
         let input = arView.input
         gamepad.poll(into: input)
+        hintTimer += dt
+        if gamepad.glyphs != glyphs { glyphs = gamepad.glyphs; hintVisible = true; hintTimer = 0 }
+        if hintVisible && hintTimer > 8 && !panelVisible { hintVisible = false }
+        // no job loop here (free play, or a world the current job does not use): no stale card
+        if !missionActive && mission.phase != .freePlay { mission = MissionState() }
         if let arena {
             updateArena(arena, dt: dt, rawDt: rawDt, input: input, cameraRig: cameraRig)
             publishAck(dt: dt)
@@ -398,7 +450,7 @@ final class GameController: ObservableObject {
             input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
             input.pointerClimb = max(-1, min(1, sin(time * 0.6 + 1.0) * 0.9))
             // weapons pulse during a run; while parked the only "fire" is the scripted accept
-            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing)) : Int(time * 2) % 3 == 0
+            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing) && Int(time * 2) % 3 == 0) : Int(time * 2) % 3 == 0
             let demoBoost = ProcessInfo.processInfo.environment["SPEEDER_DEMO_BOOST"]
             input.pointerBoost = demoBoost == "always" || (time > 6.5 && time < 11 && demoBoost != "0")
         }
@@ -406,48 +458,100 @@ final class GameController: ObservableObject {
         handleCaptures()
 
         // throttle: cruise speed adjusted with up/down, boost multiplies
-        if input.speedUp { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
-        if input.speedDown { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
+        // (locked while the job loop is on: the timers and the pursuer are tuned to the job's cruise,
+        // and Y / ] is the garage's buy button on the briefing)
+        let cruiseLocked = missionActive
+        if input.speedUp && !cruiseLocked { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
+        if input.speedDown && !cruiseLocked { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
         // missions: A / F / tap accepts a briefing or a result; the vehicle only moves during a live job
-        if missionActive {
+        if titleVisible {
+            let fire = input.firing
+            if fire && !titleFirePrev { startFromTitle() }
+            titleFirePrev = fire
+            missionFirePrev = fire
+        }
+        if missionActive && !titleVisible {
             let fire = input.firing
             if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
             missionFirePrev = fire
+            briefingInput(input)
             var beaconHits = 0
             if let beacons, missions.isRunning {
                 beaconHits = beacons.update(distance: distance, roadX: { world.offset(atWorldZ: $0) - world.playerOffset }, playerX: speeder.x, playerY: speeder.altitude, time: time)
-                if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9) }
+                if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9); sound.play(.beacon) }
             }
             missions.update(dt: simDt, travel: speed * simDt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed,
                             scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits)
             missionHitsSeen = hits
             missionKillsSeen = kills
-            if missions.isRunning, let s = missions.scoredNow { stamp(s.streak > 1 ? "+\(s.value)  x\(s.streak)" : "+\(s.value)", seconds: 0.6) }
+            if missions.isRunning, let s = missions.scoredNow {
+                let timeText = s.time > 0 ? String(format: "  +%.1f s", s.time) : ""
+                stamp((s.streak > 1 ? "+\(s.value)  x\(s.streak)" : "+\(s.value)") + timeText, seconds: 0.6)
+                sound.play(.gate, volume: 0.7, pitch: 0.85 + Float(s.streak) * 0.06)
+            }
+            if missions.helmetUsedNow { stamp("HELMET", seconds: 0.9); flash = max(flash, 0.5); sound.play(.respawn, volume: 0.6) }
             if missions.respawnedNow {
                 let left = missions.snapshot().respawnsLeft
                 stamp("HULL RESTORED  \(left) LEFT", seconds: 1.4)
                 flash = 1.0; invulnerable = 1.5
                 gamepad.rumble(intensity: 0.8, sharpness: 0.3)
+                sound.play(.respawn)
             }
+            let ms = missions.snapshot()
+            updateComms(ms, dt: simDt, upcoming: world.upcoming?.label)
             if let pursuer {
-                if missions.isRunning { pursuer.update(gap: missions.snapshot().gap, playerX: speeder.x, time: time) } else { pursuer.hide() }
+                if missions.isRunning { pursuer.update(gap: ms.gap, playerX: speeder.x, time: time) } else { pursuer.hide() }
             }
-            if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = missions.snapshot() }
+            if missions.isRunning {
+                // the last five seconds tick (rising on the last two); low hull and a closing pursuer share the alarm loop
+                let secLeft = Int(ceil(ms.timeLeft))
+                if secLeft <= 5 && secLeft != lastTickSecond { lastTickSecond = secLeft; sound.play(.tick, volume: 0.8, pitch: secLeft <= 2 ? 1.35 : 1) }
+                let low: Float = ms.energy < 0.25 ? 0.45 : 0
+                let close: Float = ms.kind == .escape ? clamp01((25 - ms.gap) / 20) * 0.7 : 0
+                sound.set(.alarm, volume: max(low, close), pitch: close > low ? 1.4 : 1)
+            } else {
+                lastTickSecond = -1
+            }
+            if missions.phase != mission.phase {
+                switch missions.phase {
+                case .success: sound.play(.success)
+                case .failed: sound.play(.fail)
+                default: break
+                }
+            }
+            if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = ms }
+            // music: the pad under the cards, bass on the run, the arp when it gets hot
+            let hot = (input.boosting && missions.boostAllowed) || ms.streak >= 4 || (ms.kind == .escape && ms.gap < 25)
+            let lead = (input.boosting && missions.boostAllowed) || ms.streak >= 4
+            let final = missions.isRunning && ms.distanceTotal > 0 && ms.distanceLeft < ms.distanceTotal * 0.25
+            sound.setMusic(intensity: missions.isRunning ? (hot ? 2 : 1) : 0.4, lead: lead, finalStretch: final, gated: ms.score > 0)
+            if missions.phase != mission.phase {
+                if missions.phase == .success { sound.musicSlam() }
+                if missions.phase == .failed { sound.musicCut() }
+            }
             contactAvatar?.root.isEnabled = missions.phase != .running
             if missions.phase != .running { contactAvatar?.face(cameraRig.position) }
             if demoMode && Int(time * 4) % 4 == 0 && statsAccumulator > 0.2, let a = contactAvatar { print("avatar \(a.debugBounds())") }
         }
+        if !missionActive { sound.setMusic(intensity: input.boosting ? 2 : 1, lead: input.boosting, gated: true) }
+        sound.setAmbience((0.5 - world.enclosure * 0.3) * (settings.weather || theme != .neonCity ? 1 : 0.7))
+        sound.setEnclosure(world.enclosure)
         let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
         let boosting = moving && input.boosting && (!missionActive || missions.boostAllowed)
         if boosting && !boostPrev {
             // boost onset: camera kick, haptic and the HUD pip on the same frame
             cameraRig.punch(1.0)
             gamepad.rumble(intensity: 0.5, sharpness: 0.5)
+            sound.play(.surge, volume: 0.5)
         }
         boostPrev = boosting
+        boostLevel = damp(boostLevel, boosting ? 1 : 0, boosting ? 13 : 5, dt)
         let target = moving ? settings.cruiseSpeed * (boosting ? 1.8 : 1.0) : 0
         speed = damp(speed, target, target > speed ? 1.6 : 2.0, simDt)
         let speedNorm = clamp01(speed / maxSpeed)
+        sound.set(.engine, volume: moving ? 0.3 + speedNorm * 0.5 : 0.12, pitch: 0.7 + speedNorm * 1.1)
+        gamepad.engineHum(intensity: speed > 3 ? 0.08 + speedNorm * 0.22 + boostLevel * 0.3 : 0, sharpness: 0.15 + boostLevel * 0.5)
+        sound.set(.boost, volume: boosting ? 0.9 : 0, pitch: 0.9 + speedNorm * 0.4)
 
         let travel = speed * simDt
         world.advance(travel, playerX: speeder.x, time: time)
@@ -456,14 +560,33 @@ final class GameController: ObservableObject {
         speeder.tubeBlend = world.tubeBlend
         speeder.wedgeLimit = world.wedgeLimit
         post.enclosure = world.enclosure
+        // weather: rain off in enclosed sections; lightning every 9 to 17 s with a rumble
+        if theme.rain {
+            let wet: Float = settings.weather ? 1 - world.enclosure : 0
+            rainLevel = damp(rainLevel, wet, 3, dt)
+            post.rain = rainLevel
+            if settings.weather {
+                lightningTimer -= dt
+                if lightningTimer <= 0 { lightning = 1; lightningTimer = weatherRNG.float(9, 17); gamepad.rumble(intensity: 0.2, sharpness: 0.2) }
+            }
+            lightning = max(0, lightning - dt * 7)
+            post.lightning = lightning * (1 - world.enclosure) * (settings.weather ? 1 : 0)
+        }
         // section stamp when the player crosses into a new kind of section
         let style = world.currentBlock.style
         if style != lastStyle {
-            if lastStyle != nil, let label = Self.sectionStamp(style) { stamp(label) }
+            if lastStyle != nil, let label = WorldScroller.sectionLabel(style) { stamp(label); sound.play(.section) }
             lastStyle = style
         }
+        // "coming up" cue: one tone when a section change comes into range
+        if let u = world.upcoming {
+            if u.label != lastUpcoming { sound.play(.approach, volume: 0.6) }
+            lastUpcoming = u.label
+        } else {
+            lastUpcoming = nil
+        }
         let parked = missionActive && !missions.allowsMotion
-        speeder.update(dt: simDt, time: time, steerInput: parked ? 0 : input.steering, climbInput: parked ? 0 : input.climb, speedNorm: speedNorm, roadShift: world.lastShift * world.tugFactor / 0.6)
+        speeder.update(dt: simDt, time: time, steerInput: parked ? 0 : input.steering, climbInput: parked ? 0 : input.climb, speedNorm: speedNorm, roadShift: world.lastShift * world.tugFactor / 0.6, boost: boostLevel)
 
         // barrier scraping: bleed speed, sparks, shake
         if speeder.scraping && speed > 5 {
@@ -474,6 +597,7 @@ final class GameController: ObservableObject {
                 : speeder.root.position + simd_normalize(SIMD3<Float>(speeder.x, speeder.altitude - RoadSegment.tubeCenterY, 0)) * 1.1
             emitSparks(at: sparkPos, duration: 0.1)
             if Int(time * 10) % 3 == 0 { gamepad.rumble(intensity: 0.3, sharpness: 0.8) }
+            sound.set(.scrape, volume: 0.7)
         }
         // obstacle collisions (AABB in world space; speeder half extents 0.95 x 1.6)
         invulnerable = max(0, invulnerable - dt)
@@ -494,17 +618,19 @@ final class GameController: ObservableObject {
                     emitSparks(at: [p.x, p.y + o.centerY, p.z], duration: 0.18)
                     weapons?.explode(at: [p.x, p.y + o.centerY, p.z])
                     gamepad.rumble(intensity: 1.0, sharpness: 0.4)
+                    sound.play(.hit)
                     break
                 }
             }
         }
         // weapons
         if let weapons {
-            if input.firing && settings.obstacles && !parked {
+            if input.firing && settings.obstacles && !parked && (!missionActive || missions.current.weaponsAllowed) {
                 if weapons.fire(from: speeder.root.position, orientation: speeder.root.orientation) {
                     shakeBurst = max(shakeBurst, 0.08)
                     ackTimers.fire = 0.15
                     gamepad.rumble(intensity: 0.25, sharpness: 1.0)
+                    sound.play(.fire, volume: 0.5)
                 }
             }
             let targets = world.nearbyObstacles(segments: 4)
@@ -519,6 +645,7 @@ final class GameController: ObservableObject {
                             kills += 1
                             shakeBurst = max(shakeBurst, 0.2)
                             gamepad.rumble(intensity: 0.5, sharpness: 0.9)
+                            sound.play(.kill, volume: 0.8)
                         } else {
                             emitSparks(at: tip, duration: 0.08)
                         }
@@ -536,7 +663,6 @@ final class GameController: ObservableObject {
             sparks.components.set(e)
         }
         post.flash = flash
-        if flash > 0 && stats.flash != flash { stats.flash = flash }
 
         let curveAhead = world.offset(atWorldZ: -14) - world.playerOffset
         // the camera follows the smooth bank and only a little of the collision jolt
@@ -558,12 +684,21 @@ final class GameController: ObservableObject {
 
         // post-process uniforms
         post.speedNorm = speedNorm
+        post.speed = speed
         post.kick = cameraRig.kickLevel
+        post.boost = boostLevel
         ackBoost = boosting
-        if let vp = arView.project([cameraRig.position.x, cameraRig.position.y, -900]) {
-            let size = arView.bounds.size
-            if size.width > 0 && size.height > 0 {
+        let size = arView.bounds.size
+        if size.width > 0 && size.height > 0 {
+            if let vp = arView.project([cameraRig.position.x, cameraRig.position.y, -900]) {
                 post.vanishing = [Float(vp.x / size.width), Float(vp.y / size.height)]
+            }
+            if let tp = arView.project(speeder.thrusterWorldPosition) {
+                post.thrusterUV = [Float(tp.x / size.width), Float(tp.y / size.height)]
+            }
+            if let cp = arView.project(speeder.root.position) {
+                post.vehicleUV = [Float(cp.x / size.width), Float(cp.y / size.height)]
+                post.vehicleDistance = simd_length(speeder.root.position - cameraRig.position)
             }
         }
 
@@ -577,11 +712,14 @@ final class GameController: ObservableObject {
                 print(String(format: "t=%.1f fps=%.0f speed=%.0f m/s entities=%d dist=%.0f mission=%@ beacons=%d/%d gap=%.0f hull=%.2f", time, fpsSmoothed, speed, entityCount, distance, "\(ms.phase)", ms.beaconsHit, ms.beaconsTotal, ms.gap, ms.energy) + " beacon " + (beacons?.debugNearest ?? "-") + String(format: " player x=%.1f alt=%.1f", speeder.x, speeder.altitude) + " proj=\(beacons.flatMap { _ in arView.project(beaconProbe) }.map { "\($0)" } ?? "-") view=\(arView.bounds.size)")
             }
             if entityCount == 0 { entityCount = count(worldAnchor) }
-            stats = FrameStats(fps: fpsSmoothed, frameMs: Double(rawDt) * 1000, speed: speed,
-                               entities: entityCount, lights: settings.realLights ? 5 : 0,
-                               sourceFormat: post.sourceFormat, distance: distance, hits: hits,
-                               section: world.currentBlock.name, flash: flash, decision: world.lastDecision,
-                               kills: kills, altitude: speeder.altitude, controller: gamepad.connectedName)
+            var st = FrameStats(fps: fpsSmoothed, frameMs: Double(rawDt) * 1000, speed: speed,
+                                entities: entityCount, lights: settings.realLights ? 5 : 0,
+                                sourceFormat: post.sourceFormat, distance: distance, hits: hits,
+                                section: world.currentBlock.name, flash: flash, decision: world.lastDecision,
+                                kills: kills, altitude: speeder.altitude, controller: gamepad.connectedName)
+            st.upcoming = world.upcoming?.label
+            st.upcomingDistance = world.upcoming?.distance ?? 0
+            stats = st
         }
         publishAck(dt: dt)
     }
@@ -589,14 +727,61 @@ final class GameController: ObservableObject {
     private var ackBoost = false
 
     /// Centre-screen stamp text for a section entry.
-    private static func sectionStamp(_ style: SegmentStyle) -> String? {
-        switch style {
-        case .tube: return "CONDUIT"
-        case .tunnel: return "UNDERCITY"
-        case .elevated: return "SKYWAY"
-        case .fork: return "SPLIT"
-        default: return nil
+    private static func sectionStamp(_ style: SegmentStyle) -> String? { WorldScroller.sectionLabel(style) }
+
+    /// One line from the contact, with a comms blip. Never while a stamp is up (it would fight it).
+    private func comms(_ trigger: Mission.CommsTrigger, section: String = "") {
+        let m = missions.current
+        commsSpeaker = m.contact
+        commsText = Mission.comms(contact: m.contact, kind: m.kind, trigger: trigger, section: section).uppercased()
+        commsTimer = 2.8
+        sound.play(.approach, volume: 0.35, pitch: 1.7)
+    }
+
+    /// Comms triggers for a live corridor job: launch, one mid-run event (a section ahead, the pursuer
+    /// closing, or halfway), the last stretch. Reset when the job is not running.
+    private func updateComms(_ ms: MissionState, dt: Float, upcoming: String?) {
+        guard missions.isRunning, ms.kind != .duel else { runClock = 0; commsSlots = (false, false, false); return }
+        runClock += dt
+        if !commsSlots.launch && runClock > 1.6 { commsSlots.launch = true; comms(.launch); return }
+        if !commsSlots.event && runClock > 6 && ackTimers.stamp <= 0 && commsTimer <= 0 {
+            if ms.kind == .escape && ms.gap < 30 { commsSlots.event = true; comms(.pursuerClose); return }
+            if let u = upcoming, ms.kind != .escape { commsSlots.event = true; comms(.sectionAhead, section: u); return }
+            if ms.distanceLeft < ms.distanceTotal * 0.5 { commsSlots.event = true; comms(.midway); return }
         }
+        if !commsSlots.last && ms.distanceLeft < 320 && ms.distanceLeft > 0 && ackTimers.stamp <= 0 { commsSlots.last = true; comms(.lastStretch) }
+    }
+
+    /// The rival card can be skipped with A once it has been up for a moment.
+    private static let introSkipAfter = MissionRunner.introDuration - 0.8
+
+    /// Leave the title screen (also called by a tap on it).
+    func startFromTitle() {
+        guard titleVisible else { return }
+        titleVisible = false
+        sound.play(.accept)
+        gamepad.rumble(intensity: 0.3, sharpness: 0.5)
+        hintVisible = true; hintTimer = 0
+    }
+
+    // MARK: - Identity
+
+    func setCallsign(_ raw: String) {
+        missions.setCallsign(raw)
+        player = missions.player
+        mission = missions.snapshot()
+        sound.play(.tick, volume: 0.5, pitch: 1.2)
+    }
+    func cycleLivery() {
+        missions.cycleLivery()
+        player = missions.player
+        mission = missions.snapshot()
+        if let speeder, let materials {
+            if player.tintsBike { speeder.tint(player.liveryColor, materials: materials) } else { speeder.tint(Neon.cyan, materials: materials) }
+        }
+        ArenaController.playerColor = player.liveryColor
+        sound.play(.pickupTaken, volume: 0.5)
+        gamepad.rumble(intensity: 0.3, sharpness: 0.7)
     }
 
     private func stamp(_ text: String, seconds: Float = 0.7) {
@@ -610,10 +795,14 @@ final class GameController: ObservableObject {
         ackTimers.pickup = max(0, ackTimers.pickup - dt); ackTimers.snap = max(0, ackTimers.snap - dt)
         ackTimers.beacon = max(0, ackTimers.beacon - dt); ackTimers.hit = max(0, ackTimers.hit - dt)
         ackTimers.stamp = max(0, ackTimers.stamp - dt); ackTimers.boost = max(0, ackTimers.boost - dt)
+        commsTimer = max(0, commsTimer - dt)
         let a = ActionAck(boost: ackBoost || ackTimers.boost > 0, fire: ackTimers.fire > 0, jump: ackTimers.jump > 0, pickup: ackTimers.pickup > 0,
                           snap: ackTimers.snap > 0, beacon: ackTimers.beacon > 0, hit: ackTimers.hit > 0,
-                          stamp: ackTimers.stamp > 0 ? stampText : "")
+                          stamp: ackTimers.stamp > 0 ? stampText : "",
+                          commsSpeaker: commsTimer > 0 ? commsSpeaker : "", commsText: commsTimer > 0 ? commsText : "")
         if a != ack { ack = a }
+        sound.update(dt: dt)
+        arView.input.tapFire = false
     }
 
     /// The curtain closes before a rebuild, the rebuild runs behind it, and it opens after `build()`.
@@ -633,6 +822,18 @@ final class GameController: ObservableObject {
     func handleTouches(_ events: SpatialEventCollection, in size: CGSize) {
         let active = events.filter { $0.phase == .active }
         let input = arView.input
+        // a quick, still tap is the touch player's A button (fire, pickup, accept)
+        let now = Date().timeIntervalSinceReferenceDate
+        for e in events {
+            switch e.phase {
+            case .active:
+                if touchStarts[e.id] == nil { touchStarts[e.id] = (e.location, now) }
+            default:
+                if let st = touchStarts.removeValue(forKey: e.id), now - st.1 < 0.22, hypot(st.0.x - e.location.x, st.0.y - e.location.y) < 18 {
+                    input.tapFire = true
+                }
+            }
+        }
         guard let first = active.min(by: { $0.location.x < $1.location.x }), size.width > 0, size.height > 0 else {
             input.pointerSteer = nil
             input.pointerClimb = nil
@@ -667,18 +868,64 @@ final class GameController: ObservableObject {
         cameraRig?.resetArena()
     }
 
+    /// Inbox: browse the unlocked jobs from the briefing (stick left / right, or a tap on a chip).
+    func browseJob(_ delta: Int) {
+        guard missionActive, missions.phase == .briefing else { return }
+        missions.browse(delta)
+        mission = missions.snapshot()
+        sound.play(.tick, volume: 0.5)
+    }
+    func browseJob(to id: Int) {
+        guard missionActive, missions.phase == .briefing else { return }
+        missions.browse(to: id)
+        mission = missions.snapshot()
+        sound.play(.tick, volume: 0.5)
+    }
+    /// Garage: move the highlight (stick up / down) and buy (Y / ] / tap on the row).
+    func shopMove(_ delta: Int) {
+        guard missionActive, missions.phase == .briefing else { return }
+        missions.shopMove(delta)
+        mission = missions.snapshot()
+        sound.play(.tick, volume: 0.4, pitch: 1.3)
+    }
+    func buyUpgrade(at row: Int? = nil) {
+        guard missionActive, missions.phase == .briefing else { return }
+        if let row { while missions.shopSelection != row { missions.shopMove(1) } }
+        let ok = missions.buySelected()
+        mission = missions.snapshot()
+        sound.play(ok ? .pickupTaken : .streakLost, volume: 0.6)
+        if ok { gamepad.rumble(intensity: 0.4, sharpness: 0.6) }
+    }
+
+    /// Pad and keyboard edges while a briefing is up: steer browses the inbox, climb moves the
+    /// garage highlight, Y / ] buys. Touch never browses (a tap on the card accepts).
+    private func briefingInput(_ input: InputState) {
+        guard missions.phase == .briefing, !demoMode else { briefPrev = (0, 0, false); return }
+        let steer: Float = input.padSteer ?? ((input.right ? 1 : 0) - (input.left ? 1 : 0))
+        let climb: Float = input.padSteer != nil ? input.padClimb : ((input.up ? 1 : 0) - (input.down ? 1 : 0))
+        if steer > 0.5 && briefPrev.steer <= 0.5 { browseJob(1) }
+        if steer < -0.5 && briefPrev.steer >= -0.5 { browseJob(-1) }
+        if climb > 0.5 && briefPrev.climb <= 0.5 { shopMove(-1) }
+        if climb < -0.5 && briefPrev.climb >= -0.5 { shopMove(1) }
+        if input.speedUp && !briefPrev.buy { buyUpgrade() }
+        briefPrev = (steer, climb, input.speedUp)
+    }
+
     /// Accept the briefing or continue past a result (also called by the HUD tap).
     func acceptMission() {
         if let arena, arena.awaitingRestart, !missionActive { restartArenaMatch(arena); return }
-        guard missionActive else { return }
+        guard missionActive, !pendingRebuild, !rebuilding else { return }
         let wasBriefing = missions.phase == .briefing
         let rebuild = missions.accept()
         mission = missions.snapshot()
+        sound.play(.accept)
+        if wasBriefing && missions.phase == .rivalIntro { sound.play(.warn, volume: 0.8, pitch: 0.7); gamepad.rumble(intensity: 0.5, sharpness: 0.3) }
         if wasBriefing && missions.phase == .running {
             // launch: the same kick as a boost, plus the stamp
             cameraRig?.punch(0.8)
             gamepad.rumble(intensity: 0.6, sharpness: 0.4)
             stamp("GO", seconds: 0.6)
+            sound.play(.go)
         }
         if rebuild {
             let theme = missions.current.theme
@@ -697,6 +944,7 @@ final class GameController: ObservableObject {
         if input.panelToggleRequested {
             input.panelToggleRequested = false
             panelVisible.toggle()
+            if panelVisible { hintVisible = true; hintTimer = 0 }
         }
         if input.screenshotRequested {
             input.screenshotRequested = false
@@ -753,38 +1001,71 @@ final class GameController: ObservableObject {
         if demoMode, let script = ProcessInfo.processInfo.environment["SPEEDER_DEMO_SCRIPT"], script == "noai" { aiCmd = CycleInput() }
         if missionActive {
             // duel: the briefing holds the arena; A / F / tap accepts, the arena's score decides the job
-            let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing)
-            if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
+            // the demo pulses its accept (a held button has no edge, so the result card would stay up)
+            let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing) && Int(time * 2) % 3 == 0)
+            if titleVisible {
+                if fire && !titleFirePrev { startFromTitle() }
+                titleFirePrev = fire
+            } else if fire && !missionFirePrev && missions.phase != .running && missions.phase != .rivalIntro { acceptMission() }
+            else if fire && !missionFirePrev && missions.phase == .rivalIntro && !demoMode && missions.snapshot().introLeft < Self.introSkipAfter { acceptMission() }
             missionFirePrev = fire
+            briefingInput(input)
+            if missions.phase == .rivalIntro { missions.tickIntro(dt: dt); if missions.phase == .running { stamp("ROUND 1", seconds: 1.0); sound.play(.roundStart, volume: 0.6) } }
+            missions.lastDerezCause = arena.stateText
             arena.paused = missions.phase != .running
             arena.matchTarget = Int.max
+            if missions.phase != mission.phase {
+                switch missions.phase {
+                case .success: sound.play(.success)
+                case .failed: sound.play(.fail)
+                default: break
+                }
+            }
             if let r = missions.current.rival { arena.rival = r }
             missions.updateDuel(dt: dt, wins: arena.wins, losses: arena.losses)
             if missions.phase != mission.phase || statsAccumulator > 0.2 { mission = missions.snapshot() }
             if missions.phase != .running { cmd = CycleInput() }
         }
-        if arena.awaitingRestart && cmd.action && !missionActive { restartArenaMatch(arena) }
-        if cmd.boost && !boostPrev && arena.energy > 0.02 { cameraRig.punch(1.0); gamepad.rumble(intensity: 0.5, sharpness: 0.5) }
+        if !missionActive && arena.matchTarget == Int.max { arena.matchTarget = 3 }   // free play again after a duel
+        if arena.awaitingRestart && cmd.action && !missionActive { restartArenaMatch(arena); sound.play(.accept) }
+        if cmd.boost && !boostPrev && arena.energy > 0.02 { cameraRig.punch(1.0); gamepad.rumble(intensity: 0.5, sharpness: 0.5); sound.play(.surge, volume: 0.5) }
         boostPrev = cmd.boost && arena.energy > 0.02
         arena.update(dt: dt, time: time, input: cmd, aiInput: aiCmd)
         let ev = arena.events
-        if ev.snapped { ackTimers.snap = 0.2 }
-        if ev.jumped { ackTimers.jump = 0.35 }
-        if ev.pickupUsed != nil { ackTimers.pickup = 0.4; stamp(ev.pickupUsed == .phase ? "PHASE" : "PULSE", seconds: 0.6) }
-        if ev.pickupTaken { ackTimers.pickup = 0.3 }
-        if ev.padBoost { ackTimers.boost = 0.3; stamp("SURGE", seconds: 0.5) }
-        if ev.padSlow { ackTimers.hit = 0.4 }
-        if ev.charged { ackTimers.boost = 0.4; stamp("CHARGE", seconds: 0.6) }
-        if ev.zoneOpened { stamp("ZONE", seconds: 1.2) }
+        if ev.snapped { ackTimers.snap = 0.2; sound.play(.snap, volume: 0.6) }
+        if ev.jumped { ackTimers.jump = 0.35; sound.play(.jump) }
+        if ev.landed { sound.play(.land, volume: 0.6) }
+        if ev.pickupUsed != nil { ackTimers.pickup = 0.4; stamp(ev.pickupUsed == .phase ? "PHASE" : "PULSE", seconds: 0.6); sound.play(.pickup) }
+        if ev.pickupTaken { ackTimers.pickup = 0.3; sound.play(.pickupTaken, volume: 0.6) }
+        if ev.padBoost { ackTimers.boost = 0.3; stamp("SURGE", seconds: 0.5); sound.play(.surge) }
+        if ev.padSlow { ackTimers.hit = 0.4; sound.play(.slow) }
+        if ev.charged { ackTimers.boost = 0.4; stamp("CHARGE", seconds: 0.6); sound.play(.charge) }
+        if ev.zoneOpened { stamp("ZONE", seconds: 1.2); sound.play(.zone) }
         // round and match beats: one stamp each, on the frame they happen
-        if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2) }
-        if ev.roundLost { stamp("DEREZZED", seconds: 2.2) }
-        if ev.matchWon { stamp("MATCH WON  \(arena.wins) - \(arena.losses)", seconds: 3.4) }
-        if ev.matchLost { stamp("MATCH LOST  \(arena.wins) - \(arena.losses)", seconds: 3.4) }
-        if ev.roundStart && !ev.matchWon && !ev.matchLost { stamp(arena.matchTarget == Int.max ? "READY" : "ROUND \(arena.roundNumber)", seconds: 1.0) }
-        if ev.go { stamp("GO", seconds: 0.5) }
+        if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2); sound.play(.rivalDerez) }
+        if ev.roundLost { stamp("DEREZZED", seconds: 2.2); sound.play(.derez) }
+        if ev.voidRound { stamp("VOID ROUND", seconds: 2.2); sound.play(.derez) }
+        if ev.matchWon { stamp("MATCH WON  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchWon) }
+        if ev.matchLost { stamp("MATCH LOST  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchLost) }
+        if ev.roundStart && !ev.matchWon && !ev.matchLost { stamp(arena.matchTarget == Int.max ? "READY" : "ROUND \(arena.roundNumber)", seconds: 1.0); sound.play(.roundStart, volume: 0.6) }
+        if ev.go { stamp("GO", seconds: 0.5); sound.play(.go) }
+        let arenaLive = arena.stateText.isEmpty && !arena.paused
+        sound.set(.engine, volume: arenaLive ? 0.25 + arena.speedNorm * 0.5 : 0.1, pitch: 0.75 + arena.speedNorm * 1.0)
+        sound.set(.boost, volume: (arenaLive && cmd.boost && arena.energy > 0.02) ? 0.8 : 0, pitch: 1.1)
+        sound.set(.grind, volume: arenaLive ? arena.grind * 0.9 : 0, pitch: 0.8 + arena.grind * 0.7)
+        let zoneOut: Float = (arena.zoneRadius != nil && arena.energy < 0.3) ? 0.4 : 0
+        sound.set(.alarm, volume: arenaLive ? max(arena.edge < 0.3 ? 0.3 : 0, zoneOut) : 0)
+        let hot = (cmd.boost && arena.energy > 0.02) || arena.grind > 0.5 || arena.zoneRadius != nil
+        let target = arena.matchTarget == Int.max ? (missionActive ? missions.current.duelTarget : 3) : arena.matchTarget
+        let final = arenaLive && (arena.wins == target - 1 || arena.losses == target - 1)
+        sound.setMusic(intensity: arenaLive ? (hot ? 2 : 1) : 0.4, lead: arena.wins > arena.losses || (cmd.boost && arena.energy > 0.02), finalStretch: final, gated: true)
+        if ev.roundLost || ev.voidRound { sound.musicCut() }
+        if ev.matchWon { sound.musicSlam() }
+        sound.setAmbience(0.35)
+        sound.setEnclosure(0)
         if ev.matchResult, let r = arena.matchResult {
             missions.award(r.credits)
+            missions.recordMatch(rival: r.rival, won: r.won)
             matchResult = r
             mission.credits = missions.credits      // free play: only the purse changes, no job card
         }
@@ -796,7 +1077,6 @@ final class GameController: ObservableObject {
         shakeBurst = max(shakeBurst, arena.shake)
         flash = arena.flash
         post.flash = flash
-        if flash > 0 && stats.flash != flash { stats.flash = flash }
         shakeBurst = max(0, shakeBurst - dt * 2.5)
         cameraRig.followArena(dt: dt, time: time, position: player.position + [0, 1.05, 0], forward: player.forward, lean: player.lean,
                               speedNorm: speedNorm, shake: settings.cameraShake, extraShake: shakeBurst, orbit: arena.cameraOrbit,
@@ -808,7 +1088,14 @@ final class GameController: ObservableObject {
             speedParticles.components.set(e)
         }
         post.speedNorm = speedNorm * 0.8
+        post.speed = 0   // the arena camera moves with the bike; reprojection blur does not apply
         post.kick = cameraRig.kickLevel
+        boostLevel = damp(boostLevel, (cmd.boost && arena.energy > 0.02) ? 1 : 0, cmd.boost ? 13 : 5, dt)
+        post.boost = boostLevel
+        gamepad.engineHum(intensity: speedNorm > 0.05 ? 0.08 + speedNorm * 0.2 + boostLevel * 0.3 : 0, sharpness: 0.2 + boostLevel * 0.5)
+        if arView.bounds.width > 0, let sp = speeder, let tp = arView.project(sp.thrusterWorldPosition) {
+            post.thrusterUV = [Float(tp.x / arView.bounds.width), Float(tp.y / arView.bounds.height)]
+        }
         // vanishing point for the streaks: where the cycle is heading, far ahead
         if let vp = arView.project(player.position + player.forward * 400 + [0, 1.0, 0]) {
             let size = arView.bounds.size

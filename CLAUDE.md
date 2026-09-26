@@ -41,6 +41,51 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   (`Mission.maxScore`, `rank.<id>` in UserDefaults), checkpoint respawn (two per job), sumo zone
   (16 Sep 2026, `ArenaController.updateZone`, `SPEEDER_ARENA_ZONE_AT`). Feel tuning on the phone
   with the Backbone is still owed (`LightCycle` constants).
+- Assessment pass 18 Sep 2026 (`SpeederProto/docs/assessment-2026-09-18.md`, written on Linux,
+  built and verified on the Mac the same day): `TrackComposer` composes every corridor job over
+  its full length (before, 85 % of each job repeated its last block), overpass / gateway landmark
+  dressings, a synthesised sound layer (`Sources/Audio/SoundEngine.swift`, `SPEEDER_SOUND=0|1`),
+  HUD states (speedometer, three-state pulsing meters, timer ticks, pursuer GAP bar, "coming up"
+  chip, job flags), tap to fire on touch, review fixes (theme change from The Grid never rebuilt;
+  boost flicker at empty hull; arena economy exploits).
+- Second pass 18 Sep 2026 (verified the same day): three chapters and eighteen jobs with debrief
+  lines (`Mission.deliveries`), salvage and dive kinds, the inbox (browse unlocked jobs on the
+  briefing, replay at half pay), the garage (four upgrades bought with credits), gate time bonus,
+  one-tap retry, the rival's occupancy-grid space term + loop guard + skill tiers, void rounds,
+  generative music per world.
+- Third pass 18 Sep 2026 (`docs/polish-log.md`, `Captures/polish/p6/`): both blind passes compiled
+  clean; captures verified the composed tracks, both conduits, the canyon undercity / arch / split,
+  the skyway, DUEL 01 -> RELAY 04 rebuild, rival own-trail deaths (none in nine), the simulator
+  HUD cards. Fixes: race block hidden under cards on the phone, escape strip in two lines, a forced
+  `SPEEDER_MISSION` unlocks its chain, inbox scrolls to the shown chip, demo accept pulses, Grid
+  death attribution (`CUT OFF BY KADE` / `BOXED YOURSELF`), `SPEEDER_ARENA_IMMORTAL=1` hook.
+  Still owed on the phone: sound / music levels, Backbone browse and buy, balance (step 2 of the
+  kickoff), the void round by play. Branch `claude/game-prototype-assessment-chlzto`, PR #2.
+- Market assessment 26 Sep 2026 (`SpeederProto/docs/assessment-2026-09-26-market.md`, reports in
+  `docs/research-2026-09-26-reports.md`): six research streams on look, HUD, story / cast / sound and
+  RealityKit architecture; gap analysis, four ranked workstreams (viewing space, post pass, HUD and
+  screens, cast / story / sound) and a four-pass build order. Character Creator 5 + iClone 8 are
+  available for the cast (FBX -> Blender -> USDZ, one clip per file; blend shapes stop during
+  skeletal clips, so talk is video-in-HUD or blend-shape-only). Pass 1 (presentation foundation:
+  HUD type + zones + glyphs + touch buttons, boost scalar, thruster haze, contact shadow, edge studs,
+  callsign / livery, comms lines, haptics director) built and capture-verified 26 Sep 2026
+  (`docs/polish-log.md`, `Captures/polish/p7/`). Fonts: `Resources/Fonts` (Chakra Petch, SIL OFL),
+  registered at launch, no plist keys. The simulator exposes a virtual "Gamepad", so it never shows
+  the touch buttons; only the phone does. Pass 2 (the world: stars / moon, two-ring skyline with
+  mega-signs, screen-space rain + lightning, reprojection blur + ghosts + dirt + dither, hot Grid
+  trails, dissolve derez) built and verified the same day. Gotchas: apply the chromatic offset inside
+  every post-pass sample (re-sampling R/B after a blur fringes everything); a particle-emitter rain
+  child of the camera rig rendered almost nothing, the rain lives in `PostFX.metal` instead;
+  `SPEEDER_LIGHTNING_AT=<s>` forces a flash. Pass 3's code half (title screen, rival intro phase
+  `.rivalIntro` with records, staged result card, reactive debrief lines in `Missions/Debrief.swift`,
+  two-column briefing with a pinned footer) built and verified the same day; `SPEEDER_TITLE=0` skips
+  the title (the demo always does). D4 (the cast through CC5 / iClone 8) is Mark's, on Windows.
+  Pass 4's audio half (drum layer, bar-quantised music state machine with a final-stretch lift, slam
+  and cut, ambience beds per world, tunnel reverb on the vehicle loops) built the same day; the mix
+  needs ears on the phone. Not built: RealityView migration (B4), batching (A6), Game Center (D9).
+  Audio graph gotchas: connect a sub-mixer's sources before connecting it forward; connect
+  `AVAudioUnitReverb` with `format: nil` (a forced mono format throws an ObjC exception that SwiftUI
+  swallows: the app idles with no scene and an empty log).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
@@ -48,7 +93,8 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 
 - Always `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` (Xcode 26.6). The Xcode 27
   beta that `xcode-select` points at has no Metal toolchain and fails on the .metal files.
-- Project is generated by xcodegen from `project.yml`; run `xcodegen generate` after adding files.
+- Project is generated by xcodegen from `project.yml`; run `xcodegen generate` after adding files
+  (`Sources/Audio/SoundEngine.swift` was added to the pbxproj by hand on 18 Sep; regenerating is fine).
 - Mac: `xcodebuild -project SpeederProto.xcodeproj -scheme SpeederProto-macOS -configuration Debug -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO build`
 - Visual verification: `screencapture` is blocked here. Run the Mac app with
   `SPEEDER_DEMO=1 SPEEDER_CAPTURE_DIR=<dir> SPEEDER_CAPTURE_TIMES=4,9,17` (fixed 60 Hz step, frames
@@ -116,7 +162,16 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view, `side` a side elevation; the chase camera cannot
   show elevated trails or trail cuts. Capture times with decimals are allowed (`frame-1.5.png`).
 - The MCP iOS simulator panel crashed in this session; `xcrun simctl io <udid> screenshot` works
-  and `SIMCTL_CHILD_<VAR>` passes env vars to `simctl launch`.
+  and `SIMCTL_CHILD_<VAR>` passes env vars to `simctl launch`. `Captures/polish/simshot.sh` wraps
+  that (delays from launch); the simulator covers ~25 m of track per wall second and scene time
+  starts ~14 s after launch, later when the Mac is busy, so take several delays per scene.
+- Captures run in parallel share the GPU: four Mac instances at once drop to 15-25 fps and scene
+  time (fixed 60 Hz step) falls to a quarter of wall clock, so late capture times are missed. Run
+  long arena logs one at a time.
+- Demo mode pulses the accept button (`Int(time * 2) % 3 == 0`); a held accept has no edge, so a
+  result card was never accepted in the arena and the corridor loop stalled after a rebuild.
+- `SPEEDER_MISSION=<n>` writes `cleared = n` to UserDefaults when n is past the cleared count (the
+  inbox lists the chain); use `SPEEDER_RESET_PROGRESS=1` with it for a clean slate.
 
 ## Working style the user wants
 
