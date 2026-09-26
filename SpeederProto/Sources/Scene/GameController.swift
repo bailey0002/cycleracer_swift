@@ -31,6 +31,8 @@ final class GameController: ObservableObject {
     /// The controls hint shows for the first half minute and whenever the settings panel opens.
     @Published var hintVisible = true
     private var hintTimer: Float = 0
+    /// Button art for the connected pad (published when it changes).
+    @Published var glyphs = ControllerGlyphs()
     private var lastTickSecond = -1
     /// Edge detection for the briefing's inbox (steer) and garage (climb, buy) controls.
     private var briefPrev = (steer: Float(0), climb: Float(0), buy: false)
@@ -409,7 +411,8 @@ final class GameController: ObservableObject {
         let input = arView.input
         gamepad.poll(into: input)
         hintTimer += dt
-        if hintVisible && hintTimer > 30 && !panelVisible { hintVisible = false }
+        if gamepad.glyphs != glyphs { glyphs = gamepad.glyphs; hintVisible = true; hintTimer = 0 }
+        if hintVisible && hintTimer > 8 && !panelVisible { hintVisible = false }
         // no job loop here (free play, or a world the current job does not use): no stale card
         if !missionActive && mission.phase != .freePlay { mission = MissionState() }
         if let arena {

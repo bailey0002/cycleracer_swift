@@ -17,6 +17,9 @@ final class InputState {
     var pointerSteer: Float? = nil
     var pointerClimb: Float? = nil
     var pointerBoost = false
+    /// On-screen BOOST / FIRE buttons (touch without a pad).
+    var buttonBoost = false
+    var buttonFire = false
     /// A quick tap (touch) fires / uses the pickup / accepts; set by the touch handler, cleared each frame.
     var tapFire = false
     // gamepad (polled each frame)
@@ -39,8 +42,8 @@ final class InputState {
         if let p = pointerClimb { return p }
         return (up ? 1 : 0) - (down ? 1 : 0)
     }
-    var boosting: Bool { boost || pointerBoost || padBoost }
-    var firing: Bool { fire || padFire || tapFire }
+    var boosting: Bool { boost || pointerBoost || padBoost || buttonBoost }
+    var firing: Bool { fire || padFire || tapFire || buttonFire }
 }
 
 /// Polls the first connected extended gamepad (Backbone, PlayStation, Xbox...) and
@@ -49,6 +52,25 @@ final class GamepadInput {
     private var hapticEngine: CHHapticEngine?
     private var hapticController: GCController?
     private(set) var connectedName: String? = nil
+    /// Button art for the HUD, read from the pad itself.
+    private(set) var glyphs = ControllerGlyphs()
+    private var glyphController: GCController? = nil
+
+    private func updateGlyphs(_ controller: GCController?) {
+        if controller === glyphController { return }
+        glyphController = controller
+        var g = ControllerGlyphs()
+        if let gp = controller?.extendedGamepad {
+            g.connected = true
+            g.a = gp.buttonA.sfSymbolsName ?? g.a
+            g.b = gp.buttonB.sfSymbolsName ?? g.b
+            g.y = gp.buttonY.sfSymbolsName ?? g.y
+            g.boost = gp.rightTrigger.sfSymbolsName ?? g.boost
+            g.stick = gp.leftThumbstick.sfSymbolsName ?? g.stick
+            g.menu = gp.buttonMenu.sfSymbolsName ?? g.menu
+        }
+        glyphs = g
+    }
 
     init() {
         NotificationCenter.default.addObserver(forName: .GCControllerDidConnect, object: nil, queue: .main) { [weak self] n in
@@ -64,7 +86,9 @@ final class GamepadInput {
     }
 
     func poll(into input: InputState) {
-        guard let controller = GCController.current ?? GCController.controllers().first,
+        let current = GCController.current ?? GCController.controllers().first
+        updateGlyphs(current)
+        guard let controller = current,
               let gp = controller.extendedGamepad else {
             input.padSteer = nil
             input.padClimb = 0

@@ -88,3 +88,15 @@ struct ActionAck: Equatable {
     /// Centre-screen stamp (section change, launch, derez); empty when off.
     var stamp = ""
 }
+
+/// SF Symbol names for the connected pad's buttons (`GCControllerElement.sfSymbolsName`), so the
+/// HUD shows the right art for an Xbox-layout Backbone, a PlayStation pad or nothing at all.
+struct ControllerGlyphs: Equatable {
+    var connected = false
+    var a = "a.circle"
+    var b = "b.circle"
+    var y = "y.circle"
+    var boost = "r2.rectangle.roundedtop"
+    var stick = "l.joystick"
+    var menu = "line.3.horizontal.circle"
+}
