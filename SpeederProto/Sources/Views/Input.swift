@@ -28,8 +28,13 @@ final class InputState {
     var padClimb: Float = 0
     var padBoost = false
     var padFire = false
+    /// Pad B (the front end's back; cruise down in free play).
+    var padBack = false
     var screenshotRequested = false
+    /// The developer panel (keyboard ` only, once unlocked).
     var panelToggleRequested = false
+    /// Pause in a run, back / close in the front end (pad Menu / Options, Escape, the touch pause button).
+    var menuRequested = false
     var menuWasDown = false
 
     var steering: Float {
@@ -50,6 +55,10 @@ final class InputState {
 /// Polls the first connected extended gamepad (Backbone, PlayStation, Xbox...) and
 /// drives controller haptics when available.
 final class GamepadInput {
+    /// The player's HAPTICS setting: off stops the hum and every rumble.
+    var enabled = true {
+        didSet { if !enabled { try? humPlayer?.stop(atTime: CHHapticTimeImmediate); humPlayer = nil; humLast = (-1, -1) } }
+    }
     private var hapticEngine: CHHapticEngine?
     private var hapticController: GCController?
     private(set) var connectedName: String? = nil
@@ -95,6 +104,7 @@ final class GamepadInput {
             input.padClimb = 0
             input.padBoost = false
             input.padFire = false
+            input.padBack = false
             return
         }
         func dz(_ v: Float) -> Float { abs(v) < 0.12 ? 0 : v }
@@ -111,8 +121,9 @@ final class GamepadInput {
         input.padFire = gp.buttonA.isPressed || gp.leftTrigger.value > 0.3 || gp.buttonX.isPressed
         input.speedUp = gp.buttonY.isPressed
         input.speedDown = gp.buttonB.isPressed
+        input.padBack = gp.buttonB.isPressed
         let menu = gp.buttonMenu.isPressed || gp.buttonOptions?.isPressed == true
-        if menu && !input.menuWasDown { input.panelToggleRequested = true }
+        if menu && !input.menuWasDown { input.menuRequested = true }
         input.menuWasDown = menu
     }
 
@@ -157,7 +168,7 @@ final class GamepadInput {
     func engineHum(intensity: Float, sharpness: Float) {
         humFrame += 1
         let now = CACurrentMediaTime()
-        if intensity <= 0.01 {
+        if intensity <= 0.01 || !enabled {
             if humPlayer != nil { try? humPlayer?.stop(atTime: CHHapticTimeImmediate); humPlayer = nil; humLast = (-1, -1) }
             return
         }
@@ -189,6 +200,7 @@ final class GamepadInput {
 
     /// Short rumble: the pad's actuators, else the phone's.
     func rumble(intensity: Float, sharpness: Float = 0.5) {
+        guard enabled else { return }
         guard let engine = activeEngine() else {
             #if os(iOS)
             let gen = UIImpactFeedbackGenerator(style: intensity > 0.6 ? .heavy : .medium)
@@ -253,6 +265,8 @@ final class GameARView: ARView {
         case 30:      input.speedUp = down       // ]
         case 33:      input.speedDown = down     // [
         case 35:      if down { input.screenshotRequested = true }
+        case 53:      if down { input.menuRequested = true }          // escape: pause / back
+        case 50:      if down { input.panelToggleRequested = true }   // `: developer panel
         default: return false
         }
         return true
@@ -347,6 +361,8 @@ final class GameARView: ARView {
             case .keyboardCloseBracket: input.speedUp = down; handled = true
             case .keyboardOpenBracket: input.speedDown = down; handled = true
             case .keyboardP: if down { input.screenshotRequested = true }; handled = true
+            case .keyboardEscape: if down { input.menuRequested = true }; handled = true
+            case .keyboardGraveAccentAndTilde: if down { input.panelToggleRequested = true }; handled = true
             default: break
             }
         }

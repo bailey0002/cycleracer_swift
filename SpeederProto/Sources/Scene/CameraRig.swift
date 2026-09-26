@@ -57,18 +57,36 @@ final class CameraRig {
 
     /// `frameShift` slides the whole framing sideways (metres): the briefing uses -2.2 so the bike
     /// and the contact sit in the right two thirds, clear of the card; it eases out on launch.
-    func update(dt: Float, time: Float, speederX: Float, speederY: Float, bank: Float, speedNorm: Float, shake: Bool, curveAhead: Float, extraShake: Float, inTube: Float, frameShift: Float = 0) {
+    /// `title` (0 ... 1) blends in the title screen's drift: a slow sway behind the parked bike with a
+    /// gentle push in and out, aimed so the bike sits right of centre, clear of the wordmark on the left.
+    func update(dt: Float, time: Float, speederX: Float, speederY: Float, bank: Float, speedNorm: Float, shake: Bool, curveAhead: Float, extraShake: Float, inTube: Float, frameShift: Float = 0, title: Float = 0) {
         advanceKick(dt: dt)
         x = damp(x, speederX * (0.5 + 0.25 * inTube) + frameShift, 3.5, dt)
         y = damp(y, (speederY - 1.05) * (0.85 + 0.10 * inTube), 4.0, dt)
         roll = damp(roll, bank * Self.rollGain, Self.rollDamp, dt)
         let offset = shakeOffset(time: time, speedNorm: speedNorm, shake: shake, extra: extraShake)
         let back = baseDistance - speedNorm * 0.8 + kickEnv * 0.45
-        let from = SIMD3<Float>(x, baseHeight + y + speedNorm * 0.25, back) + offset
-        let target = SIMD3<Float>(speederX * 0.55 + curveAhead * 0.35 + (x - speederX * (0.5 + 0.25 * inTube)) * 0.9, 1.0 + y * 0.9, -7)
-        let up = simd_quatf(angle: roll, axis: [0, 0, 1]).act([0, 1, 0])
+        var from = SIMD3<Float>(x, baseHeight + y + speedNorm * 0.25, back) + offset
+        var target = SIMD3<Float>(speederX * 0.55 + curveAhead * 0.35 + (x - speederX * (0.5 + 0.25 * inTube)) * 0.9, 1.0 + y * 0.9, -7)
+        var up = simd_quatf(angle: roll, axis: [0, 0, 1]).act([0, 1, 0])
+        var lens = 52 + speedNorm * Self.speedFov + kickEnv * 9
+        if title > 0.001 {
+            let bike = SIMD3<Float>(speederX, speederY, 0)
+            // two slow sines so the sway never visibly repeats; from behind-left to behind-right
+            let sway = sin(time * 0.11) * 0.5 + sin(time * 0.043 + 1.3) * 0.22 - 0.18
+            let r: Float = 7.4 + sin(time * 0.07) * 0.9
+            let orbit = bike + SIMD3<Float>(sin(sway) * r, 1.15 + sin(time * 0.09) * 0.3, cos(sway) * r)
+            let look = simd_normalize(bike - orbit)
+            let right = simd_normalize(simd_cross(look, [0, 1, 0]))
+            let aim = bike + look * 5 - right * 2.1 + [0, 0.35, 0]
+            let t = title * title * (3 - 2 * title)
+            from = from + (orbit - from) * t
+            target = target + (aim - target) * t
+            up = simd_normalize(up + (SIMD3<Float>(0, 1, 0) - up) * t)
+            lens = lens + (44 - lens) * t
+        }
         root.look(at: target, from: from, upVector: up, relativeTo: nil)
-        fov = damp(fov, 52 + speedNorm * Self.speedFov + kickEnv * 9, Self.fovDamp, dt)
+        fov = damp(fov, lens, Self.fovDamp, dt)
         camera.camera.fieldOfViewInDegrees = fov
     }
 

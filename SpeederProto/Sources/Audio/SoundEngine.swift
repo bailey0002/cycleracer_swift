@@ -54,6 +54,10 @@ final class SoundEngine {
         didSet { engine.mainMixerNode.outputVolume = enabled ? masterVolume : 0 }
     }
     private let masterVolume: Float = 0.8
+    /// The player's MUSIC and EFFECTS levels (0 ... 1). Effects cover the cues and the loops (the
+    /// vehicle, alarms and the ambience bed); music is the generative layers' mixer.
+    var musicVolume: Float = 1 { didSet { musicMix.outputVolume = musicVolume } }
+    var effectsVolume: Float = 1
 
     init() {
         format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
@@ -314,7 +318,7 @@ final class SoundEngine {
         nextShot = (nextShot + 1) % shots.count
         s.player.stop()
         s.pitch.rate = max(0.25, min(4, pitch))
-        s.player.volume = max(0, min(1, volume))
+        s.player.volume = max(0, min(1, volume)) * effectsVolume
         s.player.scheduleBuffer(b, at: nil, options: [], completionHandler: nil)
         s.player.play()
     }
@@ -334,7 +338,7 @@ final class SoundEngine {
             let v = loopVolumes[i]
             let rate: Float = t > v ? 18 : 6
             loopVolumes[i] = damp(v, t, rate, dt)
-            loops[i].player.volume = loopVolumes[i]
+            loops[i].player.volume = loopVolumes[i] * effectsVolume
             loopTargets[i] = 0        // callers re-assert every frame; silence otherwise
         }
         // bar clock: pending layer and rate changes land when the loop crosses a bar line

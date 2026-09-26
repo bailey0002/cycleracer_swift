@@ -86,6 +86,15 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   Audio graph gotchas: connect a sub-mixer's sources before connecting it forward; connect
   `AVAudioUnitReverb` with `format: nil` (a forced mono format throws an ObjC exception that SwiftUI
   swallows: the app idles with no scene and an empty log).
+- Front end 26 Sep 2026 (evening; PR #2 merged into master first, work on branch `claude/front-end`;
+  `docs/polish-log.md` last section, README "Front end", shots in `Captures/polish/p8/sim/`): launch
+  screen + app icon (`Resources/Assets.xcassets`, re-rendered by `swift Tools/render-brand.swift`), a
+  splash with a Core Animation loader that times each stage from the last launch, a title menu
+  (CONTINUE / FREE PLAY / SETTINGS) with a camera drift, persisted player settings (`PlayerPrefs`:
+  music / effects / haptics / graphics preset / Grid steering), a first-run rider step, a pause menu,
+  and the developer panel hidden behind five taps on the version line. One stack of screens
+  (`GameController.screens`) and one row model (`menuRows`) in `Scene/FrontEnd.swift`; views in
+  `Views/FrontEndView.swift`. Fixed on the way: Neon City's rain carried into The Grid and the canyon.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
@@ -98,10 +107,15 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Mac: `xcodebuild -project SpeederProto.xcodeproj -scheme SpeederProto-macOS -configuration Debug -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO build`
 - Visual verification: `screencapture` is blocked here. Run the Mac app with
   `SPEEDER_DEMO=1 SPEEDER_CAPTURE_DIR=<dir> SPEEDER_CAPTURE_TIMES=4,9,17` (fixed 60 Hz step, frames
-  are deterministic and pixel-aligned between runs) and Read the PNGs. `SPEEDER_DEMO_BIAS=-0.45`
+  are aligned between runs; since pass 2's rain about 8 % of pixels differ run to run and a lightning
+  flash can land on one run only, so A/B by eye or against a master-vs-master diff) and Read the PNGs.
+  The demo starts in the game; `SPEEDER_TITLE=1` or `SPEEDER_SCREEN=<screen>` shows the front end. `SPEEDER_DEMO_BIAS=-0.45`
   takes the tunnel branch; `SPEEDER_VARIANT=canyon` etc. applies a preset. Allow ~30 s per run.
 - Phone (Mark's iPhone 12, paired over Wi-Fi, id 1438FC4B-510E-5302-9AAE-0833BC5A856F, team HNBN55RN29):
-  the exact build/install/launch command is in `SpeederProto/README.md`. Launch is refused when the
+  the exact build/install/launch command is in `SpeederProto/README.md`. Build the phone in **Release**
+  (`build-device/Build/Products/Release-iphoneos`): ready 3.9 s after launch, Debug is about four
+  times slower (the procedural textures are Swift pixel loops). `devicectl ... process launch --console`
+  streams stdout (`load:` lines). Launch is refused when the
   phone is locked; the install itself also fails on a locked phone (CoreDevice error 12040, "developer
   disk image could not be mounted"), so ask the user to unlock and retry. The user expects every
   meaningful build to be pushed to the phone without being asked.
@@ -161,7 +175,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   but `process launch` is refused (FBSOpenApplicationServiceErrorDomain error 1) until unlocked.
 - Arena captures: `SPEEDER_ARENA_CAMERA=overview` gives a layout view, `side` a side elevation; the chase camera cannot
   show elevated trails or trail cuts. Capture times with decimals are allowed (`frame-1.5.png`).
-- The MCP iOS simulator panel crashed in this session; `xcrun simctl io <udid> screenshot` works
+- The MCP iOS simulator tool worked again on 26 Sep 2026 (headless `screenshot` / `tap`, portrait
+  coordinates: tool (x, y) = (390 - landscape y, landscape x)); it drove the front-end flows by touch.
+  Earlier it crashed; `xcrun simctl io <udid> screenshot` always works
   and `SIMCTL_CHILD_<VAR>` passes env vars to `simctl launch`. `Captures/polish/simshot.sh` wraps
   that (delays from launch); the simulator covers ~25 m of track per wall second and scene time
   starts ~14 s after launch, later when the Mac is busy, so take several delays per scene.
@@ -170,6 +186,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   long arena logs one at a time.
 - Demo mode pulses the accept button (`Int(time * 2) % 3 == 0`); a held accept has no edge, so a
   result card was never accepted in the arena and the corridor loop stalled after a rebuild.
+- Front end: `SPEEDER_SCREEN=title|worlds|settings|rider|paused|game` opens a screen once the world is
+  built (rider as the first run). Player settings never apply in the demo, and the title camera blend
+  starts at 0 there, so captures keep the reference look. The first START on a device with no stored
+  `callsign` goes to the rider screen. iOS caches launch screens: reboot the phone if the old one shows.
+- Weather state (`post.rain`, `post.lightning`) is reset in `build()`; it is only written in worlds with
+  rain, so without the reset it leaked into the next world.
 - `SPEEDER_MISSION=<n>` writes `cleared = n` to UserDefaults when n is past the cleared count (the
   inbox lists the chain); use `SPEEDER_RESET_PROGRESS=1` with it for a clean slate.
 

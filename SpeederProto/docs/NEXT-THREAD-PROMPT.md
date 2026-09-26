@@ -101,3 +101,27 @@ Next thread, in order:
 3. D4 proof on the player character, then the four contacts / rivals; the portrait PNGs replace
    `ProceduralTextures.portrait` through `Rival.portrait(for:)`.
 4. Then B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.
+
+---
+
+## Status 26 Sep 2026 (evening): the front end is built
+
+PR #2 is merged into master. The front end (splash with launch screen and app icon, title menu with
+CONTINUE / FREE PLAY / SETTINGS, persisted player settings, first-run rider step, pause menu, the
+developer panel hidden behind five taps on the version line) is on branch `claude/front-end`
+(`docs/polish-log.md` last section, README "Front end"). The phone now gets a Release build (README
+command); it was installed and launched on the iPhone 12 (ready 3.9 s after launch).
+
+Next thread, in order:
+1. The phone pass with the Backbone, now including the front end: the launch screen and splash on the
+   device (reboot the phone if the old black launch screen is cached), menu navigation and the pad
+   callsign entry, the keyboard callsign in landscape, the haptics switch, MUSIC / EFFECTS levels by
+   ear, GRAPHICS presets against the frame rate (BALANCED if HIGH drops frames on the iPhone 12), then
+   everything in the earlier list (touch buttons, hum and rumble, the mix, the rival card, livery tint).
+2. Balance (unchanged): chapter-3 density, the dive windows, garage prices.
+3. D4 proof on the player character (CC5 / iClone 8), then the contacts; the title screen can then show
+   the rider beside the bike.
+4. Front-end follow-ups if wanted: an attract run after 20 s idle on the title (the demo drive with the
+   HUD hidden), a message log (the debriefs, reread from the title), controls remapping, the
+   `WorldScroller` build (1.6 to 2 s on the main thread) moved into smaller steps so the splash is shorter.
+5. B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.

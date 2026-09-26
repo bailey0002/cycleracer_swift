@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 import Combine
 import RealityKit
 import simd
@@ -15,6 +16,7 @@ final class GameController: ObservableObject {
             if settings.environment != oldValue.environment, world != nil || arena != nil {
                 var s = settings
                 (Theme(rawValue: s.environment) ?? .neonCity).adjust(&s)
+                if !demoMode { prefs.apply(to: &s) }
                 settings = s
                 requestRebuild()
                 return
@@ -30,7 +32,7 @@ final class GameController: ObservableObject {
     let sound = SoundEngine()
     /// The controls hint shows for the first half minute and whenever the settings panel opens.
     @Published var hintVisible = true
-    private var hintTimer: Float = 0
+    var hintTimer: Float = 0
     /// Button art for the connected pad (published when it changes).
     @Published var glyphs = ControllerGlyphs()
     private var lastTickSecond = -1
@@ -53,9 +55,36 @@ final class GameController: ObservableObject {
     private var runClock: Float = 0
     /// The rider's identity, published for the HUD.
     @Published var player = Player()
-    /// The title screen: the world's front door. A / F / tap starts. Off for the demo and captures.
-    @Published var titleVisible = !(ProcessInfo.processInfo.environment["SPEEDER_DEMO"] == "1") && ProcessInfo.processInfo.environment["SPEEDER_TITLE"] != "0"
-    private var titleFirePrev = false
+    /// The screen stack (see `Screen`, `FrontEnd.swift`): the splash, then the title, its sub screens,
+    /// the game, a pause. The demo and `SPEEDER_TITLE=0` start in the game (captures); `SPEEDER_TITLE=1`
+    /// keeps the front end in the demo.
+    @Published var screens: [Screen] = {
+        let env = ProcessInfo.processInfo.environment
+        if env["SPEEDER_TITLE"] == "0" || (env["SPEEDER_DEMO"] == "1" && env["SPEEDER_TITLE"] != "1" && env["SPEEDER_SCREEN"] == nil) { return [.game] }
+        return [.loading]
+    }()
+    /// The highlighted row of the current screen's list (restored when a screen is popped).
+    @Published var menuIndex = 0
+    var indexStack: [Int] = []
+    /// The player's persisted settings (music / effects / haptics / graphics / steering).
+    @Published var prefs = PlayerPrefs.load(.standard)
+    /// The world is built and the curtain is opening (false while building or rebuilding).
+    @Published var worldReady = false
+    /// The splash loader's stage (label, target fill, expected seconds).
+    @Published var loadStage = LoadStage()
+    /// A pad callsign edit in progress on the rider screen.
+    @Published var callsignEdit: CallsignEdit? = nil
+    /// RESET PROGRESS was pressed once; the next press resets.
+    @Published var resetArmed = false
+    /// The rider screen was opened by the first START (RIDE goes on to the first briefing).
+    @Published var riderFirstRun = false
+    var devTaps = 0
+    var navHold: (dir: Int, t: Float) = (0, 0)
+    var navPrev: (select: Bool, back: Bool) = (false, false)
+    /// The world was built for the job loop (its track, contact and props), not for free play.
+    var builtForJobs = false
+    /// 0 ... 1: the title camera drift's share of the framing.
+    private var titleMix: Float = 0
     private var lastStyle: SegmentStyle? = nil
     private var boostPrev = false
     /// Held boost, eased: 150 ms in, 400 ms out. One scalar for the post pass, the exhaust and the HUD.
@@ -82,11 +111,9 @@ final class GameController: ObservableObject {
     private let holdResult = ProcessInfo.processInfo.environment["SPEEDER_HOLD_RESULT"] == "1"
     private var missionHitsSeen = 0
     private var missionKillsSeen = 0
-    #if os(macOS)
-    @Published var panelVisible = true
-    #else
+    /// The developer panel: hidden from players (five taps on the version line in SETTINGS unlock it;
+    /// the Mac has it unlocked, with ` as a toggle). `SPEEDER_PANEL=1` opens it at launch.
     @Published var panelVisible = ProcessInfo.processInfo.environment["SPEEDER_PANEL"] == "1"
-    #endif
 
     private var materials: SceneMaterials?
     private let worldAnchor = AnchorEntity(world: .zero)
@@ -123,12 +150,12 @@ final class GameController: ObservableObject {
     private var invulnerable: Float = 0
     private var shakeBurst: Float = 0
     private let sparks = Entity()
-    private let gamepad = GamepadInput()
+    let gamepad = GamepadInput()
     private var weapons: WeaponSystem?
     private var kills = 0
     private var sparkTimer: Float = 0
     /// SPEEDER_DEMO=1 scripts steering/boost; SPEEDER_CAPTURE_DIR=<dir> saves frames at fixed times.
-    private let demoMode = ProcessInfo.processInfo.environment["SPEEDER_DEMO"] == "1"
+    let demoMode = ProcessInfo.processInfo.environment["SPEEDER_DEMO"] == "1"
     private let captureDir = ProcessInfo.processInfo.environment["SPEEDER_CAPTURE_DIR"]
     private var captureTimes: [Float] = (ProcessInfo.processInfo.environment["SPEEDER_CAPTURE_TIMES"] ?? "4,7,10").split(separator: ",").compactMap { Float($0) }
     /// SPEEDER_SWEEP=1: capture a frame per disabled technique for A/B comparison.
@@ -162,6 +189,11 @@ final class GameController: ObservableObject {
             settings.environment = missions.current.theme.rawValue
             missions.current.theme.adjust(&settings)
         }
+        if !demoMode { prefs.apply(to: &settings) }
+        titleMix = onTitle ? 1 : 0             // the demo starts in the game: no drift in the first frames
+        sound.musicVolume = Float(prefs.music) / 10
+        sound.effectsVolume = Float(prefs.effects) / 10
+        gamepad.enabled = prefs.haptics
         mission = missionActive ? missions.snapshot() : MissionState()
         Task { await build() }
     }
@@ -219,7 +251,7 @@ final class GameController: ObservableObject {
     }
 
     /// Ask for a rebuild: the curtain closes first, the rebuild runs behind it, then it opens.
-    private func requestRebuild() {
+    func requestRebuild() {
         curtainTarget = 1
         pendingRebuild = true
     }
@@ -228,6 +260,7 @@ final class GameController: ObservableObject {
     private func rebuildScene() async {
         guard !rebuilding else { return }
         rebuilding = true
+        worldReady = false
         lastStyle = nil
         world = nil; arena = nil; speeder = nil; cameraRig = nil; weapons = nil; contactAvatar = nil; beacons = nil; pursuer = nil
         for child in worldAnchor.children.map({ $0 }) { child.removeFromParent() }
@@ -243,19 +276,54 @@ final class GameController: ObservableObject {
     }
 
     private func build() async {
+        let t0 = CACurrentMediaTime()
+        func mark(_ stage: String) { print(String(format: "load: %@ %.2f s (%.2f s since launch)", stage, CACurrentMediaTime() - t0, CACurrentMediaTime() - SpeederApp.launchTime)) }
+        worldReady = false
+        let buildTheme = Theme(rawValue: settings.environment) ?? .neonCity
+        // the splash loader: three stages, each expected to take what it took last time on this device
+        let d = UserDefaults.standard
+        let keys = ["surfaces", "vehicle", "world"]
+        let fallback: [Double] = [1.0, 0.6, buildTheme == .theGrid ? 0.6 : 2.2]
+        let expected = keys.indices.map { i -> Double in
+            let k = "load.\(buildTheme.rawValue).\(keys[i])"
+            return d.object(forKey: k) == nil ? fallback[i] : max(0.05, d.double(forKey: k))
+        }
+        let total = expected.reduce(0, +)
+        var stageStart = CACurrentMediaTime()
+        var stageIndex = -1
+        func stage(_ i: Int, _ label: String) async {
+            if stageIndex >= 0 { d.set(CACurrentMediaTime() - stageStart, forKey: "load.\(buildTheme.rawValue).\(keys[stageIndex])") }
+            stageIndex = i
+            stageStart = CACurrentMediaTime()
+            guard i < keys.count else { loadStage = LoadStage(id: loadStage.id + 1, label: "READY", to: 1, seconds: 0.25); return }
+            let to = Float(expected[0...i].reduce(0, +) / total) * 0.96
+            loadStage = LoadStage(id: loadStage.id + 1, label: label, to: to, seconds: expected[i] * 1.1)
+            // let the splash draw the stage (and start its fill) before the next block of main-thread work
+            if screens.first == .loading { try? await Task.sleep(nanoseconds: 30_000_000) }
+        }
         do {
-            theme = Theme(rawValue: settings.environment) ?? .neonCity
+            theme = buildTheme
             post.theme = theme
+            // weather belongs to the world: without this the canyon and The Grid kept Neon City's rain
+            // (post.rain is only written where it rains) after any in-app world change
+            rainLevel = 0; lightning = 0
+            post.rain = 0; post.lightning = 0
+            await stage(0, "SURFACES")
             sound.setMusic(world: theme.rawValue)
             let device = MTLCreateSystemDefaultDevice()
+            mark("start")
             let materials = try SceneMaterials(device: device, theme: theme)
             self.materials = materials
+            mark("materials")
+            await stage(1, "VEHICLE")
 
             arView.environment.lighting.resource = materials.environment
             arView.environment.lighting.intensityExponent = theme.iblExponent
             arView.environment.background = .skybox(materials.environment)
 
             let speeder = try await SpeederController.load(materials: materials)
+            mark("vehicle")
+            await stage(2, theme.displayName)
             worldAnchor.addChild(speeder.root)
             self.speeder = speeder
             player = missions.player
@@ -273,6 +341,7 @@ final class GameController: ObservableObject {
             } else {
                 let program = missionActive ? TrackProgram(blocks: missions.current.blocks) : TrackProgram()
                 let world = WorldScroller(materials: materials, settings: settings, program: program)
+                mark("track")
                 distance = 0; hits = 0; missionHitsSeen = 0; kills = 0; missionKillsSeen = 0
                 if missionActive {
                     let m = missions.current
@@ -289,6 +358,7 @@ final class GameController: ObservableObject {
                     // the contact waits beside the bike; hidden once the job is live
                     do {
                         let avatar = try await AvatarActor.load()
+                        mark("contact")
                         avatar.root.position = [2.6, 0, -1.5]
                         avatar.face([0, 1.5, 6])
                         worldAnchor.addChild(avatar.root)
@@ -338,11 +408,21 @@ final class GameController: ObservableObject {
                 self.weapons = weapons
             }
 
+            mark("world")
+            await stage(3, "")
             arView.scene.addAnchor(worldAnchor)
             applySettings()
             curtainTarget = 0
+            builtForJobs = missionActive
+            worldReady = true
             updateSub = arView.scene.subscribe(to: SceneEvents.Update.self) { [weak self] ev in
                 self?.update(dt: Float(ev.deltaTime))
+            }
+            if screens.first == .loading {
+                // the splash hands over as the curtain opens: the wordmark flies to its place on the title
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                screens = initialScreens()
+                menuIndex = 0
             }
         } catch {
             loadError = "\(error)"
@@ -427,12 +507,30 @@ final class GameController: ObservableObject {
     private func update(dt rawDt: Float) {
         guard let speeder, let cameraRig else { return }
         let dt: Float = demoMode ? 1.0 / 60.0 : min(max(rawDt, 1.0 / 240.0), 1.0 / 20.0)
-        time += dt
         updateCurtain(dt: dt)
         let input = arView.input
         gamepad.poll(into: input)
-        hintTimer += dt
         if gamepad.glyphs != glyphs { glyphs = gamepad.glyphs; hintVisible = true; hintTimer = 0 }
+        // the front end owns the pad and the keys; in a run, Menu / Escape pauses
+        if screen != .game {
+            if demoMode { input.menuRequested = false } else { frontEndInput(input, dt: dt) }
+        } else if input.menuRequested {
+            input.menuRequested = false
+            pause()
+        }
+        titleMix = damp(titleMix, onTitle ? 1 : 0, onTitle ? 0.9 : 1.8, dt)
+        if simFrozen {
+            // paused: the frame holds, the loops fall silent (they need re-asserting each frame), the pad plays
+            missionFirePrev = input.firing
+            arenaPrev.fire = input.firing
+            sound.setMusic(intensity: 0.4)
+            gamepad.engineHum(intensity: 0, sharpness: 0)
+            handleCommonInput(input)
+            publishAck(dt: dt)
+            return
+        }
+        time += dt
+        hintTimer += dt
         if hintVisible && hintTimer > 8 && !panelVisible { hintVisible = false }
         // no job loop here (free play, or a world the current job does not use): no stale card
         if !missionActive && mission.phase != .freePlay { mission = MissionState() }
@@ -464,17 +562,14 @@ final class GameController: ObservableObject {
         if input.speedUp && !cruiseLocked { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
         if input.speedDown && !cruiseLocked { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
         // missions: A / F / tap accepts a briefing or a result; the vehicle only moves during a live job
-        if titleVisible {
+        if missionActive {
+            // the job loop runs under the title too (parked, briefed); only the game takes the accept
             let fire = input.firing
-            if fire && !titleFirePrev { startFromTitle() }
-            titleFirePrev = fire
+            if screen == .game {
+                if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
+                briefingInput(input)
+            }
             missionFirePrev = fire
-        }
-        if missionActive && !titleVisible {
-            let fire = input.firing
-            if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
-            missionFirePrev = fire
-            briefingInput(input)
             var beaconHits = 0
             if let beacons, missions.isRunning {
                 beaconHits = beacons.update(distance: distance, roadX: { world.offset(atWorldZ: $0) - world.playerOffset }, playerX: speeder.x, playerY: speeder.altitude, time: time)
@@ -534,6 +629,7 @@ final class GameController: ObservableObject {
             if demoMode && Int(time * 4) % 4 == 0 && statsAccumulator > 0.2, let a = contactAvatar { print("avatar \(a.debugBounds())") }
         }
         if !missionActive { sound.setMusic(intensity: input.boosting ? 2 : 1, lead: input.boosting, gated: true) }
+        if onTitle { sound.setMusic(intensity: 1) }         // the title: pad and bass
         sound.setAmbience((0.5 - world.enclosure * 0.3) * (settings.weather || theme != .neonCity ? 1 : 0.7))
         sound.setEnclosure(world.enclosure)
         let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
@@ -672,7 +768,7 @@ final class GameController: ObservableObject {
         } else {
             cameraRig.update(dt: dt, time: time, speederX: speeder.x, speederY: speeder.altitude, bank: camBank, speedNorm: speedNorm,
                              shake: settings.cameraShake, curveAhead: curveAhead, extraShake: shakeBurst, inTube: world.tubeBlend,
-                             frameShift: parked ? -2.2 : 0)
+                             frameShift: parked ? -2.2 : 0, title: titleMix)
         }
 
         // speed particles follow the vehicle speed (none while parked)
@@ -755,15 +851,6 @@ final class GameController: ObservableObject {
     /// The rival card can be skipped with A once it has been up for a moment.
     private static let introSkipAfter = MissionRunner.introDuration - 0.8
 
-    /// Leave the title screen (also called by a tap on it).
-    func startFromTitle() {
-        guard titleVisible else { return }
-        titleVisible = false
-        sound.play(.accept)
-        gamepad.rumble(intensity: 0.3, sharpness: 0.5)
-        hintVisible = true; hintTimer = 0
-    }
-
     // MARK: - Identity
 
     func setCallsign(_ raw: String) {
@@ -772,8 +859,10 @@ final class GameController: ObservableObject {
         mission = missions.snapshot()
         sound.play(.tick, volume: 0.5, pitch: 1.2)
     }
-    func cycleLivery() {
-        missions.cycleLivery()
+    func cycleLivery() { setLivery(player.livery + 1) }
+    /// Pick a livery (wraps): the bike, the trail colour and the HUD tint follow on the same frame.
+    func setLivery(_ i: Int) {
+        missions.setLivery(i)
         player = missions.player
         mission = missions.snapshot()
         if let speeder, let materials {
@@ -859,7 +948,7 @@ final class GameController: ObservableObject {
     private func count(_ e: Entity) -> Int { 1 + e.children.reduce(0) { $0 + count($1) } }
 
     /// Missions run in the corridor worlds when the toggle is on.
-    private var missionActive: Bool { settings.missions && missions.current.theme.rawValue == settings.environment }
+    var missionActive: Bool { settings.missions && missions.current.theme.rawValue == settings.environment }
 
     /// Free play: the result card's A / F / tap restarts the match against the next rival.
     private func restartArenaMatch(_ arena: ArenaController) {
@@ -943,8 +1032,10 @@ final class GameController: ObservableObject {
     private func handleCommonInput(_ input: InputState) {
         if input.panelToggleRequested {
             input.panelToggleRequested = false
-            panelVisible.toggle()
-            if panelVisible { hintVisible = true; hintTimer = 0 }
+            if prefs.devUnlocked {
+                panelVisible.toggle()
+                if panelVisible { hintVisible = true; hintTimer = 0 }
+            }
         }
         if input.screenshotRequested {
             input.screenshotRequested = false
@@ -1003,13 +1094,12 @@ final class GameController: ObservableObject {
             // duel: the briefing holds the arena; A / F / tap accepts, the arena's score decides the job
             // the demo pulses its accept (a held button has no edge, so the result card would stay up)
             let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing) && Int(time * 2) % 3 == 0)
-            if titleVisible {
-                if fire && !titleFirePrev { startFromTitle() }
-                titleFirePrev = fire
+            if screen != .game {
+                // the front end has the buttons
             } else if fire && !missionFirePrev && missions.phase != .running && missions.phase != .rivalIntro { acceptMission() }
             else if fire && !missionFirePrev && missions.phase == .rivalIntro && !demoMode && missions.snapshot().introLeft < Self.introSkipAfter { acceptMission() }
             missionFirePrev = fire
-            briefingInput(input)
+            if screen == .game { briefingInput(input) }
             if missions.phase == .rivalIntro { missions.tickIntro(dt: dt); if missions.phase == .running { stamp("ROUND 1", seconds: 1.0); sound.play(.roundStart, volume: 0.6) } }
             missions.lastDerezCause = arena.stateText
             arena.paused = missions.phase != .running
@@ -1059,6 +1149,7 @@ final class GameController: ObservableObject {
         let target = arena.matchTarget == Int.max ? (missionActive ? missions.current.duelTarget : 3) : arena.matchTarget
         let final = arenaLive && (arena.wins == target - 1 || arena.losses == target - 1)
         sound.setMusic(intensity: arenaLive ? (hot ? 2 : 1) : 0.4, lead: arena.wins > arena.losses || (cmd.boost && arena.energy > 0.02), finalStretch: final, gated: true)
+        if onTitle { sound.setMusic(intensity: 1) }
         if ev.roundLost || ev.voidRound { sound.musicCut() }
         if ev.matchWon { sound.musicSlam() }
         sound.setAmbience(0.35)
@@ -1079,7 +1170,8 @@ final class GameController: ObservableObject {
         post.flash = flash
         shakeBurst = max(0, shakeBurst - dt * 2.5)
         cameraRig.followArena(dt: dt, time: time, position: player.position + [0, 1.05, 0], forward: player.forward, lean: player.lean,
-                              speedNorm: speedNorm, shake: settings.cameraShake, extraShake: shakeBurst, orbit: arena.cameraOrbit,
+                              speedNorm: speedNorm, shake: settings.cameraShake, extraShake: shakeBurst,
+                              orbit: onTitle ? (center: player.position, progress: 0.25) : arena.cameraOrbit,
                               overview: overviewCamera, ground: arena.groundHeight, side: sideCamera)
         arena.placeRivalTag(camera: cameraRig.position)
         if settings.particles, var e = speedParticles.components[ParticleEmitterComponent.self] {

@@ -1,9 +1,12 @@
 import SwiftUI
+import QuartzCore
 
 @main
 struct SpeederApp: App {
+    /// Process start, as early as Swift sees it (the load log measures from here).
+    static let launchTime = CACurrentMediaTime()
     @StateObject private var controller = GameController()
-    init() { setvbuf(stdout, nil, _IOLBF, 0); HUDStyle.registerFonts() }
+    init() { _ = Self.launchTime; setvbuf(stdout, nil, _IOLBF, 0); HUDStyle.registerFonts() }
 
     var body: some Scene {
         WindowGroup("Speeder") {
