@@ -731,7 +731,8 @@ final class ArenaController {
         let p = player.position + [0, 0.9, 0]
         derezAt(p, color: Self.playerColor)
         breachTrails(at: player.xz)
-        playerVehicle.setVisible(false)
+        playerVehicle.beginDissolve(color: Self.playerColor, library: materials.library)
+        dissolve.player = 0.001
         player.alive = false
         flash = 1.0
         shake = 1.0
@@ -750,7 +751,8 @@ final class ArenaController {
         let p = opponent.position + [0, 0.9, 0]
         derezAt(p, color: Self.opponentColor)
         breachTrails(at: opponent.xz)
-        opponentVehicle?.root.isEnabled = false
+        opponentVehicle?.beginDissolve(color: Self.opponentColor, library: materials.library)
+        dissolve.opponent = 0.001
         pulseOrigin = (opponent.id, trails.trails[opponent.id].headS, time)
         shake = max(shake, 0.5)
         flash = max(flash, 0.5)
@@ -950,7 +952,25 @@ final class ArenaController {
         }
     }
 
+    /// Derez burn timers (0 = idle): the cycle dissolves along a noise front over half a second, then hides.
+    private var dissolve = (player: Float(0), opponent: Float(0))
+    static let dissolveDuration: Float = 0.55
+
+    private func updateDissolve(dt: Float) {
+        if dissolve.player > 0 {
+            dissolve.player += dt
+            let t = dissolve.player / Self.dissolveDuration
+            if t >= 1 { dissolve.player = 0; playerVehicle.setVisible(false) } else { playerVehicle.updateDissolve(progress: t) }
+        }
+        if dissolve.opponent > 0 {
+            dissolve.opponent += dt
+            let t = dissolve.opponent / Self.dissolveDuration
+            if t >= 1 { dissolve.opponent = 0; opponentVehicle?.endDissolve(); opponentVehicle?.root.isEnabled = false } else { opponentVehicle?.updateDissolve(progress: t) }
+        }
+    }
+
     private func updateFX(dt: Float) {
+        updateDissolve(dt: dt)
         sparkTimer -= dt
         if sparkTimer <= 0, var e = sparks.components[ParticleEmitterComponent.self], e.mainEmitter.birthRate > 0 {
             e.mainEmitter.birthRate = 0
@@ -1002,7 +1022,7 @@ final class ArenaController {
         var pos = player.position
         if phaseTimer > 0 { pos.y += sin(time * 60) * 0.02 }
         playerVehicle.poseArena(position: pos, heading: player.visualHeading, lean: player.lean, pitch: player.pitch, time: time, speedNorm: sp, airborne: player.airborne)
-        if phaseTimer > 0 { playerVehicle.setVisible(Int(time * 24) % 4 != 0) } else if player.alive { playerVehicle.setVisible(true) }
+        if dissolve.player <= 0 { if phaseTimer > 0 { playerVehicle.setVisible(Int(time * 24) % 4 != 0) } else if player.alive { playerVehicle.setVisible(true) } }
         if let ov = opponentVehicle {
             ov.poseArena(position: opponent.position, heading: opponent.visualHeading, lean: opponent.lean, pitch: opponent.pitch, time: time,
                          speedNorm: clamp01((opponent.speed - 10) / 60), airborne: opponent.airborne)

@@ -1,5 +1,6 @@
 import Foundation
 import RealityKit
+import Metal
 import simd
 
 /// Gameplay root for the vehicle. The imported model sits in a holder that fixes
@@ -266,5 +267,64 @@ final class SpeederController {
         }
     }
 
-    func setVisible(_ on: Bool) { holder.isEnabled = on; for g in glows { g.isEnabled = on }; underGlow?.isEnabled = on; shadow?.isEnabled = on; trail?.isEnabled = on }
+    func setVisible(_ on: Bool) {
+        if on { endDissolve() }
+        holder.isEnabled = on; for g in glows { g.isEnabled = on }; underGlow?.isEnabled = on; shadow?.isEnabled = on; trail?.isEnabled = on
+    }
+
+    // MARK: - Derez dissolve
+
+    private var dissolveOriginals: [(ModelEntity, [any Material])] = []
+    private var dissolveMaterials: [(ModelEntity, [CustomMaterial?])] = []
+
+    /// Swap the model's materials for the dissolve shader (keeps each material's base colour texture
+    /// and tint). `color` is the hot rim. No-op when the Metal library is missing.
+    func beginDissolve(color: SIMD3<Float>, library: MTLLibrary?) {
+        guard dissolveOriginals.isEmpty, let library else { return }
+        let shader = CustomMaterial.SurfaceShader(named: "dissolveSurface", in: library)
+        var models: [ModelEntity] = []
+        func walk(_ e: Entity) { if let m = e as? ModelEntity { models.append(m) }; for c in e.children { walk(c) } }
+        walk(holder)
+        for m in models {
+            guard let model = m.model else { continue }
+            dissolveOriginals.append((m, model.materials))
+            var custom: [CustomMaterial?] = []
+            var replaced: [any Material] = []
+            for mat in model.materials {
+                if let pbm = mat as? PhysicallyBasedMaterial, var cm = try? CustomMaterial(from: pbm, surfaceShader: shader) {
+                    cm.custom.value = SIMD4<Float>(0, color.x, color.y, color.z)
+                    cm.opacityThreshold = 0.5
+                    custom.append(cm); replaced.append(cm)
+                } else {
+                    custom.append(nil); replaced.append(mat)
+                }
+            }
+            var mm = model; mm.materials = replaced; m.model = mm
+            dissolveMaterials.append((m, custom))
+        }
+        for g in glows { g.isEnabled = false }
+        trail?.isEnabled = false
+    }
+
+    /// Advance the burn: 0 whole, 1 gone. Materials are values, so they are re-assigned each call.
+    func updateDissolve(progress: Float) {
+        guard !dissolveMaterials.isEmpty else { return }
+        for (m, mats) in dissolveMaterials {
+            guard var model = m.model else { continue }
+            var out = model.materials
+            for (i, cm) in mats.enumerated() {
+                guard var c = cm else { continue }
+                var v = c.custom.value; v.x = progress; c.custom.value = v
+                out[i] = c
+            }
+            model.materials = out
+            m.model = model
+        }
+    }
+
+    func endDissolve() {
+        guard !dissolveOriginals.isEmpty else { return }
+        for (m, mats) in dissolveOriginals { if var model = m.model { model.materials = mats; m.model = model } }
+        dissolveOriginals.removeAll(); dissolveMaterials.removeAll()
+    }
 }

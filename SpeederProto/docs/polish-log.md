@@ -179,3 +179,21 @@ binary is in `build-device/` (the phone was locked; install pending).
 Not verified here: the haptics and the on-screen buttons (need the phone), the callsign keyboard on
 the phone, the livery tint on The Grid by play. Pad browsing of the livery / callsign is not built
 (touch or click only); a pad flow belongs with the title screen in pass 3.
+
+## Pass 2 of the market assessment: the world (26 Sep 2026)
+
+Assessment section 7, pass 2 (A1, A4, A5, B2 in its lightweight form, B3, A7). Captures in
+`Captures/polish/p7/world-*`, `rain2`, `grid-side`, `grid-crash2`.
+
+| Item | What changed | Capture |
+|---|---|---|
+| A1 sky and far layer | Night sky gains a hash-grid star field and a moon with a halo (also in the IBL); the Grid sky faint stars. `SkylineLayer` is theme-aware and has two parallax rings: the mid ring (towers, or wide mesas in the canyon) and a new far ring of dark wide silhouettes (150 to 380 m tall city slabs with antenna tips and neon strips; 90 to 200 m mesas) scrolling at a third of the mid ring's rate; the depth fog is the haze between them | `world-overview2/frame-6`, `world-canyon/frame-6` (far mesas replace the city towers the canyon used to show) |
+| A4 brand typography | Brand mega-signs (up to 70 m wide, the existing procedural sign atlas) on the road-facing faces of far-ring slabs | `world-overview2/frame-6` (top right) |
+| A5 weather | Screen-space rain in the composite pass (two hashed streak layers, slanted, faster and wider near; strength eases out inside the tunnels and the conduit; `weather` toggle) and lightning every 9 to 17 s (a cool lift on the haze and the frame for ~150 ms, a soft rumble; `SPEEDER_LIGHTNING_AT=<s>` for captures). A particle-emitter version was tried first and produced almost nothing on screen; the post pass version is deterministic and also shows in the simulator | `rain2/frame-5`, `rain3/frame-9.0` |
+| B2 / B3 post pass | Linear depth is computed once per pixel and shared. Motion blur by reprojection: the world moves rigidly toward the camera, so last frame's position of a pixel is `travel` further away; six taps from here toward there, weighted to the outer ring, never on the vehicle (a mask around its projected centre and a depth test) with a shutter that opens with boost. The chromatic offset is applied inside every sample (`fetchCA`), which fixed a first cut where red and blue were re-sampled unblurred and fringed every blurred pixel. Ghost flares (three mirrored samples of the wide bloom, tinted) and a procedural lens-dirt mask lit by the bloom (`Theme.lensScale`); interleaved-gradient dither before the 8-bit write. The thruster haze now only refracts what is behind the bike | `world-neon2/frame-9` (cruise), `world-boost2/frame-9` (boost) |
+| A7 The Grid | Trail walls are hot, not glass: a bright rim along the top edge, a heat flicker along the length, a translucent body; the glow skirt shimmers. Derez is a dissolve: the cycle's materials are swapped for `dissolveSurface` (a `CustomMaterial(from:)` per PBR material, so textures and tints survive) and burn away along a 3D noise front with a rim in the trail colour over 0.55 s, then the model hides; the shard burst and the light remain. `SpeederController.beginDissolve / updateDissolve / endDissolve`; `setVisible(true)` restores the originals | `grid-side/frame-8`, `grid-crash2/frame-5.2` |
+
+Not built from pass 2: A6 (building archetypes and batching) is deferred to pass 4 with the
+instancing gate; the volumetric fog slices and the datamosh glitch from the technique table were not
+started. Not verified here: phone frame time with the blur (six full-resolution taps in the outer
+ring; `motionBlur` and `lensFX` are HUD toggles so the phone pass can turn them off).

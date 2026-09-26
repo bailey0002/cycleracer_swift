@@ -30,6 +30,9 @@ struct FXSettings: Equatable {
     var bloom       = true
     var streaks     = true
     var colorGrade  = true
+    var motionBlur  = true      // depth-aware radial blur in the outer ring
+    var lensFX      = true      // ghost flares + lens dirt from the bright pass
+    var weather     = true      // rain and lightning where the world has them
     var cruiseSpeed: Float = 45  // m/s
     // The Grid (arena mode)
     var steeringMode = 0        // 0 analog velocity steering, 1 ninety-degree snap turns

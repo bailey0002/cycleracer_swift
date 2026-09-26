@@ -15,6 +15,9 @@ struct PostUniforms {
     var flags          = SIMD4<Float>(1, 1, 1, 1)
     var section        = SIMD4<Float>(0, 0, 0, 0)   // x: enclosure (tunnel/conduit)  y: curtain  z: kick  w: boost level
     var haze           = SIMD4<Float>(0.5, 0.5, 0, 0.08)  // x,y: thruster (uv)  z: strength  w: radius
+    var extra          = SIMD4<Float>(0, 1, 0, 0)         // x: lightning  y: dither  z: lens FX  w: motion blur (metres per frame x shutter)
+    var vehicle        = SIMD4<Float>(0.8, 0.6, 6, 0.4)    // x,y: vehicle centre (uv)  z: its distance (m)  w: mask radius
+    var weather        = SIMD4<Float>(0, 0, 0, 0)         // x: rain strength  y: rain speed  z,w: unused
 }
 
 /// Full-screen Metal post pass driven from ARView's render callback:
@@ -27,6 +30,12 @@ final class PostProcessor {
     var settings = FXSettings()
     var vanishing = SIMD2<Float>(0.5, 0.45)
     var speedNorm: Float = 0
+    /// Vehicle speed in m/s (the world's motion for the reprojection blur).
+    var speed: Float = 0
+    /// Lightning flash 0...1 (decays fast).
+    var lightning: Float = 0
+    /// Screen-space rain strength 0...1 (eased; off in enclosed sections).
+    var rain: Float = 0
     var flash: Float = 0
     /// 0 in the open, 1 inside a tunnel or conduit: denser, darker fog and a tighter vignette.
     var enclosure: Float = 0
@@ -39,6 +48,9 @@ final class PostProcessor {
     var boost: Float = 0
     /// Thruster position on screen (uv) and haze strength for the heat shimmer.
     var thrusterUV = SIMD2<Float>(0.5, 0.6)
+    /// Vehicle centre on screen and its distance: the blur and the haze leave it alone.
+    var vehicleUV = SIMD2<Float>(0.8, 0.6)
+    var vehicleDistance: Float = 6
     var theme: Theme = .neonCity
     private(set) var sourceFormat: String = "-"
     /// Set to request a readback of the next finished frame.
@@ -64,6 +76,7 @@ final class PostProcessor {
     /// nil = not yet probed, false = depth reads as zero (fog falls back to screen-space)
     private(set) var depthUsable: Bool? = nil
     private var isHDR = false
+    private var texDirt: MTLTexture?
 
     func prepare(device: MTLDevice) {
         self.device = device
@@ -83,6 +96,21 @@ final class PostProcessor {
         scaler = MPSImageBilinearScale(device: device)
         blurNarrow?.edgeMode = .clamp
         blurWide?.edgeMode = .clamp
+        texDirt = Self.texture(from: ProceduralTextures.lensDirt(), device: device)
+    }
+
+    /// RGBA8 texture from a CGImage (the lens dirt mask).
+    private static func texture(from image: CGImage, device: MTLDevice) -> MTLTexture? {
+        let w = image.width, h = image.height
+        var data = [UInt8](repeating: 0, count: w * h * 4)
+        guard let ctx = CGContext(data: &data, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                  space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: w, height: h, mipmapped: false)
+        d.usage = [.shaderRead]
+        guard let tex = device.makeTexture(descriptor: d) else { return nil }
+        tex.replace(region: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0, withBytes: data, bytesPerRow: w * 4)
+        return tex
     }
 
     func process(_ ctx: ARView.PostProcessContext) {
@@ -125,6 +153,9 @@ final class PostProcessor {
         u.misc = SIMD4<Float>(0.0007 + sp * 0.0025 + kk * 0.0015 + boost * 0.0012, Float(ctx.time), th.saturation, th.gradeStrength)
         u.section = SIMD4<Float>(enc, curtain, kk, boost)
         u.haze = SIMD4<Float>(thrusterUV.x, thrusterUV.y, (0.35 + sp * 0.4 + boost * 0.9) * (s.particles ? 1 : 0), 0.06 + boost * 0.05)
+        u.extra = SIMD4<Float>(lightning, 1, s.lensFX ? th.lensScale : 0, s.motionBlur ? speed / 60 * (0.22 + boost * 0.4) : 0)
+        u.vehicle = SIMD4<Float>(vehicleUV.x, vehicleUV.y, vehicleDistance, 0.42)
+        u.weather = SIMD4<Float>(rain, 14 + sp * 10, 0, 0)
         u.proj.z = (isHDR ? 1.2 : 1.0) * th.exposure
         u.proj.w = th.vignette
         let fogMode: Float = s.fog ? (depthUsable == false ? 2 : 1) : 0
@@ -181,6 +212,7 @@ final class PostProcessor {
             enc.setTexture(texBlurB, index: 2)
             enc.setTexture(ctx.sourceDepthTexture, index: 3)
             enc.setTexture(dst, index: 4)
+            if let texDirt { enc.setTexture(texDirt, index: 5) }
             enc.setBytes(&u, length: MemoryLayout<PostUniforms>.stride, index: 0)
             dispatch(enc, composite, width: dst.width, height: dst.height)
             enc.endEncoding()

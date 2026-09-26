@@ -99,6 +99,12 @@ final class GameController: ObservableObject {
     private var rebuilding = false
     private let rim = DirectionalLight()
     private let speedParticles = Entity()
+    /// Rain (screen-space, in the post pass) and the lightning clock.
+    private var rainLevel: Float = 0
+    /// SPEEDER_LIGHTNING_AT=<s> forces the first flash at that scene time (captures).
+    private var lightningTimer: Float = Float(ProcessInfo.processInfo.environment["SPEEDER_LIGHTNING_AT"] ?? "") ?? 7
+    private var lightning: Float = 0
+    private var weatherRNG = SeededRNG(seed: 4242)
     private var updateSub: Cancellable?
 
     private var time: Float = 0
@@ -537,6 +543,18 @@ final class GameController: ObservableObject {
         speeder.tubeBlend = world.tubeBlend
         speeder.wedgeLimit = world.wedgeLimit
         post.enclosure = world.enclosure
+        // weather: rain off in enclosed sections; lightning every 9 to 17 s with a rumble
+        if theme.rain {
+            let wet: Float = settings.weather ? 1 - world.enclosure : 0
+            rainLevel = damp(rainLevel, wet, 3, dt)
+            post.rain = rainLevel
+            if settings.weather {
+                lightningTimer -= dt
+                if lightningTimer <= 0 { lightning = 1; lightningTimer = weatherRNG.float(9, 17); gamepad.rumble(intensity: 0.2, sharpness: 0.2) }
+            }
+            lightning = max(0, lightning - dt * 7)
+            post.lightning = lightning * (1 - world.enclosure) * (settings.weather ? 1 : 0)
+        }
         // section stamp when the player crosses into a new kind of section
         let style = world.currentBlock.style
         if style != lastStyle {
@@ -649,6 +667,7 @@ final class GameController: ObservableObject {
 
         // post-process uniforms
         post.speedNorm = speedNorm
+        post.speed = speed
         post.kick = cameraRig.kickLevel
         post.boost = boostLevel
         ackBoost = boosting
@@ -659,6 +678,10 @@ final class GameController: ObservableObject {
             }
             if let tp = arView.project(speeder.thrusterWorldPosition) {
                 post.thrusterUV = [Float(tp.x / size.width), Float(tp.y / size.height)]
+            }
+            if let cp = arView.project(speeder.root.position) {
+                post.vehicleUV = [Float(cp.x / size.width), Float(cp.y / size.height)]
+                post.vehicleDistance = simd_length(speeder.root.position - cameraRig.position)
             }
         }
 
@@ -1022,6 +1045,7 @@ final class GameController: ObservableObject {
             speedParticles.components.set(e)
         }
         post.speedNorm = speedNorm * 0.8
+        post.speed = 0   // the arena camera moves with the bike; reprojection blur does not apply
         post.kick = cameraRig.kickLevel
         boostLevel = damp(boostLevel, (cmd.boost && arena.energy > 0.02) ? 1 : 0, cmd.boost ? 13 : 5, dt)
         post.boost = boostLevel

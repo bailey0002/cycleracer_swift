@@ -71,7 +71,13 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   callsign / livery, comms lines, haptics director) built and capture-verified 26 Sep 2026
   (`docs/polish-log.md`, `Captures/polish/p7/`). Fonts: `Resources/Fonts` (Chakra Petch, SIL OFL),
   registered at launch, no plist keys. The simulator exposes a virtual "Gamepad", so it never shows
-  the touch buttons; only the phone does. Pass 2 (the world) is next.
+  the touch buttons; only the phone does. Pass 2 (the world: stars / moon, two-ring skyline with
+  mega-signs, screen-space rain + lightning, reprojection blur + ghosts + dirt + dither, hot Grid
+  trails, dissolve derez) built and verified the same day. Gotchas: apply the chromatic offset inside
+  every post-pass sample (re-sampling R/B after a blur fringes everything); a particle-emitter rain
+  child of the camera rig rendered almost nothing, the rain lives in `PostFX.metal` instead;
+  `SPEEDER_LIGHTNING_AT=<s>` forces a flash. Pass 3 (cast: D4 needs CC5 on Windows; D1, D3, C4, C5,
+  C6 are code) is next.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

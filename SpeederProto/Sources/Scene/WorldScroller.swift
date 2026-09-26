@@ -1191,33 +1191,83 @@ final class RoadSegment {
 @MainActor
 final class SkylineLayer {
     let root = Entity()
-    private var towers: [Entity] = []
-    private let wrapLength: Float = 260
-    private let nearZ: Float = -140
+    private var mid: [Entity] = []
+    private var far: [Entity] = []
+    private let midWrap: Float = 260
+    private let midNear: Float = -140
+    private let farWrap: Float = 640
+    private let farNear: Float = -330
 
+    /// Two parallax rings behind the corridor (Horizon Chase, Cyberpunk sign layers): a mid ring of
+    /// towers or mesas and a far ring of wide silhouettes with brand mega-signs, each scrolling slower
+    /// than the road so the horizon has depth. The haze between them is the depth fog.
     init(materials: SceneMaterials) {
         var rng = SeededRNG(seed: 555)
+        let canyon = materials.theme == .sunsetCanyon
+        // mid ring
         for i in 0..<22 {
             let side: Float = i % 2 == 0 ? -1 : 1
-            let w = rng.float(14, 40), d = rng.float(14, 40), h = rng.float(70, 230)
+            let w = canyon ? rng.float(50, 140) : rng.float(14, 40)
+            let d = canyon ? rng.float(40, 90) : rng.float(14, 40)
+            let h = canyon ? rng.float(40, 120) : rng.float(70, 230)
             var mat = materials.skyline
             mat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(w / 12, h / 12), rotation: 0)
-            let t = ModelEntity(mesh: .generateBox(width: w, height: h, depth: d), materials: [mat])
-            t.position = [side * rng.float(30, 170), h / 2 - 2, nearZ - rng.float(0, wrapLength)]
+            let t = ModelEntity(mesh: .generateBox(width: w, height: h, depth: d, cornerRadius: canyon ? 3 : 0), materials: [mat])
+            t.position = [side * rng.float(canyon ? 60 : 30, canyon ? 220 : 170), h / 2 - 2, midNear - rng.float(0, midWrap)]
             root.addChild(t)
-            towers.append(t)
-            if rng.chance(0.5) {
+            mid.append(t)
+            if !canyon && rng.chance(0.5) {
                 let tip = ModelEntity(mesh: .generateBox(size: [1.2, 1.2, 1.2]), materials: [materials.neon(rng.chance(0.5) ? Neon.red : Neon.cyan, intensity: 3)])
                 tip.position = [0, h / 2 + 0.6, 0]
                 t.addChild(tip)
             }
         }
+        // far ring: wide, dark silhouettes; the city gets mega-signs on a few of them
+        var farMat = materials.skyline
+        farMat.baseColor = .init(tint: canyon ? .rgb(0.55, 0.38, 0.34) : .rgb(0.45, 0.45, 0.6), texture: materials.skyline.baseColor.texture)
+        if !canyon { farMat.emissiveIntensity = 0.8 }
+        for i in 0..<16 {
+            let side: Float = i % 2 == 0 ? -1 : 1
+            let w = canyon ? rng.float(140, 320) : rng.float(50, 130)
+            let d = rng.float(40, 90)
+            let h = canyon ? rng.float(90, 200) : rng.float(150, 380)
+            var mat = farMat
+            mat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(w / 16, h / 16), rotation: 0)
+            let t = ModelEntity(mesh: .generateBox(width: w, height: h, depth: d, cornerRadius: canyon ? 6 : 0), materials: [mat])
+            t.position = [side * rng.float(canyon ? 120 : 90, 360), h / 2 - 4, farNear - rng.float(0, farWrap)]
+            root.addChild(t)
+            far.append(t)
+            if !canyon {
+                if rng.chance(0.5) {
+                    let tip = ModelEntity(mesh: .generateBox(size: [2, 2, 2]), materials: [materials.neon(Neon.red, intensity: 3)])
+                    tip.position = [0, h / 2 + 1, 0]
+                    t.addChild(tip)
+                }
+                if rng.chance(0.45), !materials.signs.isEmpty {
+                    // brand mega-sign on the road-facing face (Wipeout: typography as world-building)
+                    let sw = min(w * 0.8, 70), sh = sw * 0.5
+                    let sign = ModelEntity(mesh: .generateBox(width: sw, height: sh, depth: 0.6), materials: [rng.pick(materials.signs)])
+                    sign.position = [0, rng.float(-h * 0.3, h * 0.35), d / 2 + 0.4]
+                    t.addChild(sign)
+                }
+                if rng.chance(0.6) {
+                    let strip = ModelEntity(mesh: .generateBox(size: [0.8, h * rng.float(0.4, 0.9), 0.8]), materials: [materials.neon(rng.pick(Neon.all), intensity: 2.2)])
+                    strip.position = [rng.float(-w * 0.45, w * 0.45), 0, d / 2 + 0.5]
+                    t.addChild(strip)
+                }
+            }
+        }
     }
 
+    /// `travel` is already scaled by the scroller (0.22x of the road); the far ring moves at a third of that.
     func advance(_ travel: Float) {
-        for t in towers {
+        for t in mid {
             t.position.z += travel
-            if t.position.z > nearZ { t.position.z -= wrapLength }
+            if t.position.z > midNear { t.position.z -= midWrap }
+        }
+        for t in far {
+            t.position.z += travel * 0.35
+            if t.position.z > farNear { t.position.z -= farWrap }
         }
     }
 }

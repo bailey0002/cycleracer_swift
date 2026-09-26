@@ -453,6 +453,14 @@ callsign, livery, rank title; tap the name or the swatch on the briefing), conta
 run (`Mission.comms`), and a haptics director with a continuous engine hum that falls back to the
 phone's own haptics for pads without rumble.
 
+## Pass 2 of the assessment: the world (26 Sep 2026)
+
+Stars and a moon in the night sky, a theme-aware two-ring parallax skyline with brand mega-signs
+(mesas in the canyon), screen-space rain with lightning in Neon City, a post pass that computes linear
+depth once and adds reprojection motion blur in the outer ring (never on the bike), ghost flares, lens
+dirt and dither, hot translucent trail walls on The Grid and a dissolve derez on the cycles
+(`dissolveSurface`). Log and captures: `docs/polish-log.md` pass 2, `Captures/polish/p7/`.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).
