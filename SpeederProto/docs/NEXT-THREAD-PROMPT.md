@@ -125,3 +125,31 @@ Next thread, in order:
    HUD hidden), a message log (the debriefs, reread from the title), controls remapping, the
    `WorldScroller` build (1.6 to 2 s on the main thread) moved into smaller steps so the splash is shorter.
 5. B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.
+
+---
+
+## Status 27 Sep 2026: the story pass is built
+
+Read `docs/assessment-2026-09-27-story.md` first (the narrative assessment, the research on GTA / Driver /
+NFS / Hades-class comparables, and the recommendations). Sections 5.1 to 5.4 are built on branch
+`claude/story` (off master after PR #3 was merged): the spine (routes as the MacGuffin, the player's own
+route in the ledger, a real ending), the message log (`Missions/MessageLog.swift`; MESSAGES on the title
+and pause, the envelope chip on the briefing), chapter cards (`Phase.chapter`), and the rival's voice in
+the duel (`Debrief.rivalLine`). Logged in `docs/polish-log.md` (story pass), shots in `Captures/polish/p9/`.
+
+Next thread, in order:
+1. The phone pass with the Backbone (unchanged from the 26 Sep list: launch screen, menu and callsign,
+   haptics, MUSIC / EFFECTS by ear, GRAPHICS vs frame rate, touch buttons, hum and rumble, the mix, the
+   rival card, livery tint), plus the story pass on the phone: the chapter card on a 390 pt screen,
+   Menu -> MESSAGES from a briefing, the rival's line by eye mid-duel, the `??` static line's monospace
+   face on the phone.
+2. Balance (unchanged): chapter-3 density, the dive windows, garage prices.
+3. Assessment 5.5, agency: after a chapter's first job unlock its next two at once (the chapter's duel
+   stays gated on all of them); flag-gated side offers in the inbox reusing existing jobs with a modifier
+   and a different sender; one debrief variant per fork branch (`WorldScroller` knows the branch taken).
+4. D4, the cast through CC5 / iClone 8 (Mark, Windows): portraits first (alpha PNG, three sizes, replacing
+   `ProceduralTextures.portrait` through `Rival.portrait(for:)`; the unknown state on the chapter card
+   blurs them), then talk clips at three moments only (briefing accept, result card, chapter card), under
+   four seconds, video-in-HUD per report E. The script is now locked in `Mission.deliveries`,
+   `Debrief.swift` and `MessageLog.swift`.
+5. B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.

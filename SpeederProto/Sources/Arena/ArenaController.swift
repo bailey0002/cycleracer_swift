@@ -431,8 +431,9 @@ final class ArenaController {
         bestGrind = 0; longestTrail = 0; grindRun = 0
         // free play meets the roster in turn: the next match brings the next rival
         if matchTarget != Int.max {
-            rosterIndex = (rosterIndex + 1) % Rival.roster.count
-            rival = Rival.roster[rosterIndex]
+            let roster = Rival.freePlayRoster
+            rosterIndex = (rosterIndex + 1) % roster.count
+            rival = roster[rosterIndex]
         }
     }
 

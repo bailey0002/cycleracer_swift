@@ -45,7 +45,7 @@ struct Upgrades: Equatable {
 
 /// Snapshot of the mission state for the HUD.
 struct MissionState: Equatable {
-    enum Phase: Equatable { case briefing, rivalIntro, running, success, failed, freePlay }
+    enum Phase: Equatable { case chapter, briefing, rivalIntro, running, success, failed, freePlay }
     var phase: Phase = .freePlay
     var code = ""
     var title = ""
@@ -119,6 +119,27 @@ struct MissionState: Equatable {
     var rivalColor = SIMD3<Float>(1, 0.5, 0.2)
     var contactRole = ""
     var introLeft: Float = 0       // rival intro card countdown
+    // the message log (title, pause and briefing)
+    var messageCount = 0
+    var unreadMessages = 0
+    var latestSender = ""
+    // the chapter card
+    var chapterIntro = ""
+    var chapterCast: [(name: String, standing: Mission.Standing)] = []
+    var finished = false          // the arc is done (the ending's title and roster)
+
+    static func == (a: MissionState, b: MissionState) -> Bool {
+        a.phase == b.phase && a.code == b.code && a.contact == b.contact && a.brief == b.brief && a.debrief == b.debrief
+        && a.timeLeft == b.timeLeft && a.distanceLeft == b.distanceLeft && a.energy == b.energy && a.payout == b.payout
+        && a.credits == b.credits && a.failReason == b.failReason && a.index == b.index && a.beaconsHit == b.beaconsHit
+        && a.gap == b.gap && a.duelWins == b.duelWins && a.duelLosses == b.duelLosses && a.kills == b.kills && a.score == b.score
+        && a.streak == b.streak && a.rank == b.rank && a.respawnsLeft == b.respawnsLeft && a.helmetArmed == b.helmetArmed
+        && a.flags == b.flags && a.newFlags == b.newFlags && a.cleared == b.cleared && a.browsing == b.browsing && a.jobs == b.jobs
+        && a.upgrades == b.upgrades && a.shopSelection == b.shopSelection && a.shopNote == b.shopNote && a.callsign == b.callsign
+        && a.playerTitle == b.playerTitle && a.liveryName == b.liveryName && a.reactiveLine == b.reactiveLine
+        && a.rivalWins == b.rivalWins && a.rivalLosses == b.rivalLosses && a.rivalTaunt == b.rivalTaunt && a.introLeft == b.introLeft
+        && a.messageCount == b.messageCount && a.unreadMessages == b.unreadMessages && a.chapter == b.chapter && a.finished == b.finished
+    }
 }
 
 /// The job loop: briefing -> running (timer, hull energy, distance) -> success / failed -> next.
@@ -138,6 +159,8 @@ final class MissionRunner {
     private(set) var player: Player
     private(set) var shopSelection = 0
     private var shopNote = ""
+    /// The story channel: briefs, debriefs, notices and the unseen sender's lines.
+    private(set) var log: MessageLog
     /// Set when a retry should start the run as soon as the world is rebuilt (one-tap retry).
     var autoStart = false
     private var elapsed: Float = 0
@@ -187,6 +210,7 @@ final class MissionRunner {
         credits = defaults.integer(forKey: "credits")
         upgrades = Upgrades.load(defaults)
         player = Player.load(defaults)
+        log = MessageLog(defaults)
         index = abs(defaults.integer(forKey: "missionIndex")) % max(1, missions.count)
         if let m = env["SPEEDER_MISSION"], let i = Int(m) {
             index = abs(i) % max(1, missions.count)
@@ -194,6 +218,8 @@ final class MissionRunner {
             if index > defaults.integer(forKey: "cleared") { defaults.set(index, forKey: "cleared") }
         }
         previewIndex = index
+        if env["SPEEDER_CHAPTER_CARDS"] == "0" { for c in 1...3 { defaults.set(true, forKey: "chapter.seen.\(c)") } }
+        if needsChapterCard(index) { phase = .chapter }
     }
 
     /// Jobs, credits, the garage, ranks, flags, head-to-head records and the said-line sets. The callsign
@@ -201,7 +227,8 @@ final class MissionRunner {
     private static func clearStoredProgress(_ defaults: UserDefaults, missions: [Mission]) {
         for k in ["credits", "missionIndex", "cleared", Upgrades.key] { defaults.removeObject(forKey: k) }
         for m in missions { defaults.removeObject(forKey: "rank.\(m.id)"); defaults.removeObject(forKey: "flags.\(m.id)") }
-        for k in defaults.dictionaryRepresentation().keys where k.hasPrefix("record.") || k.hasPrefix("said.") { defaults.removeObject(forKey: k) }
+        for k in defaults.dictionaryRepresentation().keys where k.hasPrefix("record.") || k.hasPrefix("said.") || k.hasPrefix("chapter.seen.") { defaults.removeObject(forKey: k) }
+        defaults.removeObject(forKey: MessageLog.key); defaults.removeObject(forKey: MessageLog.readKey)
     }
 
     /// The settings screen's RESET PROGRESS: back to the first job's briefing with an empty purse.
@@ -209,8 +236,9 @@ final class MissionRunner {
         Self.clearStoredProgress(defaults, missions: missions)
         credits = 0
         upgrades = Upgrades.load(defaults)
+        log.clear()
         index = 0; previewIndex = 0
-        phase = .briefing
+        phase = needsChapterCard(0) ? .chapter : .briefing
         shopSelection = 0; shopNote = ""; autoStart = false
     }
 
@@ -222,6 +250,7 @@ final class MissionRunner {
         case .running, .rivalIntro, .failed: phase = .briefing
         default: break
         }
+        if phase == .briefing && needsChapterCard(index) { phase = .chapter }
         previewIndex = index
         autoStart = false
         shopNote = ""
@@ -235,8 +264,32 @@ final class MissionRunner {
     var current: Mission { missions[index] }
     var preview: Mission { missions[previewIndex] }
     var isRunning: Bool { phase == .running }
+    /// The arc is done: every job cleared at least once.
+    var finished: Bool { clearedCount >= missions.count }
+    /// The briefing or the chapter card is up (the inbox and the garage take input on the briefing only).
+    var isParked: Bool { phase == .briefing || phase == .chapter }
     /// The vehicle only moves while the job is live.
     var allowsMotion: Bool { phase == .running }
+
+    // MARK: - Chapter cards and the message log
+
+    /// The first job of a chapter shows the chapter card once (the paragraph, the cast's standing).
+    private func needsChapterCard(_ i: Int) -> Bool {
+        guard missions.indices.contains(i) else { return false }
+        let m = missions[i]
+        let first = !missions.contains { $0.chapter == m.chapter && $0.id < m.id }
+        return first && !defaults.bool(forKey: "chapter.seen.\(m.chapter)")
+    }
+    /// Leaving the chapter card: remember it, post the chapter to the log with the unseen sender's line.
+    private func openChapter() {
+        let m = current
+        defaults.set(true, forKey: "chapter.seen.\(m.chapter)")
+        log.post("CHAPTER \(m.chapter)", .chapter, chapter: m.chapter, "\(Mission.chapterTitle(m.chapter)). \(Mission.chapterIntro(m.chapter))")
+        log.post(Message.unknownSender, .static, chapter: m.chapter, Mission.staticLine(m.chapter))
+    }
+    /// The log is open: everything in it counts as read.
+    func markMessagesRead() { log.markRead() }
+    var messages: [Message] { log.messages }
 
     // MARK: - Progress
 
@@ -282,6 +335,7 @@ final class MissionRunner {
         upgrades.save(defaults)
         defaults.set(credits, forKey: "credits")
         shopNote = "\(item.title): BOUGHT"
+        log.post("GARAGE", .notice, chapter: current.chapter, "\(item.title) \(item.level + 1 > 1 ? "II" : "I") fitted: \(item.detail). \(credits) credits left.")
         return true
     }
 
@@ -289,6 +343,10 @@ final class MissionRunner {
     /// rebuilt for a new (or retried) mission.
     func accept() -> Bool {
         switch phase {
+        case .chapter:
+            openChapter()
+            phase = .briefing
+            return false
         case .briefing:
             if previewIndex != index {
                 // the inbox chose another job: load it (the world rebuilds), then brief it
@@ -309,7 +367,7 @@ final class MissionRunner {
             if index == missions.count - 1 && isCleared(index) { index = 0 }   // the arc is done: ride it again
             previewIndex = index
             defaults.set(index, forKey: "missionIndex")
-            phase = .briefing
+            phase = needsChapterCard(index) ? .chapter : .briefing
             return true
         case .failed:
             phase = .briefing
@@ -334,7 +392,7 @@ final class MissionRunner {
         player.save(defaults)
     }
     var golds: Int { missions.filter { bestRank(for: $0) == .gold }.count }
-    var playerTitle: String { Player.title(golds: golds, cleared: clearedCount) }
+    var playerTitle: String { Player.title(golds: golds, cleared: clearedCount, finished: finished) }
 
     static let introDuration: Float = 3.6
 
@@ -347,6 +405,7 @@ final class MissionRunner {
         hitsTaken = 0; newFlags = []; boostArmed = true
         helmetArmed = upgrades.helmet > 0; helmetUsedNow = false
         reactiveLine = ""; lastDerezCause = ""; introLeft = 0
+        if !isCleared(index) { log.post(current.contact, .brief, code: current.code, chapter: current.chapter, current.brief) }
     }
 
     /// The rival intro card counts down, then the duel starts.
@@ -497,6 +556,21 @@ final class MissionRunner {
         if current.kind == .duel, let r = current.rival { recordMatch(rival: r.name, won: true) }
         reactiveLine = Debrief.reactive(contact: current.contact, outcome: outcome(), defaults: defaults)
         phase = .success
+        // the story channel: the debrief (once), the reaction, the unlock, the ending
+        if !replay {
+            let d = current.debrief
+            let sender = d.split(separator: ":").first.map(String.init) ?? current.contact
+            let body = d.contains(":") ? String(d.drop { $0 != ":" }.dropFirst()).trimmingCharacters(in: .whitespaces) : d
+            log.post(sender, .debrief, code: current.code, chapter: current.chapter, body)
+            if index + 1 < missions.count {
+                let n = missions[index + 1]
+                log.post("INBOX", .notice, code: n.code, chapter: n.chapter, "New job from \(n.contact): \(n.code) // \(n.title) (\(n.kindText.lowercased())).")
+            } else {
+                log.post(Message.routeSender, .static, chapter: current.chapter, Mission.staticLine(4))
+                log.post("KADE", .debrief, code: current.code, chapter: current.chapter, String(Mission.endingLine.dropFirst(6)))
+            }
+        }
+        log.post(current.contact, .notice, code: current.code, chapter: current.chapter, "\(current.code): \(reactiveLine)")
     }
 
     private func outcome() -> Debrief.Outcome {
@@ -549,6 +623,8 @@ final class MissionRunner {
                             rivalWins: m.rival.map { record(for: $0.name).wins } ?? 0, rivalLosses: m.rival.map { record(for: $0.name).losses } ?? 0,
                             rivalTaunt: m.rival.map { Debrief.taunt(rival: $0.name, record: record(for: $0.name)) } ?? "",
                             rivalColor: m.rival?.color ?? SIMD3<Float>(1, 0.5, 0.2),
-                            contactRole: Debrief.role(m.contact), introLeft: introLeft)
+                            contactRole: Debrief.role(m.contact), introLeft: introLeft,
+                            messageCount: log.count, unreadMessages: log.unread, latestSender: log.latest?.sender ?? "",
+                            chapterIntro: Mission.chapterIntro(m.chapter), chapterCast: Mission.chapterCast(m.chapter), finished: finished)
     }
 }

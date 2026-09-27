@@ -95,6 +95,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   and the developer panel hidden behind five taps on the version line. One stack of screens
   (`GameController.screens`) and one row model (`menuRows`) in `Scene/FrontEnd.swift`; views in
   `Views/FrontEndView.swift`. Fixed on the way: Neon City's rain carried into The Grid and the canyon.
+- Story pass 27 Sep 2026 (branch `claude/story`; PR #3 front end merged first): `docs/assessment-2026-09-27-story.md`
+  (narrative assessment + research on GTA / Driver / NFS / Hades-class comparables). Built: the spine (routes as
+  the MacGuffin, the player's own route in the ledger, ROUTE-HOLDER title, VESS in free play), the message log
+  (`Missions/MessageLog.swift`, `Screen.messages`, chip on the briefing, `SPEEDER_SCREEN=messages`), chapter
+  cards (`Phase.chapter`, `SPEEDER_CHAPTER_CARDS=0` to skip), the rival's in-duel comms (`Debrief.rivalLine`,
+  logged as `comms:` in demo mode). Owed: 5.5 agency (after the phone pass), D4 the cast (Mark, CC5 / iClone).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

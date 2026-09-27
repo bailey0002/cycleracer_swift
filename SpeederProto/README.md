@@ -520,6 +520,29 @@ building batching, Game Center.
   `activate` / `adjust` / `setValue`; the frame loop feeds pad and keys (`frontEndInput`, auto-repeat on
   a held direction), the views feed taps (`Views/FrontEndView.swift`).
 
+## Story pass: the spine, the message log, chapter cards, the rival's voice (27 Sep 2026)
+
+`docs/assessment-2026-09-27-story.md` assessed the narrative (the game had the delivery devices and no
+spine) against twenty-three narrative-driven vehicle games; this pass built its sections 5.1 to 5.4
+(`docs/polish-log.md`, story pass; `Captures/polish/p9/`).
+
+- **The spine.** Every program rides a route: its name, its right to ride. The player's is provisional
+  and VESS holds the licence. The packets are riders' routes; SABLE buys them and derezzes the rider;
+  the last packet of chapter 1 carried the player's own, and the ledger's last line is the player's.
+  Told in the same briefs and debriefs (`Mission.deliveries`), about a dozen lines rewritten. The ending
+  is real: the title ROUTE-HOLDER once every job is cleared, a last message from KADE, and VESS in the
+  free-play roster (`Rival.freePlayRoster`).
+- **The message log** (`Missions/MessageLog.swift`): every brief and debrief kept as a message from its
+  contact, the game's notices (a job unlocked, a part fitted, a chapter opened) and the unseen sender
+  `??`, one static line per chapter that the reveal resolves. MESSAGES on the title and the pause menu,
+  the envelope chip on the briefing; unread counts; `SPEEDER_SCREEN=messages`.
+- **Chapter cards** (`MissionState.Phase.chapter`): once, before the first briefing of each chapter:
+  the district, a forty-word paragraph, the cast's standing (unknowns blurred), the rider's callsign,
+  title and purse. `SPEEDER_CHAPTER_CARDS=0` skips them for captures.
+- **The rival's voice** (`Debrief.rivalLine`): one comms line per round at most, in the rival's colour,
+  from the round's outcome, the lead, match point and the record at match start; shown 2.4 s after the
+  derez once the attribution has cleared. The intro taunt gains a third-meeting tier.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

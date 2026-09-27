@@ -119,9 +119,20 @@ enum Debrief {
     }
 
     /// The rival's line on the intro card, from the head-to-head record (F-Zero 99: rivals from history).
+    /// The record deepens the memory: a third meeting and a streak either way get their own lines.
     static func taunt(rival: String, record: (wins: Int, losses: Int)) -> String {
         let first = record.wins + record.losses == 0
         let leads = record.losses > record.wins
+        let meetings = record.wins + record.losses
+        if meetings >= 3 {
+            switch rival {
+            case "KADE": return leads ? "\"Third time. You keep coming back to lose.\"" : "\"Third time, courier. I have been counting.\""
+            case "ORIN": return leads ? "\"Again. The door will be where it always is.\"" : "\"You have read my line. Let us see if you can read a new one.\""
+            case "SABLE": return leads ? "\"You are becoming a habit. A cheap one.\"" : "\"Nobody beats me \(record.wins) times. Not for long.\""
+            case "VESS": return leads ? "\"I still hold the licence. Ride for it.\"" : "\"You want the route so badly? Take it from me again.\""
+            default: break
+            }
+        }
         switch rival {
         case "KADE":
             if first { return "\"Hunter, they call me. Do not look back.\"" }
@@ -137,6 +148,46 @@ enum Debrief {
             return leads ? "\"I dispatched better riders than you.\"" : "\"You should have stayed a courier.\""
         default:
             return first ? "\"Let us see.\"" : (leads ? "\"Again?\"" : "\"Not this time.\"")
+        }
+    }
+
+    /// The rival's voice in the duel (Hades' rule on the Grid): one line per round at most, from the
+    /// round's outcome and the record, shown as a comms stamp once the derez attribution has cleared.
+    enum DuelEvent { case matchStart, wonRound, lostRoundCutOff, lostRoundBoxed, lostRoundOther, playerLeads, rivalLeads, matchPoint }
+    static func rivalLine(rival: String, event: DuelEvent, record: (wins: Int, losses: Int), wins: Int, losses: Int) -> String {
+        switch (rival, event) {
+        case ("KADE", .wonRound): return ["Lucky wall.", "Fine. Ride.", "I felt that one."][wins % 3]
+        case ("KADE", .lostRoundCutOff): return ["Told you not to look back.", "Hunted.", "Your tail is mine."][losses % 3]
+        case ("KADE", .lostRoundBoxed): return "Your own wall. I did not even turn."
+        case ("KADE", .lostRoundOther): return "Sloppy. Again."
+        case ("KADE", .playerLeads): return "Do not get comfortable."
+        case ("KADE", .rivalLeads): return "Feel that? That is a hunt."
+        case ("KADE", .matchPoint): return wins > losses ? "One more and I will remember it." : "One more. Then the packet is mine."
+        case ("ORIN", .wonRound): return ["Adequate.", "You cut well. Once.", "Noted."][wins % 3]
+        case ("ORIN", .lostRoundCutOff): return ["Door closed.", "You never saw the wall.", "Boxed."][losses % 3]
+        case ("ORIN", .lostRoundBoxed): return "You did my work for me."
+        case ("ORIN", .lostRoundOther): return "Careless."
+        case ("ORIN", .playerLeads): return "Enjoy it."
+        case ("ORIN", .rivalLeads): return "This is what the canyon relays pay for."
+        case ("ORIN", .matchPoint): return wins > losses ? "Close the door then. If you can." : "Last door."
+        case ("SABLE", .wonRound): return ["Slow, but lucky.", "A courier. Really.", "Noise."][wins % 3]
+        case ("SABLE", .lostRoundCutOff): return ["Bought and paid for.", "Too slow.", "Derezzed. As purchased."][losses % 3]
+        case ("SABLE", .lostRoundBoxed): return "You are cheaper than I paid."
+        case ("SABLE", .lostRoundOther): return "Dull."
+        case ("SABLE", .playerLeads): return "Vess will refund me."
+        case ("SABLE", .rivalLeads): return "The route is mine already."
+        case ("SABLE", .matchPoint): return wins > losses ? "No. Not to a courier." : "Collecting."
+        case ("VESS", .wonRound): return ["I dispatched better.", "Kade taught you that.", "Provisional."][wins % 3]
+        case ("VESS", .lostRoundCutOff): return ["The licence is mine.", "Ride the window.", "Sold."][losses % 3]
+        case ("VESS", .lostRoundBoxed): return "Your own trail. I taught Kade that."
+        case ("VESS", .lostRoundOther): return "Acceptable. For Sable."
+        case ("VESS", .playerLeads): return "You were a good rider. Were."
+        case ("VESS", .rivalLeads): return "The route was never going to be yours."
+        case ("VESS", .matchPoint): return wins > losses ? "Take it, then. Take it from me." : "Last packet."
+        case (_, .matchStart):
+            let n = record.wins + record.losses
+            return n == 0 ? "" : (record.losses > record.wins ? "Again? \(record.losses) - \(record.wins)." : "\(record.wins) - \(record.losses). Not this time.")
+        default: return ""
         }
     }
 

@@ -29,7 +29,8 @@ struct Player: Equatable {
     }
 
     /// A rank-earned title (F-Zero 99's ranks, Sideswipe's season titles).
-    static func title(golds: Int, cleared: Int) -> String {
+    static func title(golds: Int, cleared: Int, finished: Bool = false) -> String {
+        if finished { return "ROUTE-HOLDER" }      // earned by the story, not by golds
         if golds >= 9 { return "UNBOXED" }
         if golds >= 4 { return "GATE-RUNNER" }
         if cleared >= 3 { return "COURIER" }

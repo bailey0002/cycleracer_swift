@@ -52,6 +52,9 @@ final class GameController: ObservableObject {
     private var commsTimer: Float = 0
     private var commsSpeaker = "", commsText = ""
     private var commsSlots = (launch: false, event: false, last: false)
+    /// The rival's line in a duel, queued until the derez stamp has cleared (one per round at most).
+    private var rivalComms: (speaker: String, text: String, delay: Float)? = nil
+    private var rivalCommsRound = -1
     private var runClock: Float = 0
     /// The rider's identity, published for the HUD.
     @Published var player = Player()
@@ -548,7 +551,7 @@ final class GameController: ObservableObject {
             input.pointerSteer = max(-1, min(1, sin(time * 0.9) * 0.5 + bias))
             input.pointerClimb = max(-1, min(1, sin(time * 0.6 + 1.0) * 0.9))
             // weapons pulse during a run; while parked the only "fire" is the scripted accept
-            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing) && Int(time * 2) % 3 == 0) : Int(time * 2) % 3 == 0
+            input.fire = (missionActive && missions.phase != .running) ? (time > 1.5 && !holdBriefing && !(holdResult && !missions.isParked) && Int(time * 2) % 3 == 0) : Int(time * 2) % 3 == 0
             let demoBoost = ProcessInfo.processInfo.environment["SPEEDER_DEMO_BOOST"]
             input.pointerBoost = demoBoost == "always" || (time > 6.5 && time < 11 && demoBoost != "0")
         }
@@ -834,6 +837,29 @@ final class GameController: ObservableObject {
         sound.play(.approach, volume: 0.35, pitch: 1.7)
     }
 
+    /// The rival speaks on the Grid: queued on the round's event, shown once the stamp has cleared.
+    private func rivalSay(_ arena: ArenaController, _ event: Debrief.DuelEvent, delay: Float = 2.4) {
+        let r = arena.rival
+        let text = Debrief.rivalLine(rival: r.name, event: event, record: missions.record(for: r.name), wins: arena.wins, losses: arena.losses)
+        guard !text.isEmpty else { return }
+        rivalComms = (r.name, text.uppercased(), delay)
+    }
+    private func updateRivalComms(dt: Float) {
+        guard var p = rivalComms else { return }
+        p.delay -= dt
+        if p.delay <= 0 {
+            if ackTimers.stamp <= 0 && commsTimer <= 0 {
+                commsSpeaker = p.speaker; commsText = p.text; commsTimer = 2.6
+                if demoMode { print("comms: \(p.speaker): \(p.text) at \(String(format: "%.1f", time)) s") }
+                sound.play(.approach, volume: 0.3, pitch: 1.2)
+                rivalComms = nil
+                return
+            }
+            p.delay = 0
+        }
+        rivalComms = p
+    }
+
     /// Comms triggers for a live corridor job: launch, one mid-run event (a section ahead, the pursuer
     /// closing, or halfway), the last stretch. Reset when the job is not running.
     private func updateComms(_ ms: MissionState, dt: Float, upcoming: String?) {
@@ -1093,7 +1119,7 @@ final class GameController: ObservableObject {
         if missionActive {
             // duel: the briefing holds the arena; A / F / tap accepts, the arena's score decides the job
             // the demo pulses its accept (a held button has no edge, so the result card would stay up)
-            let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing && !(holdResult && missions.phase != .briefing) && Int(time * 2) % 3 == 0)
+            let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing && !(holdResult && !missions.isParked) && Int(time * 2) % 3 == 0)
             if screen != .game {
                 // the front end has the buttons
             } else if fire && !missionFirePrev && missions.phase != .running && missions.phase != .rivalIntro { acceptMission() }
@@ -1134,6 +1160,20 @@ final class GameController: ObservableObject {
         // round and match beats: one stamp each, on the frame they happen
         if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2); sound.play(.rivalDerez) }
         if ev.roundLost { stamp("DEREZZED", seconds: 2.2); sound.play(.derez) }
+        // the rival's voice: one line per round, after the attribution has had its frame
+        if (ev.roundWon || ev.roundLost) && !ev.matchWon && !ev.matchLost && rivalCommsRound != arena.roundNumber {
+            rivalCommsRound = arena.roundNumber
+            let target = arena.matchTarget == Int.max ? (missionActive ? missions.current.duelTarget : 3) : arena.matchTarget
+            let matchPoint = arena.wins == target - 1 || arena.losses == target - 1
+            if matchPoint { rivalSay(arena, .matchPoint) }
+            else if ev.roundWon { rivalSay(arena, arena.wins > arena.losses + 1 ? .playerLeads : .wonRound) }
+            else if arena.stateText.hasPrefix("BOXED") { rivalSay(arena, .lostRoundBoxed) }
+            else if arena.stateText.hasPrefix("CUT OFF") { rivalSay(arena, arena.losses > arena.wins + 1 ? .rivalLeads : .lostRoundCutOff) }
+            else { rivalSay(arena, .lostRoundOther) }
+        }
+        if ev.roundStart && arena.roundNumber == 1 && !ev.matchWon && !ev.matchLost { rivalCommsRound = -1; rivalSay(arena, .matchStart, delay: 1.4) }
+        if ev.matchWon || ev.matchLost { rivalComms = nil }
+        updateRivalComms(dt: dt)
         if ev.voidRound { stamp("VOID ROUND", seconds: 2.2); sound.play(.derez) }
         if ev.matchWon { stamp("MATCH WON  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchWon) }
         if ev.matchLost { stamp("MATCH LOST  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchLost) }
