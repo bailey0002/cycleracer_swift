@@ -35,9 +35,16 @@ struct HUDView: View {
             .scaleEffect(controller.ack.boost && !cardUp ? 1.025 : 1)
             .brightness(controller.ack.boost && !cardUp ? 0.1 : 0)
             .animation(.easeOut(duration: controller.ack.boost ? 0.15 : 0.4), value: controller.ack.boost)
-            if !controller.titleVisible { missionOverlay }
+            if controller.screen == .game { missionOverlay }
             stampOverlay
-            if controller.titleVisible { titleScreen }
+            if controller.screen != .game { FrontEndView(controller: controller).transition(.opacity) }
+            // the developer panel (unlocked in SETTINGS) sits over everything, the menus included
+            if controller.panelVisible {
+                panel
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(.trailing, HUDStyle.sideInset)
+                    .padding(.top, HUDStyle.topInset)
+            }
         }
         .font(HUDStyle.body(HUDStyle.bodySize))
         #if os(iOS)
@@ -63,7 +70,7 @@ struct HUDView: View {
 
     /// A card (briefing, result, match) owns the screen: the run readouts mean nothing while parked.
     private var cardUp: Bool {
-        if controller.matchResult != nil || controller.titleVisible { return true }
+        if controller.matchResult != nil || controller.screen != .game { return true }
         switch controller.mission.phase {
         case .briefing, .rivalIntro, .success, .failed: return true
         default: return false
@@ -180,7 +187,7 @@ struct HUDView: View {
         .animation(.linear(duration: 0.15), value: value)
     }
 
-    /// Score with the streak chip, the respawn pips, then the gear (or the settings panel).
+    /// Score with the streak chip, the respawn pips, then the pause button.
     @ViewBuilder private var topRight: some View {
         let m = controller.mission
         HStack(alignment: .top, spacing: 10) {
@@ -199,7 +206,7 @@ struct HUDView: View {
                     }
                 }
             }
-            if controller.panelVisible { panel } else { gear }
+            if controller.screen == .game && !controller.panelVisible { pauseButton }
         }
     }
 
@@ -573,42 +580,6 @@ struct HUDView: View {
         .allowsHitTesting(false)
     }
 
-    /// The title screen: the world behind, the wordmark, who you are, the next job, one prompt.
-    private var titleScreen: some View {
-        let m = controller.mission
-        let p = controller.player
-        return ZStack(alignment: .bottomLeading) {
-            LinearGradient(colors: [.black.opacity(0.75), .black.opacity(0.35), .clear], startPoint: .leading, endPoint: .trailing)
-                .ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 10) {
-                Spacer()
-                Text("SPEEDER").font(HUDStyle.display(HUDStyle.wordmarkSize)).tracking(10).foregroundStyle(.white)
-                    .shadow(color: accent.opacity(0.8), radius: 14)
-                Text("COURIER RUNS  //  THE GRID").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(3).foregroundStyle(accent)
-                hairline(accent.opacity(0.6)).frame(width: 220)
-                HStack(spacing: 10) {
-                    Text(p.callsign).font(HUDStyle.display(HUDStyle.headingSize)).tracking(2).foregroundStyle(HUDStyle.color(p.liveryColor))
-                    Text(m.playerTitle).font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(.white.opacity(0.55))
-                    stat("CREDITS", "\(m.credits)", .white, small: true)
-                }
-                if !m.code.isEmpty {
-                    HStack(spacing: 6) {
-                        Text("NEXT").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(.white.opacity(0.5))
-                        Text("\(m.code)  //  \(m.title)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.85))
-                    }
-                }
-                PulsingPrompt(glyph: touchPlay ? "hand.tap" : glyphs.a, text: "START", accent: accent)
-                    .padding(.top, 8)
-            }
-            .padding(.leading, HUDStyle.sideInset + 28)
-            .padding(.bottom, HUDStyle.bottomInset + 24)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { controller.startFromTitle() }
-        .transition(.opacity)
-        .animation(.easeOut(duration: 0.4), value: controller.titleVisible)
-    }
-
     /// The inbox: every unlocked job as a chip (cleared ones ticked), the shown one lit.
     private func inbox(_ m: MissionState) -> some View {
         ScrollViewReader { proxy in
@@ -823,13 +794,14 @@ struct HUDView: View {
         }
     }
 
-    private var gear: some View {
-        Image(systemName: controller.glyphs.connected ? controller.glyphs.menu : "gearshape")
+    /// Pause: the pad's Menu art, else a pause glyph (touch, keyboard: Escape).
+    private var pauseButton: some View {
+        Image(systemName: controller.glyphs.connected ? controller.glyphs.menu : "pause.circle")
             .font(.system(size: 18, weight: .medium))
             .foregroundStyle(.white.opacity(0.6))
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
-            .onTapGesture { controller.panelVisible = true }
+            .onTapGesture { controller.pause() }
     }
 
     // MARK: - Settings panel
@@ -960,7 +932,7 @@ struct HUDView: View {
                 hintItem(glyphs.stick, isArena ? "STEER, UP JUMP, DOWN BRAKE" : "STEER + CLIMB")
                 hintItem(glyphs.boost, "BOOST")
                 hintItem(glyphs.a, isArena ? "PICKUP" : "FIRE")
-                hintItem(glyphs.menu, "SETTINGS")
+                hintItem(glyphs.menu, "PAUSE")
             }
         }
         .foregroundStyle(.white.opacity(0.5))
@@ -990,26 +962,6 @@ private struct StagedCard<Content: View>: View {
                     step = i
                 }
             }
-    }
-}
-
-/// The start prompt pulsing at the music's tempo (112 bpm).
-private struct PulsingPrompt: View {
-    let glyph: String
-    let text: String
-    let accent: Color
-    @State private var lit = false
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: glyph).font(.system(size: 14, weight: .semibold))
-            Text(text).font(HUDStyle.display(HUDStyle.labelSize + 4)).tracking(2)
-        }
-        .foregroundStyle(.black)
-        .padding(.horizontal, 14).padding(.vertical, 7)
-        .background(accent)
-        .clipShape(CutCorner(cut: 8))
-        .opacity(lit ? 1 : 0.55)
-        .onAppear { withAnimation(.easeInOut(duration: 0.536).repeatForever(autoreverses: true)) { lit = true } }
     }
 }
 

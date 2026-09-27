@@ -16,6 +16,11 @@ enum Theme: Int, CaseIterable {
         }
     }
 
+    /// The world's name on the splash loader and the front end.
+    var displayName: String {
+        switch self { case .neonCity: return "NEON CITY"; case .sunsetCanyon: return "SUNSET CANYON"; case .theGrid: return "THE GRID" }
+    }
+
     /// The Grid is a free-movement light-cycle arena; the other worlds are the scrolling corridor.
     var mode: GameMode { self == .theGrid ? .arena : .corridor }
 

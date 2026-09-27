@@ -235,3 +235,48 @@ scene and no log).
 Not verified: the mix itself (levels, the drum layer against the pad, the lift at the final stretch,
 the beds under the music) needs the phone and ears; the `gain` constants in `renderMusic`,
 `ambienceLoop` and the `setAmbience` levels are the knobs.
+
+## Front end: splash, title menu, settings, rider, pause (26 Sep 2026, evening)
+
+Asked for after the passes: the splash and the introductory settings. PR #2 was merged into master
+first; this work is on `claude/front-end`. Simulator shots in `Captures/polish/p8/sim/`.
+
+Findings that shaped it: the launch screen was empty (black) and there was no app icon; the title
+text sat on black for the whole world build, and START could be tapped before the world existed (the
+briefing then came up over black); the only settings were the developer panel (about 40 toggles, not
+persisted, the gear on the title); a new player was RIDER with no prompt; the phone ran a Debug build.
+
+Load timings (`load:` log lines, from launch to a ready world, Neon City):
+
+| Build | Materials | Vehicle | Track (+ contact) | Ready |
+|---|---|---|---|---|
+| Mac Debug | 8.1 s | 0.7 s | 1.9 s | 11.9 s |
+| Mac Release | 0.55 s | 0.47 s | 1.9 s | 3.3 s |
+| iPhone 12 Release | 0.71 s | 0.41 s | 2.0 s | 3.9 s |
+
+The track stage (`WorldScroller` init, synchronous on the main thread) is now the biggest block;
+batching (A6) is where it would shrink.
+
+| Item | What changed | Shot |
+|---|---|---|
+| Launch and splash | `UILaunchScreen` with `LaunchBackground` and `LaunchLogo` (the title's wordmark rendered by `Tools/render-brand.swift`); the SwiftUI splash shows the same image, so the hand-off is invisible; a Core Animation loader line (fill per stage, a sheen that keeps sweeping while the main thread builds) with the stage name; each stage animates over the time it took last launch; the wordmark flies low-left to the title as the curtain opens (`matchedGeometryEffect`) | `p8/sim/launch-1`, `launch-6` (sheen moved, stage unchanged), `launch-15` |
+| App icon | Neon road into a skyline under a magenta horizon, the S of the wordmark; iOS single size + the macOS set | `Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png` |
+| Title menu | CONTINUE / START with the next job, FREE PLAY, SETTINGS; select glyph pulses at 112 bpm; camera drift behind the parked bike (two slow sines, push in and out, bike right of centre), orbit on The Grid; pad and bass under it | `launch-15`, `launch-22` (drift) |
+| Free play | Neon City, Sunset Canyon, The Grid (row tinted in the world's accent); always rebuilt (endless track or a match to three) | `worlds-16`, `flow-grid` |
+| Settings | MUSIC / EFFECTS (0 to 10), HAPTICS, GRAPHICS (HIGH / BALANCED / BATTERY), GRID STEERING, RIDER, RESET PROGRESS (armed by the first press), DEVELOPER PANEL once unlocked; persisted as `prefs.*`; the graphics preset re-applies over each world's `Theme.adjust`; never applied in the demo | `settings2-16` |
+| Rider and first run | WHO'S RIDING? on the first START (no stored callsign); pad arcade entry or the keyboard; livery swatches re-tint the bike live; RIDE goes to the briefing | `rider-16`, flow run |
+| Pause | Menu / Escape / the pause button (touch); RESUME, SETTINGS, QUIT TO TITLE (the job returns to its briefing, `MissionRunner.abandon`), the dev panel once unlocked; the simulation holds, loops go silent, pad only | `paused-16`, flow run |
+| Developer panel | Hidden: five taps on the version line in SETTINGS unlock it (Mac always unlocked, ` toggles); drawn over the menus when open | – |
+| Fix: rain on The Grid | `post.rain` / `post.lightning` were only written in worlds with rain, so The Grid and the canyon kept Neon City's rain after any in-app world change (a job chain into DUEL 01 would have shown it too; fresh-launch captures never did). Reset in `build()` | `flow-grid` (before the fix) |
+
+Verified by driving the simulator by touch (the MCP simulator tool; tool point = (390 - y, x) of the
+landscape app point): title -> FREE PLAY -> THE GRID (match started) -> pause -> QUIT TO TITLE (Neon City
+rebuilt, title up) -> CONTINUE -> WHO'S RIDING? -> magenta swatch -> RIDE -> briefing with the magenta
+bike. Demo captures are unchanged: master vs this branch at t = 2 / 4 / 9 differ by 8.9 / 8.4 / 9.6 % of
+pixels, master vs master by 8.2 / 8.5 / 41 % (rain streaks differ run to run since pass 2, and a lightning
+flash lands on some runs), and the frames match by eye. One catch on the way: the title camera blend
+started at 1, which would have pulled the demo's first seconds toward the title framing.
+
+Not verified here (the phone): the launch screen on the device (iOS caches launch screens; reboot the
+phone if the old black one shows), Backbone navigation and the callsign letter entry, the keyboard
+callsign in landscape, the haptics switch, the music / effects levels by ear.

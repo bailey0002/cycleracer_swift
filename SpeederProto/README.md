@@ -24,11 +24,15 @@ cd "SpeederProto" && DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xc
 open "SpeederProto/build/Build/Products/Release/SpeederProto.app"
 ```
 
-To push straight to a paired iPhone over Wi‑Fi without opening Xcode (device id from `xcrun devicectl list devices`):
+To push straight to a paired iPhone over Wi‑Fi without opening Xcode (device id from `xcrun devicectl list devices`).
+The phone gets a **Release** build: the procedural textures are Swift pixel loops, and Debug took
+four times as long to load (the iPhone 12 is ready 3.9 s after launch in Release):
 
 ```bash
-cd "SpeederProto" && export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer && xcodebuild -project SpeederProto.xcodeproj -scheme SpeederProto-iOS -configuration Debug -derivedDataPath build-device -destination 'platform=iOS,id=1438FC4B-510E-5302-9AAE-0833BC5A856F' -allowProvisioningUpdates build && xcrun devicectl device install app --device 1438FC4B-510E-5302-9AAE-0833BC5A856F build-device/Build/Products/Debug-iphoneos/SpeederProto.app && xcrun devicectl device process launch --device 1438FC4B-510E-5302-9AAE-0833BC5A856F com.markbailey.speeder.ios
+cd "SpeederProto" && export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer && xcodebuild -project SpeederProto.xcodeproj -scheme SpeederProto-iOS -configuration Release -derivedDataPath build-device -destination 'platform=iOS,id=1438FC4B-510E-5302-9AAE-0833BC5A856F' -allowProvisioningUpdates build && xcrun devicectl device install app --device 1438FC4B-510E-5302-9AAE-0833BC5A856F build-device/Build/Products/Release-iphoneos/SpeederProto.app && xcrun devicectl device process launch --device 1438FC4B-510E-5302-9AAE-0833BC5A856F com.markbailey.speeder.ios
 ```
+
+`--console` on the launch streams the app's stdout (the `load:` lines give the build stages).
 
 Or open `SpeederProto.xcodeproj` in Xcode, choose the `SpeederProto-macOS` or
 `SpeederProto-iOS` scheme and run. The iOS target has been verified in the
@@ -41,19 +45,26 @@ as the Mac build with working touch steering and two-finger boost.
 |---|---|---|---|---|---|
 | Gamepad (Backbone, PS, Xbox) | left stick or d-pad | R2 or R1 | A, X or L2 | Y / B | – |
 | macOS keyboard | ← → ↑ ↓ or WASD, or drag the mouse | Shift or Space | F or Return | ] / [ | P (PNG to Desktop) |
-| iOS touch | position left/right and up/down | two fingers | quick tap | HUD slider | – |
+| iOS touch | position left/right and up/down | two fingers | quick tap | – | – |
 
 The vehicle climbs while you push up and settles back toward hover height when you let go.
 Inside a conduit there is no floor pull: you fly anywhere in the cross-section.
 
-The HUD (top right; on iPhone tap the gear, the top-right corner, or the controller's Menu button)
-has one toggle per visual technique so each effect's contribution to look and frame time can be
-judged in isolation. On iOS the RealityKit view does not take touches at all: SwiftUI owns them
-(steering via `SpatialEventGesture`), which is what keeps the HUD controls interactive on top of it.
+Pause: the pad's Menu button, Escape, or the pause button top right. Menus (see "Front end"
+below): stick / d-pad / arrows move, left / right change a value, A / Return select, B / Escape back.
+
+The developer panel (one toggle per visual technique, the look variants, the world picker, fps) is
+hidden from players: five taps on the version line in SETTINGS unlock it on a phone (the Mac has it
+unlocked), then it is a row in SETTINGS and the pause menu, and ` toggles it from a keyboard.
+`SPEEDER_PANEL=1` opens it at launch. On iOS the RealityKit view does not take touches at all:
+SwiftUI owns them (steering via `SpatialEventGesture`), which is what keeps the HUD interactive.
 
 ### Automation env vars
 
-- `SPEEDER_DEMO=1` — scripted steering and a boost burst, no input needed.
+- `SPEEDER_DEMO=1` — scripted steering and a boost burst, no input needed. The demo starts in the
+  game (no splash, no title); `SPEEDER_TITLE=1` keeps the front end, `SPEEDER_TITLE=0` skips it outside
+  the demo, `SPEEDER_SCREEN=title|worlds|settings|rider|paused|game` opens that screen once the world is
+  built (rider opens as the first run).
 - `SPEEDER_CAPTURE_DIR=<dir>` — saves the final post-processed frame at t = 4, 7, 10 s
   (`SPEEDER_CAPTURE_TIMES=3.5,4,9` overrides; decimals allowed). Scene time starts once the
   world is built, about 8 s of wall-clock after launch, and the app does not quit by itself:
@@ -478,6 +489,36 @@ stretch, a one-bar duck and slam on the finish, a detuned cut on a fail or a der
 bar line. Per-world ambience beds (hum and rain, wind, a pure tone) and a reverb on the vehicle's own
 sounds that opens in tunnels and the conduit. Not built from pass 4: the RealityView migration,
 building batching, Game Center.
+
+## Front end: splash, title menu, settings, rider, pause (26 Sep 2026)
+
+- **Splash.** The iOS launch screen (`UILaunchScreen`: `LaunchBackground` colour and the `LaunchLogo`
+  wordmark from `Resources/Assets.xcassets`) hands over to a SwiftUI splash with the same image, so the
+  switch is invisible; a loader under it (`LoaderLine`, Core Animation, so it keeps moving while the
+  main thread builds the world) runs through three stages (SURFACES, VEHICLE, the world's name), each
+  animated over the time it took on the last launch (`load.<theme>.<stage>` in UserDefaults). When the
+  world is up, the wordmark flies to its place low-left as the curtain opens. START cannot be pressed
+  before the world exists (it could before: a tap during the load put the briefing over black).
+- **App icon.** A neon road into a night skyline under a magenta horizon, the wordmark's S above it.
+  `swift Tools/render-brand.swift` (from `SpeederProto/`) re-renders the icon (iOS + macOS sizes), the
+  launch wordmark and the launch colour with Chakra Petch.
+- **Title menu.** CONTINUE (START with no progress; the next job under it), FREE PLAY (Neon City,
+  Sunset Canyon or The Grid, no job, the endless track or a match to three), SETTINGS. The callsign line
+  opens the rider screen. The camera drifts slowly behind the parked bike (`CameraRig.update(title:)`,
+  blended in and out), the arena orbits; the music is pad and bass.
+- **Settings** (persisted as `prefs.*`, `Scene/FrontEnd.swift` `PlayerPrefs`): MUSIC and EFFECTS
+  levels (0 to 10, the music mixer and every cue and loop), HAPTICS, GRAPHICS (HIGH; BALANCED drops
+  motion blur and lens FX; BATTERY also drops rain, reflections and storefronts), GRID STEERING (smooth
+  or snap 90), RIDER, RESET PROGRESS (press twice; keeps callsign and livery), the developer panel once
+  unlocked. The demo never applies them, so captures keep the reference look.
+- **Rider / first run.** The first START on a device asks WHO'S RIDING? before the first briefing:
+  callsign (a tap opens the keyboard; on a pad A edits in place, up / down change the letter, left /
+  right move) and livery swatches (the bike re-tints live); RIDE goes on to the briefing.
+- **Pause.** RESUME, SETTINGS, QUIT TO TITLE (a live job goes back to its briefing, the world rebuilds
+  from its start), the developer panel once unlocked. The simulation holds and the loops fall silent.
+- One list model drives everything: `GameController.screens` (a stack), `menuRows`, `menuIndex`,
+  `activate` / `adjust` / `setValue`; the frame loop feeds pad and keys (`frontEndInput`, auto-repeat on
+  a held direction), the views feed taps (`Views/FrontEndView.swift`).
 
 ## Next steps (brief milestones 7–8)
 

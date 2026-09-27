@@ -13,6 +13,7 @@
 		070BB31D4D19848AA63BFC0C /* Rival.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CB4715E79FFE27B9C57F3 /* Rival.swift */; };
 		077FD038A6003EABA8B6BC90 /* MissionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */; };
 		08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
+		0D32B607D31D661EFC1677E8 /* FrontEnd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BC6E99698AE6DC5426F78B /* FrontEnd.swift */; };
 		0DA9524FD78109DD0B910430 /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
 		0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
 		114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
@@ -25,6 +26,8 @@
 		2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
 		27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
 		2A8A93F04FE7BBA45595F345 /* TrackProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EC8E7CD387377F03E68669 /* TrackProgram.swift */; };
+		309CB1E16C9BF602D838CA2E /* FrontEndView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D6EAA6259FFC006598A922 /* FrontEndView.swift */; };
+		3574B9C8D199DAFDB93102ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 581F3F2FFB2CAAC00E963959 /* Assets.xcassets */; };
 		362F3B793F68131A8AC56D1C /* WorldScroller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196B1573C8FB9CC7F731E150 /* WorldScroller.swift */; };
 		3818D15AD6E5273BD7AB5084 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4CEFC5EEF0192DCE155B6328 /* OFL.txt */; };
 		38F466D3DC77436528A13440 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
@@ -56,12 +59,14 @@
 		6AFE4AE2948BF12FA8344AF9 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58455DAE604D8289457A1546 /* GameMode.swift */; };
 		72A32373DFCD52235FAAC00E /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		768897D979BEE32AF216EC58 /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
+		7A2A99447C49B468DAC13ADE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 581F3F2FFB2CAAC00E963959 /* Assets.xcassets */; };
 		7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */; };
 		8037292F5CC5D1D550286AE3 /* Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830774F78514CA1A5F4B7434 /* Input.swift */; };
 		843CCA4CA54FC1DDD43FABC9 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
 		874F606EA09A1D02E81137AB /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
 		8A156D2A07099DCA7F9BC9F2 /* LightCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */; };
 		8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
+		8EBD5014EC55D58F75E50817 /* FrontEndView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D6EAA6259FFC006598A922 /* FrontEndView.swift */; };
 		92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
 		9590C5B7564F9939CCDE8AD6 /* ChakraPetch-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */; };
 		9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
@@ -75,6 +80,7 @@
 		AFB983264A7AB37663B129A4 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A1F6907665CF7ECFD7DDF5 /* Player.swift */; };
 		B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */; };
 		B671EFFBFEDC2FCD6CE6E5B7 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
+		B7D4387CACEB2AFCD395964E /* FrontEnd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BC6E99698AE6DC5426F78B /* FrontEnd.swift */; };
 		BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
 		BFE2CA340C16BD0C8218EFA0 /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
 		D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
@@ -100,16 +106,19 @@
 		1362513C3D8ABE25AC8315B7 /* Mission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mission.swift; sourceTree = "<group>"; };
 		196B1573C8FB9CC7F731E150 /* WorldScroller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldScroller.swift; sourceTree = "<group>"; };
 		224CF6515E65592F712F0902 /* FXSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FXSettings.swift; sourceTree = "<group>"; };
+		29D6EAA6259FFC006598A922 /* FrontEndView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontEndView.swift; sourceTree = "<group>"; };
 		29EC8E7CD387377F03E68669 /* TrackProgram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProgram.swift; sourceTree = "<group>"; };
 		3073385324BD69D6531D493B /* Debrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debrief.swift; sourceTree = "<group>"; };
 		37A7B277A67AB843AA132612 /* MissionProps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionProps.swift; sourceTree = "<group>"; };
 		44E74DD4583F19C94BE32E39 /* CameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRig.swift; sourceTree = "<group>"; };
 		4CEFC5EEF0192DCE155B6328 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
+		581F3F2FFB2CAAC00E963959 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		58455DAE604D8289457A1546 /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameMode.swift; sourceTree = "<group>"; };
 		59796A2FF75D69C574FE80A0 /* PostFX.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = PostFX.metal; sourceTree = "<group>"; };
 		5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailSystem.swift; sourceTree = "<group>"; };
 		5E0762ACC75D4CC67B23E329 /* GameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameController.swift; sourceTree = "<group>"; };
 		6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-SemiBold.ttf"; sourceTree = "<group>"; };
+		65BC6E99698AE6DC5426F78B /* FrontEnd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontEnd.swift; sourceTree = "<group>"; };
 		733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightCycle.swift; sourceTree = "<group>"; };
 		78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-Bold.ttf"; sourceTree = "<group>"; };
 		824850DBC01AACD8E876F1F6 /* ChakraPetch-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-Medium.ttf"; sourceTree = "<group>"; };
@@ -161,6 +170,7 @@
 		1844EE35F9CAB3E4DD50EF2B /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				29D6EAA6259FFC006598A922 /* FrontEndView.swift */,
 				AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */,
 				868ACE88113A37309BDE3C7D /* HUDView.swift */,
 				830774F78514CA1A5F4B7434 /* Input.swift */,
@@ -218,6 +228,7 @@
 			children = (
 				FCF5F98B937F71B03F109B71 /* AvatarActor.swift */,
 				44E74DD4583F19C94BE32E39 /* CameraRig.swift */,
+				65BC6E99698AE6DC5426F78B /* FrontEnd.swift */,
 				5E0762ACC75D4CC67B23E329 /* GameController.swift */,
 				58455DAE604D8289457A1546 /* GameMode.swift */,
 				CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */,
@@ -240,6 +251,7 @@
 		60DE0E2CE1A5F121C9BB663F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				581F3F2FFB2CAAC00E963959 /* Assets.xcassets */,
 				B36422554C4AD2CC76BF3BBE /* Avatar.usdz */,
 				85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */,
 				F2A95B3B28943106ACA53512 /* Fonts */,
@@ -373,6 +385,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3574B9C8D199DAFDB93102ED /* Assets.xcassets in Resources */,
 				5CB9948783443B875CFE0E4B /* Avatar.usdz in Resources */,
 				2041480EF5DFBBCE490E6797 /* ChakraPetch-Bold.ttf in Resources */,
 				0572127472CC24B84BA3D7B9 /* ChakraPetch-Medium.ttf in Resources */,
@@ -387,6 +400,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7A2A99447C49B468DAC13ADE /* Assets.xcassets in Resources */,
 				DB49B1D8B243C8F5A4D3C3D9 /* Avatar.usdz in Resources */,
 				E3623B03682A44940D8CF7FC /* ChakraPetch-Bold.ttf in Resources */,
 				E67A083239561F9561BDA045 /* ChakraPetch-Medium.ttf in Resources */,
@@ -413,6 +427,8 @@
 				1DCDB9F975249B1F36C99403 /* Debrief.swift in Sources */,
 				60068708FF0A24190CD48367 /* FXSettings.swift in Sources */,
 				49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */,
+				0D32B607D31D661EFC1677E8 /* FrontEnd.swift in Sources */,
+				309CB1E16C9BF602D838CA2E /* FrontEndView.swift in Sources */,
 				08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */,
 				39B55898EFD94C6D219D2273 /* GameMode.swift in Sources */,
 				A975139BC959AB5AC5F0212B /* GameView.swift in Sources */,
@@ -456,6 +472,8 @@
 				F611F1A14B9E7E7897D1153C /* Debrief.swift in Sources */,
 				D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */,
 				2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */,
+				B7D4387CACEB2AFCD395964E /* FrontEnd.swift in Sources */,
+				8EBD5014EC55D58F75E50817 /* FrontEndView.swift in Sources */,
 				EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */,
 				6AFE4AE2948BF12FA8344AF9 /* GameMode.swift in Sources */,
 				DC41CBFF327A56F45112A39A /* GameView.swift in Sources */,
@@ -493,6 +511,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -524,6 +543,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -539,6 +559,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -591,6 +612,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -622,6 +644,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -643,6 +666,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

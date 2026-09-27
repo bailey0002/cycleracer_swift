@@ -183,11 +183,7 @@ final class MissionRunner {
     init(missions: [Mission] = Mission.deliveries) {
         self.missions = missions
         let env = ProcessInfo.processInfo.environment
-        if env["SPEEDER_RESET_PROGRESS"] == "1" {
-            for k in ["credits", "missionIndex", "cleared", Upgrades.key] { defaults.removeObject(forKey: k) }
-            for m in missions { defaults.removeObject(forKey: "rank.\(m.id)"); defaults.removeObject(forKey: "flags.\(m.id)") }
-            for k in defaults.dictionaryRepresentation().keys where k.hasPrefix("record.") || k.hasPrefix("said.") { defaults.removeObject(forKey: k) }
-        }
+        if env["SPEEDER_RESET_PROGRESS"] == "1" { Self.clearStoredProgress(defaults, missions: missions) }
         credits = defaults.integer(forKey: "credits")
         upgrades = Upgrades.load(defaults)
         player = Player.load(defaults)
@@ -199,6 +195,42 @@ final class MissionRunner {
         }
         previewIndex = index
     }
+
+    /// Jobs, credits, the garage, ranks, flags, head-to-head records and the said-line sets. The callsign
+    /// and livery are identity, not progress: they stay.
+    private static func clearStoredProgress(_ defaults: UserDefaults, missions: [Mission]) {
+        for k in ["credits", "missionIndex", "cleared", Upgrades.key] { defaults.removeObject(forKey: k) }
+        for m in missions { defaults.removeObject(forKey: "rank.\(m.id)"); defaults.removeObject(forKey: "flags.\(m.id)") }
+        for k in defaults.dictionaryRepresentation().keys where k.hasPrefix("record.") || k.hasPrefix("said.") { defaults.removeObject(forKey: k) }
+    }
+
+    /// The settings screen's RESET PROGRESS: back to the first job's briefing with an empty purse.
+    func resetProgress() {
+        Self.clearStoredProgress(defaults, missions: missions)
+        credits = 0
+        upgrades = Upgrades.load(defaults)
+        index = 0; previewIndex = 0
+        phase = .briefing
+        shopSelection = 0; shopNote = ""; autoStart = false
+    }
+
+    /// Quit to the title: a live, failed or intro'd job goes back to its briefing; a success banks and
+    /// briefs the next job (as its NEXT JOB press would).
+    func abandon() {
+        switch phase {
+        case .success: _ = accept()
+        case .running, .rivalIntro, .failed: phase = .briefing
+        default: break
+        }
+        previewIndex = index
+        autoStart = false
+        shopNote = ""
+    }
+
+    /// No callsign was ever confirmed on this device: the title's START asks who is riding first.
+    var isFirstRun: Bool { defaults.object(forKey: "callsign") == nil }
+    /// Anything to continue from (a cleared job, credits, or a later job chosen).
+    var hasProgress: Bool { clearedCount > 0 || credits > 0 || index > 0 }
 
     var current: Mission { missions[index] }
     var preview: Mission { missions[previewIndex] }
@@ -295,8 +327,10 @@ final class MissionRunner {
         player.callsign = Player.sanitise(raw)
         player.save(defaults)
     }
-    func cycleLivery() {
-        player.livery = (player.livery + 1) % Player.liveries.count
+    func cycleLivery() { setLivery(player.livery + 1) }
+    func setLivery(_ i: Int) {
+        let n = Player.liveries.count
+        player.livery = ((i % n) + n) % n
         player.save(defaults)
     }
     var golds: Int { missions.filter { bestRank(for: $0) == .gold }.count }

@@ -1,9 +1,7 @@
-# Xcode build products and derived data
+# Xcode build products and derived data (every derivedDataPath the threads use)
 SpeederProto/build/
-SpeederProto/build-ios/
-SpeederProto/build-device/
+SpeederProto/build-*/
 **/xcuserdata/
 **/*.xcuserstate
 .DS_Store
 SpeederProto/Captures/**/log.txt
-SpeederProto/build-sim/
