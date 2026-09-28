@@ -53,6 +53,9 @@ enum Theme: Int, CaseIterable {
         }
     }
     var fogDensityScale: Float { self == .sunsetCanyon ? 0.5 : 1.0 }
+    /// The most the depth fog may take: what is left is the far backdrop (the generated skyline and the
+    /// arena bowl, `Art`). The corridors keep their frozen 0.92; the Grid's bowl needs the room.
+    var fogMax: Float { switch self { case .neonCity: return 0.88; case .sunsetCanyon: return 0.92; case .theGrid: return 0.35 } }
     /// Cool lift in the shadows (neon) vs. none (daylight).
     var gradeStrength: Float { self == .sunsetCanyon ? 0.15 : 1.0 }
     var exposure: Float { self == .sunsetCanyon ? 0.82 : 1.0 }

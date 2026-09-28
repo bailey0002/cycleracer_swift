@@ -17,10 +17,13 @@
 		0D32B607D31D661EFC1677E8 /* FrontEnd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BC6E99698AE6DC5426F78B /* FrontEnd.swift */; };
 		0DA9524FD78109DD0B910430 /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
 		0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
+		10DDB34EF0EFCABF38CF9204 /* neon-sign-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 0EC0F619859693B3BE7F0320 /* neon-sign-02.png */; };
+		1133473794A90CA58D911CDF /* neon-facade-04.png in Resources */ = {isa = PBXBuildFile; fileRef = 6BE6651996893CE31D1284E4 /* neon-facade-04.png */; };
 		114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
 		147812546190B4325B27A09E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
 		149D5634B3552BA7882E2561 /* ChakraPetch-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */; };
 		18A4554AB853815327DB45F0 /* AvatarActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF5F98B937F71B03F109B71 /* AvatarActor.swift */; };
+		198D9359506C3E63CAEDED0D /* neon-sign-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 0EC0F619859693B3BE7F0320 /* neon-sign-02.png */; };
 		1B5F82B56A0874899A2867FA /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
 		1DCDB9F975249B1F36C99403 /* Debrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3073385324BD69D6531D493B /* Debrief.swift */; };
 		2041480EF5DFBBCE490E6797 /* ChakraPetch-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */; };
@@ -35,6 +38,7 @@
 		39B55898EFD94C6D219D2273 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58455DAE604D8289457A1546 /* GameMode.swift */; };
 		3B54FAA079FB92CEB507CE1E /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
 		3EEA9A12F0D52EA687DE3BB7 /* MissionProps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A7B277A67AB843AA132612 /* MissionProps.swift */; };
+		43C5E4BCCC197D4225A1A726 /* neon-facade-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 92AB31F80D364C74D73A338B /* neon-facade-03.png */; };
 		44D867CA914D3443D0E4B4EB /* AvatarActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF5F98B937F71B03F109B71 /* AvatarActor.swift */; };
 		49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
 		4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
@@ -45,19 +49,26 @@
 		581BC241B3E41E982571CD05 /* ChakraPetch-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */; };
 		59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
 		5B3A358007EC4F94020517ED /* TrackProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EC8E7CD387377F03E68669 /* TrackProgram.swift */; };
+		5BBED984B884E3FC6B059FA0 /* neon-sign-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 6D1B4DBDA31434E0BA32AA40 /* neon-sign-01.png */; };
 		5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */; };
 		5CB9948783443B875CFE0E4B /* Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B36422554C4AD2CC76BF3BBE /* Avatar.usdz */; };
 		5E2B35048AA4E66F36171C9A /* Rival.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CB4715E79FFE27B9C57F3 /* Rival.swift */; };
+		5E5C42DC2F14E6DFED1CC178 /* neon-facade-05.png in Resources */ = {isa = PBXBuildFile; fileRef = 9D6EF71876933BEFDD6D367D /* neon-facade-05.png */; };
 		5F20EC056DE38F2E4417C878 /* LightCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */; };
+		5F8EA8B586550D8112C81C83 /* grid-screen-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 72882052C02160C92D4332AF /* grid-screen-01.png */; };
 		60068708FF0A24190CD48367 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
 		6217B1DC87DB3D1206277B17 /* MissionProps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A7B277A67AB843AA132612 /* MissionProps.swift */; };
 		621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
 		6373BFD599684FB42ACE19A1 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
+		6477786B4FEC8FD6E79B7681 /* neon-facade-01.png in Resources */ = {isa = PBXBuildFile; fileRef = EE1999A537D2D7C94544538B /* neon-facade-01.png */; };
+		673451B190DBEFCCA82C5ECD /* grid-screen-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 72882052C02160C92D4332AF /* grid-screen-01.png */; };
 		6759E74F0B7767A6EB880B97 /* ChakraPetch-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */; };
 		6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
+		6A570909BE16A233C70F224D /* neon-shop-02.png in Resources */ = {isa = PBXBuildFile; fileRef = F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */; };
 		6A80F9F3360AD1340BF798D3 /* Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830774F78514CA1A5F4B7434 /* Input.swift */; };
 		6AF2A544D10486D2193FCC54 /* WorldScroller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196B1573C8FB9CC7F731E150 /* WorldScroller.swift */; };
 		6AFE4AE2948BF12FA8344AF9 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58455DAE604D8289457A1546 /* GameMode.swift */; };
+		6B3211969CF01549F30853BD /* neon-shop-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 2807BD977559C7CB8250C705 /* neon-shop-01.png */; };
 		72A32373DFCD52235FAAC00E /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		768897D979BEE32AF216EC58 /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
 		7A2A99447C49B468DAC13ADE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 581F3F2FFB2CAAC00E963959 /* Assets.xcassets */; };
@@ -68,36 +79,51 @@
 		8A156D2A07099DCA7F9BC9F2 /* LightCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */; };
 		8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
 		8EBD5014EC55D58F75E50817 /* FrontEndView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D6EAA6259FFC006598A922 /* FrontEndView.swift */; };
+		91E7D2FCD69A80425889BA8A /* neon-facade-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */; };
 		92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
 		9590C5B7564F9939CCDE8AD6 /* ChakraPetch-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */; };
+		98C93C4146DB8E027C690A7A /* ArtLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E254A40E482744855A866AF5 /* ArtLibrary.swift */; };
+		9A4F9D347B1295FBCD282F7B /* neon-sign-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 6D1B4DBDA31434E0BA32AA40 /* neon-sign-01.png */; };
 		9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
 		9D9093F4819EE9359D41FC2A /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE1291018C742677C899082 /* SoundEngine.swift */; };
 		9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
+		A06C7847B0BA24E8EFC4E1F6 /* neon-facade-05.png in Resources */ = {isa = PBXBuildFile; fileRef = 9D6EF71876933BEFDD6D367D /* neon-facade-05.png */; };
+		A37EB33B22D9E43B7E1370F7 /* neon-facade-01.png in Resources */ = {isa = PBXBuildFile; fileRef = EE1999A537D2D7C94544538B /* neon-facade-01.png */; };
 		A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		A975139BC959AB5AC5F0212B /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
+		AB48F2AEB092D1CB4D3B1CEC /* neon-facade-04.png in Resources */ = {isa = PBXBuildFile; fileRef = 6BE6651996893CE31D1284E4 /* neon-facade-04.png */; };
 		ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
 		AE6B361F8A64298F877C17FC /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A1F6907665CF7ECFD7DDF5 /* Player.swift */; };
 		AFB983264A7AB37663B129A4 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A1F6907665CF7ECFD7DDF5 /* Player.swift */; };
 		B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */; };
 		B671EFFBFEDC2FCD6CE6E5B7 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
 		B7D4387CACEB2AFCD395964E /* FrontEnd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BC6E99698AE6DC5426F78B /* FrontEnd.swift */; };
+		BA819C5B884C6C3A20236A47 /* grid-bowl.png in Resources */ = {isa = PBXBuildFile; fileRef = 1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */; };
+		BAC0888D747027F1CBCFCB08 /* neon-shop-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 2807BD977559C7CB8250C705 /* neon-shop-01.png */; };
 		BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
 		BFE2CA340C16BD0C8218EFA0 /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
 		C13FB08266CC67352F52BD43 /* MessageLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1B3D9DCB545B5257A55F15 /* MessageLog.swift */; };
+		CEE259DD889694D01531BF49 /* neon-facade-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 92AB31F80D364C74D73A338B /* neon-facade-03.png */; };
 		D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
+		D3AB01995CE80B17AB1CEC03 /* neon-shop-02.png in Resources */ = {isa = PBXBuildFile; fileRef = F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */; };
 		D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
 		DB49B1D8B243C8F5A4D3C3D9 /* Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B36422554C4AD2CC76BF3BBE /* Avatar.usdz */; };
+		DB9070E503B2652C1E01EA27 /* grid-bowl.png in Resources */ = {isa = PBXBuildFile; fileRef = 1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */; };
 		DC41CBFF327A56F45112A39A /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
 		E132C8599DEE43F567931FC4 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE1291018C742677C899082 /* SoundEngine.swift */; };
 		E3623B03682A44940D8CF7FC /* ChakraPetch-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */; };
 		E4BA5063FAA37F1CB0887EBE /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
 		E67A083239561F9561BDA045 /* ChakraPetch-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 824850DBC01AACD8E876F1F6 /* ChakraPetch-Medium.ttf */; };
+		EA4EA13681E94E0ADAF38079 /* neon-facade-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */; };
 		EA6E0C0F4AB2DC46D198DA28 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
 		ECF0198CE9C264BCF5D513A3 /* MessageLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1B3D9DCB545B5257A55F15 /* MessageLog.swift */; };
 		ED7A03D5F51FEA26BECEA23A /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
+		EEB86B7D0B6B3989D2CCB2CC /* ArtLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E254A40E482744855A866AF5 /* ArtLibrary.swift */; };
 		EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
+		F05D16985B22898D5314BBF5 /* neon-skyline.png in Resources */ = {isa = PBXBuildFile; fileRef = 761E24274CEDB6E4B002900F /* neon-skyline.png */; };
 		F4CA0144019743170E987786 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
+		F58BE43E6D659082669B5D23 /* neon-skyline.png in Resources */ = {isa = PBXBuildFile; fileRef = 761E24274CEDB6E4B002900F /* neon-skyline.png */; };
 		F611F1A14B9E7E7897D1153C /* Debrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3073385324BD69D6531D493B /* Debrief.swift */; };
 		F7F866353C2595C4A553AFFA /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
 		F8D064177C2090AA84FD26C1 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4CEFC5EEF0192DCE155B6328 /* OFL.txt */; };
@@ -115,10 +141,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0EC0F619859693B3BE7F0320 /* neon-sign-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-sign-02.png"; sourceTree = "<group>"; };
 		0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialFactory.swift; sourceTree = "<group>"; };
 		1362513C3D8ABE25AC8315B7 /* Mission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mission.swift; sourceTree = "<group>"; };
 		196B1573C8FB9CC7F731E150 /* WorldScroller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldScroller.swift; sourceTree = "<group>"; };
+		1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-bowl.png"; sourceTree = "<group>"; };
 		224CF6515E65592F712F0902 /* FXSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FXSettings.swift; sourceTree = "<group>"; };
+		2807BD977559C7CB8250C705 /* neon-shop-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-shop-01.png"; sourceTree = "<group>"; };
 		29D6EAA6259FFC006598A922 /* FrontEndView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontEndView.swift; sourceTree = "<group>"; };
 		29EC8E7CD387377F03E68669 /* TrackProgram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProgram.swift; sourceTree = "<group>"; };
 		3073385324BD69D6531D493B /* Debrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debrief.swift; sourceTree = "<group>"; };
@@ -126,6 +155,7 @@
 		44E74DD4583F19C94BE32E39 /* CameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRig.swift; sourceTree = "<group>"; };
 		4CEFC5EEF0192DCE155B6328 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		52D08AF1ABC5FDF097E48537 /* MissionLoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionLoopTests.swift; sourceTree = "<group>"; };
+		56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-02.png"; sourceTree = "<group>"; };
 		581F3F2FFB2CAAC00E963959 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		58455DAE604D8289457A1546 /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameMode.swift; sourceTree = "<group>"; };
 		59796A2FF75D69C574FE80A0 /* PostFX.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = PostFX.metal; sourceTree = "<group>"; };
@@ -133,17 +163,23 @@
 		5E0762ACC75D4CC67B23E329 /* GameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameController.swift; sourceTree = "<group>"; };
 		6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-SemiBold.ttf"; sourceTree = "<group>"; };
 		65BC6E99698AE6DC5426F78B /* FrontEnd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontEnd.swift; sourceTree = "<group>"; };
+		6BE6651996893CE31D1284E4 /* neon-facade-04.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-04.png"; sourceTree = "<group>"; };
+		6D1B4DBDA31434E0BA32AA40 /* neon-sign-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-sign-01.png"; sourceTree = "<group>"; };
+		72882052C02160C92D4332AF /* grid-screen-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-screen-01.png"; sourceTree = "<group>"; };
 		733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightCycle.swift; sourceTree = "<group>"; };
+		761E24274CEDB6E4B002900F /* neon-skyline.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-skyline.png"; sourceTree = "<group>"; };
 		78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-Bold.ttf"; sourceTree = "<group>"; };
 		824850DBC01AACD8E876F1F6 /* ChakraPetch-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-Medium.ttf"; sourceTree = "<group>"; };
 		830774F78514CA1A5F4B7434 /* Input.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Input.swift; sourceTree = "<group>"; };
 		84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaAI.swift; sourceTree = "<group>"; };
 		85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Speeder.usdz; sourceTree = "<group>"; };
 		868ACE88113A37309BDE3C7D /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
+		92AB31F80D364C74D73A338B /* neon-facade-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-03.png"; sourceTree = "<group>"; };
 		95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessor.swift; sourceTree = "<group>"; };
 		96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralTextures.swift; sourceTree = "<group>"; };
 		9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaTerrain.swift; sourceTree = "<group>"; };
 		9D1146D252113EB8417E5731 /* SpeederApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederApp.swift; sourceTree = "<group>"; };
+		9D6EF71876933BEFDD6D367D /* neon-facade-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-05.png"; sourceTree = "<group>"; };
 		9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaWorld.swift; sourceTree = "<group>"; };
 		AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		AF1B3D9DCB545B5257A55F15 /* MessageLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageLog.swift; sourceTree = "<group>"; };
@@ -156,12 +192,15 @@
 		CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederController.swift; sourceTree = "<group>"; };
 		D53555799C92B0DC533C8214 /* SpeederProtoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpeederProtoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA03C8CBB3AECCC551185AD4 /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
+		E254A40E482744855A866AF5 /* ArtLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtLibrary.swift; sourceTree = "<group>"; };
 		E41CB4715E79FFE27B9C57F3 /* Rival.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rival.swift; sourceTree = "<group>"; };
 		E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionRunner.swift; sourceTree = "<group>"; };
 		E59AAB31C250E0E039642DF5 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		EA98E8EC40131A52017CCC61 /* ArenaController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaController.swift; sourceTree = "<group>"; };
+		EE1999A537D2D7C94544538B /* neon-facade-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-01.png"; sourceTree = "<group>"; };
 		F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "SpeederProto-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-Regular.ttf"; sourceTree = "<group>"; };
+		F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-shop-02.png"; sourceTree = "<group>"; };
 		FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SpeederProto-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC6DBC66827CF202624BE7B3 /* Weapons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weapons.swift; sourceTree = "<group>"; };
 		FCF5F98B937F71B03F109B71 /* AvatarActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarActor.swift; sourceTree = "<group>"; };
@@ -172,6 +211,7 @@
 		14456DB4C36B752427D5A0E6 /* Rendering */ = {
 			isa = PBXGroup;
 			children = (
+				E254A40E482744855A866AF5 /* ArtLibrary.swift */,
 				B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */,
 				0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */,
 				BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */,
@@ -202,6 +242,25 @@
 				D53555799C92B0DC533C8214 /* SpeederProtoTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		37F174391265459B72F8E01D /* Art */ = {
+			isa = PBXGroup;
+			children = (
+				1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */,
+				72882052C02160C92D4332AF /* grid-screen-01.png */,
+				EE1999A537D2D7C94544538B /* neon-facade-01.png */,
+				56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */,
+				92AB31F80D364C74D73A338B /* neon-facade-03.png */,
+				6BE6651996893CE31D1284E4 /* neon-facade-04.png */,
+				9D6EF71876933BEFDD6D367D /* neon-facade-05.png */,
+				2807BD977559C7CB8250C705 /* neon-shop-01.png */,
+				F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */,
+				6D1B4DBDA31434E0BA32AA40 /* neon-sign-01.png */,
+				0EC0F619859693B3BE7F0320 /* neon-sign-02.png */,
+				761E24274CEDB6E4B002900F /* neon-skyline.png */,
+			);
+			path = Art;
 			sourceTree = "<group>";
 		};
 		3EC52E6DA14A3B093018CA9C /* Sources */ = {
@@ -272,6 +331,7 @@
 				581F3F2FFB2CAAC00E963959 /* Assets.xcassets */,
 				B36422554C4AD2CC76BF3BBE /* Avatar.usdz */,
 				85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */,
+				37F174391265459B72F8E01D /* Art */,
 				F2A95B3B28943106ACA53512 /* Fonts */,
 			);
 			path = Resources;
@@ -442,6 +502,18 @@
 				581BC241B3E41E982571CD05 /* ChakraPetch-SemiBold.ttf in Resources */,
 				F8D064177C2090AA84FD26C1 /* OFL.txt in Resources */,
 				4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */,
+				BA819C5B884C6C3A20236A47 /* grid-bowl.png in Resources */,
+				5F8EA8B586550D8112C81C83 /* grid-screen-01.png in Resources */,
+				A37EB33B22D9E43B7E1370F7 /* neon-facade-01.png in Resources */,
+				EA4EA13681E94E0ADAF38079 /* neon-facade-02.png in Resources */,
+				43C5E4BCCC197D4225A1A726 /* neon-facade-03.png in Resources */,
+				AB48F2AEB092D1CB4D3B1CEC /* neon-facade-04.png in Resources */,
+				A06C7847B0BA24E8EFC4E1F6 /* neon-facade-05.png in Resources */,
+				BAC0888D747027F1CBCFCB08 /* neon-shop-01.png in Resources */,
+				6A570909BE16A233C70F224D /* neon-shop-02.png in Resources */,
+				5BBED984B884E3FC6B059FA0 /* neon-sign-01.png in Resources */,
+				198D9359506C3E63CAEDED0D /* neon-sign-02.png in Resources */,
+				F58BE43E6D659082669B5D23 /* neon-skyline.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -457,6 +529,18 @@
 				149D5634B3552BA7882E2561 /* ChakraPetch-SemiBold.ttf in Resources */,
 				3818D15AD6E5273BD7AB5084 /* OFL.txt in Resources */,
 				7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */,
+				DB9070E503B2652C1E01EA27 /* grid-bowl.png in Resources */,
+				673451B190DBEFCCA82C5ECD /* grid-screen-01.png in Resources */,
+				6477786B4FEC8FD6E79B7681 /* neon-facade-01.png in Resources */,
+				91E7D2FCD69A80425889BA8A /* neon-facade-02.png in Resources */,
+				CEE259DD889694D01531BF49 /* neon-facade-03.png in Resources */,
+				1133473794A90CA58D911CDF /* neon-facade-04.png in Resources */,
+				5E5C42DC2F14E6DFED1CC178 /* neon-facade-05.png in Resources */,
+				6B3211969CF01549F30853BD /* neon-shop-01.png in Resources */,
+				D3AB01995CE80B17AB1CEC03 /* neon-shop-02.png in Resources */,
+				9A4F9D347B1295FBCD282F7B /* neon-sign-01.png in Resources */,
+				10DDB34EF0EFCABF38CF9204 /* neon-sign-02.png in Resources */,
+				F05D16985B22898D5314BBF5 /* neon-skyline.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -479,6 +563,7 @@
 				A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */,
 				03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */,
 				1B5F82B56A0874899A2867FA /* ArenaWorld.swift in Sources */,
+				98C93C4146DB8E027C690A7A /* ArtLibrary.swift in Sources */,
 				18A4554AB853815327DB45F0 /* AvatarActor.swift in Sources */,
 				59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */,
 				1DCDB9F975249B1F36C99403 /* Debrief.swift in Sources */,
@@ -525,6 +610,7 @@
 				72A32373DFCD52235FAAC00E /* ArenaController.swift in Sources */,
 				A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */,
 				8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */,
+				EEB86B7D0B6B3989D2CCB2CC /* ArtLibrary.swift in Sources */,
 				44D867CA914D3443D0E4B4EB /* AvatarActor.swift in Sources */,
 				FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */,
 				F611F1A14B9E7E7897D1153C /* Debrief.swift in Sources */,

@@ -185,3 +185,12 @@ Next thread, in order:
    collision) so a rival's own-trail death and the accel curve are asserted without captures; the
    round clock and the zone spin-up on The Grid.
 5. B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.
+
+## Status 28 Sep 2026: generated art, first pass
+
+Mark's first image batch (see `docs/art-brief.md`) is wired in on `claude/phone-pass` (`docs/polish-log.md`,
+"Generated art"; `Captures/polish/p11/`) and on the phone. On the phone, check: the facades up close at
+speed (tile scale, the emissive level 1.25), the storefronts at street level, the skyline strip in the haze,
+the Grid bowl (dim by design at `fogMax` 0.35 and `lift` 4; raise or lower both) and the hanging screen,
+and the frame rate with the extra textures (about 14 MB). Then the next batch from the brief: the canyon set,
+the crowd strip, far / mid skyline variants with a black sky, more billboards with faces.

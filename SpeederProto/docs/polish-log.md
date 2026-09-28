@@ -391,3 +391,35 @@ mean, raise the margin in one place, the comment over `Mission.gateSpacing`).
 
 Hooks: `SPEEDER_FLAGS=2:1,9:2` gives jobs their flags at launch (1 clean, 2 fast, 4 gold), which puts
 the offers on the table for a capture; `MissionRunner.testSetFlags` does the same in a test.
+
+## Generated art, first pass (28 Sep 2026)
+
+Mark generated the first samples against `docs/art-brief.md` (five Neon City facade tiles, two
+billboards, one skyline strip, two storefronts, two arena bowls, one jumbotron; source files in
+`../new_images_per_Art_Brief_20260927/`). They are prepared into `Resources/Art/` (sips crop and
+resize: facades 1024², billboards and storefronts centre-cropped to 1024 x 512 to lose the generated
+bezels and street, the skyline cropped to its building band at 2048 x 614, the bowl with the crowd at
+2048 x 683, the screen at 1024 x 512) and wired in by `Sources/Rendering/ArtLibrary.swift` (`Art`):
+a missing file keeps the procedural look, `SPEEDER_ART=0` keeps every image out. Captures in
+`Captures/polish/p11/` (`cruise` is the A/B against `p10/cruise`).
+
+| Where | How | Result |
+|---|---|---|
+| Facades | each tile is both the albedo (tinted 0.5) and the emissive (1.25) of a `PhysicallyBasedMaterial`, appended to `materials.facades`, so five of eight buildings pick a generated tile with the existing UV scales (18 m and 24 x 36 m per tile) | the near towers read as balconies, pipes, air units and lit rooms (`p11/cruise/frame-4`); the frozen look otherwise holds |
+| Billboards | unlit, appended to `materials.signs`, so the mega-signs and the building billboards pick them | KERB on a tower face at t = 9 |
+| Storefronts | new 2:1 quads under the shop strip on the road-facing face (55 % of buildings), `materials.artShops` | a shop at street level on the right at t = 9 |
+| Skyline strip | four thin boxes 620 m out around the corridor, alpha-faded top and bottom (`Art.faded`), `materials.artSkyline`; the fog cap `Theme.fogMax` went 0.92 -> 0.88 for Neon City so the strip keeps 12 % | a faint skyline in the haze past the gateway; the A/B frames differ by eye only in the facades and the horizon |
+| Arena bowl | four thin boxes at `halfSize + 360`, black keyed to alpha with a tone lift (`Art.keyedBlack(lift: 4)`), `Theme.fogMax` 0.35 on The Grid | tiers, pylons and crowd lights behind the data towers (`p11/grid/frame-3`), still dim: tune `fogMax` and the lift on the phone |
+| Jumbotron | four faces of a thin box over the arena centre at 46 m | not in the chase frames (it needs the bike to face the centre); check on the phone |
+
+Two bugs on the way, both in `ArtLibrary`: a `CGContext(data: &array ...)` with a Swift array is a
+dangling pointer (the context drew into a temporary; the keyed bowl came out as speckles) and flat
+`generatePlane` quads this far from the origin never drew (the RealityKit zero-thickness cull from 11
+Sep again; the backdrops are 0.5 m boxes now). The depth fog also takes 92 % of anything at sky depth,
+so a backdrop needs the cap (`fogMax`, new `weather.z` in the post uniforms).
+
+What the samples taught for the next batch: the generator ignores "no frame" (both billboards came
+with a bezel and a building around them; the crop handles it) and "transparent sky" (the skyline came
+with a painted sky and a fog band; the fade handles it, but a black sky would key cleanly). The
+facades and the bowl were right first time. Still wanted from the brief: the canyon set, the crowd
+strip, the far / mid skyline variants, more billboards with faces.

@@ -572,6 +572,16 @@ Branch `claude/phone-pass` (`docs/polish-log.md`, last section; `Captures/polish
   fail the run (`TOOK THE SKYWAY`). The contact acknowledges the **fork** on the result card
   ("The tunnel. Kade saw that."). `SPEEDER_FLAGS=2:1` puts an offer on the table for a capture.
 
+## Generated art (28 Sep 2026)
+
+`docs/art-brief.md` is the brief for AI-generated environment images (palettes per world with hex
+values, one paste-ready prompt per asset). The first batch is prepared into `Resources/Art/` and
+loaded by `Rendering/ArtLibrary.swift`: generated facade tiles join the facade pool (albedo + emissive),
+billboards join the sign pool, storefront quads sit at street level, a skyline strip stands 620 m out
+behind the rings, and The Grid gets a stadium bowl and a hanging screen. `SPEEDER_ART=0` keeps every
+image out (the A/B baseline); a missing file keeps the procedural look. `Theme.fogMax` caps the depth
+fog per world so a backdrop survives it (`docs/polish-log.md`, "Generated art").
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

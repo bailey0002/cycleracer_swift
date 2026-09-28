@@ -155,7 +155,7 @@ final class PostProcessor {
         u.haze = SIMD4<Float>(thrusterUV.x, thrusterUV.y, (0.35 + sp * 0.4 + boost * 0.9) * (s.particles ? 1 : 0), 0.06 + boost * 0.05)
         u.extra = SIMD4<Float>(lightning, 1, s.lensFX ? th.lensScale : 0, s.motionBlur ? speed / 60 * (0.22 + boost * 0.4) : 0)
         u.vehicle = SIMD4<Float>(vehicleUV.x, vehicleUV.y, vehicleDistance, 0.42)
-        u.weather = SIMD4<Float>(rain, 14 + sp * 10, 0, 0)
+        u.weather = SIMD4<Float>(rain, 14 + sp * 10, th.fogMax, 0)
         u.proj.z = (isHDR ? 1.2 : 1.0) * th.exposure
         u.proj.w = th.vignette
         let fogMode: Float = s.fog ? (depthUsable == false ? 2 : 1) : 0

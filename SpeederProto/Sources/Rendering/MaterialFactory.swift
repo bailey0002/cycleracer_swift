@@ -24,6 +24,11 @@ final class SceneMaterials {
     /// Arena-only materials (nil for the corridor worlds).
     private(set) var gridFloor: PhysicallyBasedMaterial? = nil
     private(set) var gridWall: PhysicallyBasedMaterial? = nil
+    /// Generated art (`Art`, `docs/art-brief.md`): empty / nil when the files are absent or `SPEEDER_ART=0`.
+    private(set) var artShops: [UnlitMaterial] = []          // street-level storefront quads (2:1)
+    private(set) var artSkyline: UnlitMaterial? = nil        // the far backdrop strip, alpha-faded top and bottom
+    private(set) var artBowl: UnlitMaterial? = nil           // the arena bowl backdrop, black keyed out
+    private(set) var artScreens: [UnlitMaterial] = []        // the hanging arena screens
     let library: MTLLibrary?
 
     private let glowTexture: TextureResource
@@ -68,6 +73,20 @@ final class SceneMaterials {
             wm.roughness = .init(floatLiteral: 0.35)
             wm.metallic = .init(floatLiteral: 0.2)
             gridWall = wm
+            if let img = Art.image("grid-bowl") {
+                let tex = try Self.texture(Art.keyedBlack(img, lift: 4.0), .color)
+                var m = UnlitMaterial()
+                m.color = .init(tint: .rgb(0.7, 0.9, 1.0), texture: .init(tex))   // the gain whitens the lights; pull them back to cyan
+                m.blending = .transparent(opacity: .init(scale: 1, texture: .init(tex)))
+                artBowl = m
+            }
+            for img in Art.images("grid-screen") {
+                let tex = try Self.texture(Art.keyedBlack(img, lift: 2.0), .color)
+                var m = UnlitMaterial()
+                m.color = .init(tint: .white, texture: .init(tex))
+                m.blending = .transparent(opacity: .init(scale: 1, texture: .init(tex)))
+                artScreens.append(m)
+            }
         }
 
         // --- road: dark, low roughness in puddles, normal map for ripple highlights
@@ -131,7 +150,30 @@ final class SceneMaterials {
                 m.metallic = .init(floatLiteral: 0.15)
                 fs.append(m)
             }
+            // generated facades: the picture is both the albedo (dimmed) and the emissive, so the lit windows glow
+            for img in Art.images("neon-facade") {
+                let tex = Self.repeating(try Self.texture(img, .color))
+                var m = PhysicallyBasedMaterial()
+                m.baseColor = .init(tint: .rgb(0.5, 0.5, 0.58), texture: tex)
+                m.emissiveColor = .init(color: .black, texture: tex)
+                m.emissiveIntensity = 1.25
+                m.roughness = .init(floatLiteral: 0.6)
+                m.metallic = .init(floatLiteral: 0.1)
+                fs.append(m)
+            }
             facades = fs
+            for img in Art.images("neon-shop") {
+                var m = UnlitMaterial()
+                m.color = .init(tint: .white, texture: .init(try Self.texture(img, .color)))
+                artShops.append(m)
+            }
+            if let img = Art.image("neon-skyline") {
+                let tex = try Self.texture(Art.faded(img, top: 0.10, bottom: 0.92, fade: 0.22), .color)
+                var m = UnlitMaterial()
+                m.color = .init(tint: .rgb(0.85, 0.85, 0.95), texture: .init(tex))
+                m.blending = .transparent(opacity: .init(scale: 1, texture: .init(tex)))
+                artSkyline = m
+            }
             let (sb, se) = ProceduralTextures.skylineFacade()
             var sk = PhysicallyBasedMaterial()
             sk.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(sb, .color)))
@@ -163,6 +205,14 @@ final class SceneMaterials {
             m.color = .init(tint: .white, texture: .init(tex))
             signMats.append(m)
             if let library, let h = Self.hologram(texture: tex, library: library) { holo.append(h) } else { holo.append(m) }
+        }
+        // generated billboards join the sign pool (the mega-signs and the building billboards pick from it)
+        if theme == .neonCity {
+            for img in Art.images("neon-sign") {
+                var m = UnlitMaterial()
+                m.color = .init(tint: .white, texture: .init(try Self.texture(img, .color)))
+                signMats.append(m); holo.append(m)
+            }
         }
         signs = signMats
         hologramSigns = holo

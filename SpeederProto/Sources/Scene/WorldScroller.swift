@@ -465,6 +465,14 @@ final class RoadSegment {
                 shop.position = [x - side * (d / 2 + 0.12), 4.2, z - w / 2]
                 storefrontGroup.addChild(shop)
                 cityNeon.append((shop, 2.5))
+                if !materials.artShops.isEmpty && rng.chance(0.55) {
+                    // a generated storefront on the road-facing face, under the shop strip
+                    let sw = min(w * 0.9, 13), sh = sw * 0.5
+                    let front = ModelEntity(mesh: .generatePlane(width: sw, height: sh), materials: [rng.pick(materials.artShops)])
+                    front.position = [x - side * (d / 2 + 0.08), sh / 2 - 0.05, z - w / 2]
+                    front.orientation = simd_quatf(angle: side < 0 ? .pi / 2 : -.pi / 2, axis: [0, 1, 0])
+                    storefrontGroup.addChild(front)
+                }
                 if rng.chance(0.6) {
                     let ph = rng.float(4, 9)
                     let podium = ModelEntity(mesh: .generateBox(width: d * 0.8, height: ph, depth: w + 5), materials: [materials.concrete])
@@ -1204,6 +1212,19 @@ final class SkylineLayer {
     init(materials: SceneMaterials) {
         var rng = SeededRNG(seed: 555)
         let canyon = materials.theme == .sunsetCanyon
+        if let backdrop = materials.artSkyline {
+            // the generated skyline strip as a square of four far planes behind the rings (static: at this
+            // distance the rings' parallax is the motion); faded top and bottom into the sky and the haze
+            let dist: Float = 620, width: Float = 2 * dist + 60, height = width * 614 / 2048
+            for i in 0..<4 {
+                let plane = ModelEntity(mesh: .generateBox(width: width, height: height, depth: 0.5), materials: [backdrop])   // volume: a flat quad is culled
+                let holder = Entity()
+                holder.orientation = simd_quatf(angle: Float(i) * .pi / 2, axis: [0, 1, 0])
+                plane.position = [0, height * 0.32, -dist]
+                holder.addChild(plane)
+                root.addChild(holder)
+            }
+        }
         // mid ring
         for i in 0..<22 {
             let side: Float = i % 2 == 0 ? -1 : 1

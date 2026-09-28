@@ -109,6 +109,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   and assessment 5.5 (cleared jobs as a bitmask with two jobs open at once, `SideOffer`s from KADE /
   ORIN / SABLE as amber inbox chips, the fork acknowledged on the card). `MissionRunner` takes its
   `UserDefaults` in `init`; `SPEEDER_FLAGS=<job>:<mask>` sets flags for captures.
+- Generated art 28 Sep 2026 (same branch): `docs/art-brief.md` (palettes + prompts), Mark's first batch in
+  `Resources/Art/`, loaded by `Rendering/ArtLibrary.swift` (`Art`; `SPEEDER_ART=0` for the baseline):
+  facades + billboards join the procedural pools, storefront quads, a skyline strip 620 m out, the Grid
+  bowl + screen. `Theme.fogMax` caps the depth fog per world (`weather.z`). Gotchas: never
+  `CGContext(data: &swiftArray)`; far backdrops must be thin boxes, not planes; a backdrop at sky depth
+  gets the fog cap, so tune `fogMax` and `Art.keyedBlack(lift:)` together.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

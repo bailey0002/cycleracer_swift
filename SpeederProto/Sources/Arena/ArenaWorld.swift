@@ -93,6 +93,30 @@ final class ArenaWorld {
             t.addChild(e)
         }
         root.addChild(towerGroup)
+        if let bowl = materials.artBowl {
+            // the generated stadium bowl: four far planes behind the data towers, black keyed to the sky
+            let dist = halfSize + (ProcessInfo.processInfo.environment["SPEEDER_BOWL_NEAR"] == "1" ? 40 : 360), width = 2 * dist + 80, height = width * 683 / 2048; print("art: bowl at \(dist) m, \(width) x \(height)")
+            for i in 0..<4 {
+                let plane = ModelEntity(mesh: .generateBox(width: width, height: height, depth: 0.5), materials: [bowl])   // volume: a flat quad this far out is culled
+                let holder = Entity()
+                holder.orientation = simd_quatf(angle: Float(i) * .pi / 2, axis: [0, 1, 0])
+                plane.position = [0, height * 0.42, -dist]
+                holder.addChild(plane)
+                root.addChild(holder)
+            }
+        }
+        if let screen = materials.artScreens.first {
+            // the hanging screen over the centre, four faces so it reads from every side
+            let sw: Float = 36, sh: Float = 18
+            for i in 0..<4 {
+                let face = ModelEntity(mesh: .generateBox(width: sw, height: sh, depth: 0.3), materials: [screen])
+                let holder = Entity()
+                holder.orientation = simd_quatf(angle: Float(i) * .pi / 2, axis: [0, 1, 0])
+                face.position = [0, 46, -sw / 2 + 0.5]
+                holder.addChild(face)
+                root.addChild(holder)
+            }
+        }
         buildDecks(materials: materials)
         buildPads(materials: materials)
         root.addChild(pickupGroup)
