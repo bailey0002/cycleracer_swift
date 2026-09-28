@@ -25,6 +25,7 @@ struct FXSettings: Equatable {
     var hazardX     = false     // red X mark on blocks, gates and hatches
     var environment = 0         // Theme rawValue; changing it rebuilds the scene
     var palette     = 1         // 0 mixed neon, 1 road cyan / city warm, 2 road amber / city cool, 3 painted road (daylight)
+    var gridPalette = 0         // The Grid's accent: 0 cyan, 1 red, 2 amber, 3 violet (a change rebuilds the arena)
     var postFX      = true      // master switch for the Metal post pass
     var fog         = true
     var bloom       = true

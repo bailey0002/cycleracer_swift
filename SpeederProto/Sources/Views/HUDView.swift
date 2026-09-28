@@ -915,6 +915,7 @@ struct HUDView: View {
             toggle("dense tunnel rings", \.tunnelDense)
             picker("rings", \.ringColor, ["mixed", "blue", "red", "amber"])
             picker("palette", \.palette, ["mixed", "cyan/warm", "amber/cool", "painted"])
+            picker("grid", \.gridPalette, Theme.gridPaletteNames)
             picker("hazards", \.hazardColor, ["magenta", "lime", "orange", "white"])
             toggle("red X on barriers", \.hazardX)
             Divider().overlay(.white.opacity(0.3))

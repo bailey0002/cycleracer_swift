@@ -423,3 +423,20 @@ with a bezel and a building around them; the crop handles it) and "transparent s
 with a painted sky and a fog band; the fade handles it, but a black sky would key cleanly). The
 facades and the bowl were right first time. Still wanted from the brief: the canyon set, the crowd
 strip, the far / mid skyline variants, more billboards with faces.
+
+## Street polish from the reference render (28 Sep 2026, second pass)
+
+Five items from Mark against the Unreal-vs-RealityKit reference image. Captures in `Captures/polish/p12/`.
+
+| Item | What changed | Proof |
+|---|---|---|
+| 1. Grid colours | `FXSettings.gridPalette` (dev panel row "grid"; `SPEEDER_GRID_PALETTE=cyan|red|amber|violet`): `Theme.gridAccent` drives the floor lines, wall panels, rails, base lines, pylons, tower edges, deck bands, lamps, the fog colour, the environment map's horizon band and the bowl's tint (`ProceduralTextures.gridFloor/gridWall/environmentGrid(accent:)`, `ArenaWorld`). In a duel the accent follows the rival: KADE cyan, ORIN violet, SABLE amber, VESS red; free play uses the setting. A change rebuilds the arena | `p12/grid-cyan`, `-red`, `-amber`, `-violet` (frame-3): red reads strongest against the lime decks and the white trail; the bowl takes the accent |
+| 2. Rain direction | The streak phase was `uv.y * rows + t * speed`; texture y runs down the screen, so the streaks climbed. Now `- t * speed` | by formula (a still frame cannot show it) |
+| 3. Showers | `GameController.rainMode`: `SPEEDER_RAIN=always|showers|heavy|0`; the demo keeps `always` so captures align. Otherwise light showers (18 to 34 s on, 22 to 48 s off, swelling in at rate 0.35) in chapters 1 and 2 and free play, heavy showers in chapter 3 (strength 1.7, and `post.rainFog` thickens the depth fog by up to 110 % while it rains, so the streets close in). Lightning only while it rains | `p12/heavy/frame-9` against `p12/street/frame-9` |
+| 4. Wider, darker street | Near-black asphalt aprons 12 m wide either side of the road (`materials.asphalt`, `SPEEDER_APRON=0` for the A/B), the near and tall building rows pushed 2.5 m further out, the far ring's tint 0.45 -> 0.30, the generated facades' albedo 0.5 -> 0.38. The driveable road, the barriers and the lane limit are unchanged (the fork geometry depends on them) | `p12/street/frame-4` vs `p12/noapron/frame-4`: the buildings stand on black instead of the violet void, the street reads wider |
+| 5. Crossroads | `TrackBlock.Dressing.crossroad`, on 65 % of the composer's bend leads: a dark cross street 16 m deep through both building rows at the segment's middle (`RoadSegment.crossroadHidden`: anything whose bounds overlap the street is hidden on that block), lane dashes and three pairs of lights receding down each side street, red-and-white chevron barricades with red hazard lamps across each mouth just beyond the barrier, and a signal gantry 9 m before the crossing with three red arrow panels (`ProceduralTextures.arrowSign`, swapped per block to point left, ahead or right with the bend). The block is named "crossroads, left / right" | `p12/street/frame-5` (the gantry and barricades at the first bend of RELAY 01, arrows left, the road bends left), `p12/street-over/frame-5.5` |
+
+Not changed: the driveable width (18 m; widening it means the barriers, studs, lights, the lane limit and the
+fork's ±11.5 m rows all move together, a pass of its own), the Grid's default (cyan; the rival mapping
+is the way in). On the phone: pick the Grid accent by eye (the dev panel row rebuilds), judge the showers'
+timing and the heavy mode's visibility in chapter 3, and the crossroads at speed.

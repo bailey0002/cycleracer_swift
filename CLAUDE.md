@@ -115,6 +115,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   bowl + screen. `Theme.fogMax` caps the depth fog per world (`weather.z`). Gotchas: never
   `CGContext(data: &swiftArray)`; far backdrops must be thin boxes, not planes; a backdrop at sky depth
   gets the fog cap, so tune `fogMax` and `Art.keyedBlack(lift:)` together.
+- Street polish 28 Sep 2026 (same branch, `docs/polish-log.md` "Street polish", `Captures/polish/p12/`):
+  `FXSettings.gridPalette` / `Theme.gridAccent` (duels take the rival's colour), the rain direction fix
+  (texture y runs down: the streak phase is `- t * speed`), showers (`GameController.rainMode`,
+  `SPEEDER_RAIN=`; chapter 3 heavy + `post.rainFog`), asphalt aprons (`SPEEDER_APRON=0`), and the
+  `.crossroad` dressing (`RoadSegment.buildCrossroad`, hidden set by bounds overlap, arrow materials swapped
+  per block). The driveable road width is unchanged on purpose.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

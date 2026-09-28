@@ -582,6 +582,14 @@ behind the rings, and The Grid gets a stadium bowl and a hanging screen. `SPEEDE
 image out (the A/B baseline); a missing file keeps the procedural look. `Theme.fogMax` caps the depth
 fog per world so a backdrop survives it (`docs/polish-log.md`, "Generated art").
 
+## Street polish (28 Sep 2026)
+
+From the reference render: The Grid's accent is a palette (`gridPalette`: cyan, red, amber, violet; a duel
+takes the rival's), the rain falls (it climbed), rain comes in showers and closes the streets in chapter 3
+(`SPEEDER_RAIN=always|showers|heavy|0`), the street has black asphalt aprons with the buildings set further
+back, and bends open onto **crossroads**: a cross street through the towers, chevron barricades, and a red
+arrow gantry pointing the way (`docs/polish-log.md`, "Street polish").
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

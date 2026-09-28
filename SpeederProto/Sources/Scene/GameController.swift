@@ -13,6 +13,7 @@ final class GameController: ObservableObject {
 
     @Published var settings = FXSettings() {
         didSet {
+            if settings.gridPalette != oldValue.gridPalette, arena != nil { requestRebuild() }
             if settings.environment != oldValue.environment, world != nil || arena != nil {
                 var s = settings
                 (Theme(rawValue: s.environment) ?? .neonCity).adjust(&s)
@@ -134,6 +135,23 @@ final class GameController: ObservableObject {
     private let speedParticles = Entity()
     /// Rain (screen-space, in the post pass) and the lightning clock.
     private var rainLevel: Float = 0
+    /// Showers: the rain comes and goes. `SPEEDER_RAIN=always|showers|heavy|0`; the demo keeps `always` so
+    /// captures align. Otherwise chapter 3 gets heavy showers that also thicken the fog (the streets
+    /// close in), everything else light showers.
+    private enum RainMode { case off, always, showers, heavy }
+    private var showerOn = true
+    private var showerTimer: Float = 12
+    private var rainMode: RainMode {
+        switch ProcessInfo.processInfo.environment["SPEEDER_RAIN"] {
+        case "0": return .off
+        case "always": return .always
+        case "showers": return .showers
+        case "heavy": return .heavy
+        default: break
+        }
+        if demoMode { return .always }
+        return missionActive && missions.current.chapter >= 3 ? .heavy : .showers
+    }
     /// SPEEDER_LIGHTNING_AT=<s> forces the first flash at that scene time (captures).
     private var lightningTimer: Float = Float(ProcessInfo.processInfo.environment["SPEEDER_LIGHTNING_AT"] ?? "") ?? 7
     private var lightning: Float = 0
@@ -203,6 +221,7 @@ final class GameController: ObservableObject {
 
     /// SPEEDER_VARIANT=<name> applies a look preset at launch (used by the comparison sweep).
     private func applyVariantPreset() {
+        if let g = ProcessInfo.processInfo.environment["SPEEDER_GRID_PALETTE"], let i = Theme.gridPaletteNames.firstIndex(of: g) { settings.gridPalette = i }
         guard let name = ProcessInfo.processInfo.environment["SPEEDER_VARIANT"] else { return }
         var s = settings
         switch name {
@@ -315,6 +334,12 @@ final class GameController: ObservableObject {
             sound.setMusic(world: theme.rawValue)
             let device = MTLCreateSystemDefaultDevice()
             mark("start")
+            // the arena's accent: the rival's colour family in a duel (KADE cyan, ORIN violet, SABLE amber, VESS
+            // red), the developer setting otherwise; SPEEDER_GRID_PALETTE forces one
+            Theme.gridPalette = settings.gridPalette
+            if theme == .theGrid, missionActive, let r = missions.current.rival, ProcessInfo.processInfo.environment["SPEEDER_GRID_PALETTE"] == nil {
+                Theme.gridPalette = ["KADE": 0, "ORIN": 3, "SABLE": 2, "VESS": 1][r.name] ?? settings.gridPalette
+            }
             let materials = try SceneMaterials(device: device, theme: theme)
             self.materials = materials
             mark("materials")
@@ -662,10 +687,21 @@ final class GameController: ObservableObject {
         post.enclosure = world.enclosure
         // weather: rain off in enclosed sections; lightning every 9 to 17 s with a rumble
         if theme.rain {
-            let wet: Float = settings.weather ? 1 - world.enclosure : 0
-            rainLevel = damp(rainLevel, wet, 3, dt)
+            let mode = rainMode
+            var target: Float = 0
+            switch mode {
+            case .off: target = 0
+            case .always: target = 1
+            case .showers, .heavy:
+                showerTimer -= dt
+                if showerTimer <= 0 { showerOn.toggle(); showerTimer = showerOn ? weatherRNG.float(18, 34) : weatherRNG.float(22, 48) }
+                target = showerOn ? (mode == .heavy ? 1.7 : 1.0) : 0
+            }
+            let wet: Float = settings.weather ? target * (1 - world.enclosure) : 0
+            rainLevel = damp(rainLevel, wet, mode == .always ? 3 : 0.35, dt)   // showers swell in over a few seconds
             post.rain = rainLevel
-            if settings.weather {
+            post.rainFog = mode == .heavy ? rainLevel / 1.7 : 0
+            if settings.weather && rainLevel > 0.3 {
                 lightningTimer -= dt
                 if lightningTimer <= 0 { lightning = 1; lightningTimer = weatherRNG.float(9, 17); gamepad.rumble(intensity: 0.2, sharpness: 0.2) }
             }

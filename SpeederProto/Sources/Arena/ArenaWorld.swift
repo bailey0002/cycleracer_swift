@@ -40,8 +40,10 @@ final class ArenaWorld {
         root.addChild(floor)
 
         // boundary walls: one slab per side, panelled by the texture, with a rail and base line
-        let railMat = materials.neon(SIMD3(0.35, 0.85, 1.0), intensity: 4)
-        let baseMat = materials.neon(SIMD3(0.20, 0.75, 1.0), intensity: 3)
+        let accent = Theme.gridAccent
+        func lit(_ k: Float) -> SIMD3<Float> { accent * (1 - k) + SIMD3(repeating: 1) * k }   // toward white
+        let railMat = materials.neon(lit(0.15), intensity: 4)
+        let baseMat = materials.neon(accent * 0.9, intensity: 3)
         for side in 0..<4 {
             let holder = Entity()
             holder.orientation = simd_quatf(angle: Float(side) * .pi / 2, axis: [0, 1, 0])
@@ -56,7 +58,7 @@ final class ArenaWorld {
             let base = ModelEntity(mesh: .generateBox(size: [size + 2, 0.08, 0.14]), materials: [baseMat])
             base.position = [0, 0.04, -halfSize + 0.07]
             holder.addChild(base)
-            let refl = ModelEntity(mesh: .generatePlane(width: size, depth: 7), materials: [materials.reflection(SIMD3(0.25, 0.8, 1.0), opacity: 0.30)])
+            let refl = ModelEntity(mesh: .generatePlane(width: size, depth: 7), materials: [materials.reflection(accent, opacity: 0.30)])
             refl.position = [0, 0.02, -halfSize + 3.6]
             refl.orientation = simd_quatf(angle: .pi / 2, axis: [0, 1, 0])
             holder.addChild(refl)
@@ -64,7 +66,7 @@ final class ArenaWorld {
             root.addChild(holder)
         }
         // corner pylons
-        let pylonMat = materials.neon(SIMD3(0.45, 0.9, 1.0), intensity: 3.5)
+        let pylonMat = materials.neon(lit(0.25), intensity: 3.5)
         for sx in [-1, 1] as [Float] { for sz in [-1, 1] as [Float] {
             let p = ModelEntity(mesh: .generateBox(size: [2.4, 26, 2.4]), materials: [materials.barrier])
             p.position = [sx * (halfSize + 1.2), 13, sz * (halfSize + 1.2)]
@@ -79,7 +81,7 @@ final class ArenaWorld {
         } }
         // far data towers: dark slabs with one lit edge, well outside the fog range so they read as silhouettes
         var rng = SeededRNG(seed: 7771)
-        let edgeMat = materials.neon(SIMD3(0.2, 0.6, 1.0), intensity: 2.5)
+        let edgeMat = materials.neon(accent * 0.75, intensity: 2.5)
         for i in 0..<28 {
             let a = Float(i) / 28 * 2 * .pi + rng.float(-0.08, 0.08)
             let r = halfSize + rng.float(120, 320)
@@ -179,7 +181,7 @@ final class ArenaWorld {
     /// Parking-garage levels: deck floors with a dark slab underneath and an edge strip, inclined
     /// ramps in the same grid material, and columns. Rails are drawn by the hazard trail renderer.
     private func buildDecks(materials: SceneMaterials) {
-        let bandMat = materials.neon(SIMD3(0.30, 0.80, 1.0), intensity: 3.5)
+        let bandMat = materials.neon(Theme.gridAccent, intensity: 3.5)
         // decks and ramps read as lighter steel slabs with a coarser grid so they separate from the ground
         var deckMat = materials.gridFloor ?? materials.road
         deckMat.baseColor = .init(tint: .rgb(0.42, 0.50, 0.60), texture: deckMat.baseColor.texture)
@@ -208,7 +210,7 @@ final class ArenaWorld {
                 root.addChild(e)
             }
             // ceiling lights under the deck
-            let lampMat = materials.neon(SIMD3(0.7, 0.9, 1.0), intensity: 2.2)
+            let lampMat = materials.neon(Theme.gridAccent * 0.5 + SIMD3(repeating: 0.5), intensity: 2.2)
             for k in stride(from: d.min.y + 10, to: d.max.y, by: 20) {
                 let lamp = ModelEntity(mesh: .generateBox(size: [w * 0.9, 0.12, 0.3]), materials: [lampMat])
                 lamp.position = [c.x, d.height - thick - 0.1, k]

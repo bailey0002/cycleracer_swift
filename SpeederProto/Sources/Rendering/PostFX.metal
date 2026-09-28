@@ -178,7 +178,7 @@ kernel void compositePass(texture2d<float, access::sample> src   [[texture(0)]],
         for (int k = 0; k < 2; k++) {
             float cols = k == 0 ? 70.0 : 150.0;
             float rows = cols * 0.22;
-            float2 p = float2(uv.x * cols + uv.y * (k == 0 ? 3.0 : 5.0), uv.y * rows + t * u.weather.y * (k == 0 ? 1.0 : 0.7));
+            float2 p = float2(uv.x * cols + uv.y * (k == 0 ? 3.0 : 5.0), uv.y * rows - t * u.weather.y * (k == 0 ? 1.0 : 0.7));   // minus: texture y runs down, so the streaks fall
             float2 cell = floor(p), f = fract(p);
             float h = hash21(cell + float(k) * 17.0);
             if (h < (k == 0 ? 0.16 : 0.22)) {

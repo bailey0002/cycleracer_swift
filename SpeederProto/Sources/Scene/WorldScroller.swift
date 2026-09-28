@@ -49,6 +49,12 @@ final class RoadSegment {
     let portalGroup = Entity()        // section mouths (entry / exit frames per style)
     let overpassGroup = Entity()      // landmark dressing: a crossing deck over the road
     let gatewayGroup = Entity()       // landmark dressing: twin pylons with a lit crossbar
+    let crossroadGroup = Entity()     // dressing: a cross street, barricades and red arrow signals
+    private var arrowPanels: [ModelEntity] = []
+    private var crossroadHidden: [Entity] = []   // buildings, poles and signs in the cross street's path
+    /// Dark asphalt aprons either side of the road (the street reads wider, the buildings stand on black).
+    private var aprons: [ModelEntity] = []
+    nonisolated(unsafe) static var apronEnabled = ProcessInfo.processInfo.environment["SPEEDER_APRON"] != "0"
     private var entryPortals: [SegmentStyle: Entity] = [:]
     private var exitPortals: [SegmentStyle: Entity] = [:]
     private var strobes: [Entity] = []
@@ -99,7 +105,13 @@ final class RoadSegment {
         buildingGroup.addChild(secondRowGroup)
         buildingGroup.addChild(altRowGroup)
         [surface, wideSurface, laneGroup, roadsideGroup, buildingGroup, signGroup, reflectionGroup,
-         tunnelGroup, elevatedGroup, forkGroup, tubeGroup, obstacleGroup, portalGroup, overpassGroup, gatewayGroup].forEach { root.addChild($0) }
+         tunnelGroup, elevatedGroup, forkGroup, tubeGroup, obstacleGroup, portalGroup, overpassGroup, gatewayGroup, crossroadGroup].forEach { root.addChild($0) }
+        for side in [-1, 1] as [Float] {
+            let apron = ModelEntity(mesh: .generatePlane(width: 12, depth: length + 2), materials: [materials.asphalt])
+            apron.position = [side * 15.2, -0.03, -length / 2]
+            root.addChild(apron)
+            aprons.append(apron)
+        }
         var rng = SeededRNG(seed: UInt64(1000 + index * 7919))
         buildLanes()
         buildBarriers()
@@ -112,6 +124,14 @@ final class RoadSegment {
         buildTube()
         buildPortals()
         buildLandmarks(&rng)
+        buildCrossroad(&rng)
+        // what the cross street cuts through: anything standing within 10 m of the segment's middle
+        for g in [buildingGroup, altRowGroup, secondRowGroup, storefrontGroup, signGroup, roadsideGroup] {
+            for e in g.children where e.name != "barrier" {
+                let b = e.visualBounds(relativeTo: g)
+                if b.min.z < mid + 8.5 && b.max.z > mid - 8.5 { crossroadHidden.append(e) }
+            }
+        }
         buildObstaclePool()
     }
 
@@ -153,6 +173,14 @@ final class RoadSegment {
         forkGroup.isEnabled = style == .fork
         overpassGroup.isEnabled = city && block.dressing == .overpass
         gatewayGroup.isEnabled = city && block.dressing == .gateway
+        let crossroad = city && block.dressing == .crossroad && materials.theme == .neonCity
+        crossroadGroup.isEnabled = crossroad
+        for e in crossroadHidden { e.isEnabled = !crossroad }
+        if crossroad {
+            let dir = block.curvature > 0.5 ? 2 : (block.curvature < -0.5 ? 0 : 1)
+            for p in arrowPanels { if var model = p.model { model.materials = [materials.arrowSigns[dir]]; p.model = model } }
+        }
+        for a in aprons { a.isEnabled = city && Self.apronEnabled && materials.theme == .neonCity }
         obstacleGroup.isEnabled = s.obstacles
         for m in hazardMarks { m.isEnabled = s.hazardX }
         storefrontGroup.isEnabled = s.storefronts
@@ -309,9 +337,11 @@ final class RoadSegment {
         for (side, color) in [(-1, Neon.cyan), (1, Neon.orange)] as [(Float, SIMD3<Float>)] {
             let wall = ModelEntity(mesh: .generateBox(size: [0.5, 0.9, length + 1]), materials: [materials.barrier])
             wall.position = [side * 9.0, 0.45, mid]
+            wall.name = "barrier"
             roadsideGroup.addChild(wall)
             let strip = ModelEntity(mesh: .generateBox(size: [0.52, 0.06, length + 1]), materials: [materials.neon(color, intensity: 2.5)])
             strip.position = [side * 9.0, 0.93, mid]
+            strip.name = "barrier"
             roadsideGroup.addChild(strip)
             roadPrimary.append((strip, 2.5))
             let refl = ModelEntity(mesh: .generatePlane(width: 2.2, depth: length), materials: [materials.reflection(color, opacity: 0.22)])
@@ -363,7 +393,7 @@ final class RoadSegment {
                 let w = rng.float(14, 30)
                 let d = rng.float(14, 34)
                 let h = rng.float(10, 48)
-                let setback = rng.float(2, 12)
+                let setback = rng.float(2, 12) + (Self.apronEnabled ? 2.5 : 0)
                 let x = side * (11.5 + setback + d / 2)
                 var mat = rng.pick(materials.facades)
                 mat.textureCoordinateTransform = .init(offset: SIMD2(rng.float(), rng.float()), scale: SIMD2(max(w, d) / 18, h / 18), rotation: 0)
@@ -412,7 +442,7 @@ final class RoadSegment {
                 let w = rng.float(8, 16)
                 let d = rng.float(9, 22)
                 let h = rng.float(16, 95)
-                let setback = rng.float(0, 5)
+                let setback = rng.float(0, 5) + (Self.apronEnabled ? 2.5 : 0)
                 let x = side * (11.5 + setback + d / 2)
                 var mat = rng.pick(materials.facades)
                 mat.textureCoordinateTransform = .init(offset: SIMD2(rng.float(), rng.float()), scale: SIMD2(max(w, d) / 24, h / 36), rotation: 0)
@@ -887,6 +917,69 @@ final class RoadSegment {
     /// toggled by `apply`: an overpass (a deck crossing the road on piers, lit underneath, a
     /// hologram hanging from it; in the canyon the same shape reads as a rock arch) and a gateway
     /// (twin pylons with a lit crossbar and glyph panels). Nothing here enters the lane.
+    /// A crossroads: a dark cross street through both building rows at the segment's middle, lit down
+    /// its length, closed at the road by red-and-white chevron barricades with hazard lamps, and a
+    /// signal gantry over the road whose three red arrows point the way the road bends (the arrow
+    /// material is swapped per block in `apply`).
+    private func buildCrossroad(_ rng: inout SeededRNG) {
+        let z = mid
+        let street = ModelEntity(mesh: .generateBox(width: 110, height: 0.06, depth: 16), materials: [materials.asphalt])
+        street.position = [0, -0.02, z]
+        crossroadGroup.addChild(street)
+        let dashMat = materials.neon(SIMD3(0.8, 0.85, 0.9), intensity: 1.2)
+        for side in [-1, 1] as [Float] {
+            for k in 0..<7 {
+                let dash = ModelEntity(mesh: .generateBox(size: [2.0, 0.015, 0.1]), materials: [dashMat])
+                dash.position = [side * (12 + Float(k) * 6), 0.012, z]
+                crossroadGroup.addChild(dash)
+            }
+            // lights receding down the side street
+            for k in 0..<3 {
+                let x = side * (17 + Float(k) * 13)
+                for dz in [-8.5, 8.5] as [Float] {
+                    let color = (k + (dz > 0 ? 1 : 0)) % 2 == 0 ? Neon.cyan : Neon.magenta
+                    let pole = ModelEntity(mesh: .generateBox(size: [0.18, 6.0, 0.18]), materials: [materials.concrete])
+                    pole.position = [x, 3.0, z + dz]
+                    crossroadGroup.addChild(pole)
+                    let tube = ModelEntity(mesh: .generateBox(size: [0.10, 4.2, 0.10]), materials: [materials.neon(color, intensity: 4)])
+                    tube.position = [x, 3.4, z + dz - (dz > 0 ? 0.14 : -0.14)]
+                    crossroadGroup.addChild(tube)
+                    cityNeon.append((tube, 4))
+                }
+            }
+            // the barricade across the mouth, just beyond the barrier, with a hazard lamp at each end
+            let barricade = ModelEntity(mesh: .generateBox(width: 0.3, height: 1.1, depth: 15), materials: [materials.chevron])
+            barricade.position = [side * 11.6, 0.55, z]
+            crossroadGroup.addChild(barricade)
+            for dz in [-7.2, 7.2] as [Float] {
+                let lamp = ModelEntity(mesh: .generateBox(size: [0.35, 0.35, 0.35]), materials: [materials.neon(Neon.red, intensity: 6)])
+                lamp.position = [side * 11.6, 1.3, z + dz]
+                crossroadGroup.addChild(lamp)
+                cityNeon.append((lamp, 6))
+            }
+        }
+        // the signal gantry before the crossing
+        let gz = z + 9
+        for side in [-1, 1] as [Float] {
+            let post = ModelEntity(mesh: .generateBox(size: [0.35, 8.0, 0.35]), materials: [materials.concrete])
+            post.position = [side * 9.8, 4.0, gz]
+            crossroadGroup.addChild(post)
+        }
+        let beam = ModelEntity(mesh: .generateBox(size: [20, 0.35, 0.35]), materials: [materials.concrete])
+        beam.position = [0, 8.0, gz]
+        crossroadGroup.addChild(beam)
+        let beamLight = ModelEntity(mesh: .generateBox(size: [19.6, 0.08, 0.08]), materials: [materials.neon(Neon.red, intensity: 3)])
+        beamLight.position = [0, 7.78, gz + 0.2]
+        crossroadGroup.addChild(beamLight)
+        cityNeon.append((beamLight, 3))
+        for x in [-4.5, 0, 4.5] as [Float] {
+            let panel = ModelEntity(mesh: .generateBox(width: 2.2, height: 1.5, depth: 0.12), materials: [materials.arrowSigns[1]])
+            panel.position = [x, 6.9, gz]
+            crossroadGroup.addChild(panel)
+            arrowPanels.append(panel)
+        }
+    }
+
     private func buildLandmarks(_ rng: inout SeededRNG) {
         let z = mid
         // overpass
@@ -1245,7 +1338,7 @@ final class SkylineLayer {
         }
         // far ring: wide, dark silhouettes; the city gets mega-signs on a few of them
         var farMat = materials.skyline
-        farMat.baseColor = .init(tint: canyon ? .rgb(0.55, 0.38, 0.34) : .rgb(0.45, 0.45, 0.6), texture: materials.skyline.baseColor.texture)
+        farMat.baseColor = .init(tint: canyon ? .rgb(0.55, 0.38, 0.34) : .rgb(0.30, 0.30, 0.42), texture: materials.skyline.baseColor.texture)
         if !canyon { farMat.emissiveIntensity = 0.8 }
         for i in 0..<16 {
             let side: Float = i % 2 == 0 ? -1 : 1

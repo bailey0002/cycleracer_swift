@@ -194,3 +194,12 @@ speed (tile scale, the emissive level 1.25), the storefronts at street level, th
 the Grid bowl (dim by design at `fogMax` 0.35 and `lift` 4; raise or lower both) and the hanging screen,
 and the frame rate with the extra textures (about 14 MB). Then the next batch from the brief: the canyon set,
 the crowd strip, far / mid skyline variants with a black sky, more billboards with faces.
+
+## Status 28 Sep 2026 (later): street polish
+
+Built and on the phone: Grid palettes (rival-mapped in duels), the rain direction, showers and the heavy
+chapter-3 weather, asphalt aprons, crossroads. On the phone: pick the Grid accent (dev panel "grid"), judge
+the shower timing and chapter 3's visibility, and drive the crossroads at speed (the gantry at 9 m before the
+crossing, the barricades). If the wider street is wanted for real, the driveable width is a pass of its own:
+`RoadSegment.surface` 18 m, barriers ±9, studs ±8.35, lights ±10.2, `SpeederController.laneLimit` 6.9, the
+fork's ±11.5 m rows and `wedgeLimit` all move together.

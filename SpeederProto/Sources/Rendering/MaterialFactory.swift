@@ -14,6 +14,11 @@ final class SceneMaterials {
     let concrete: PhysicallyBasedMaterial
     let tunnelWall: PhysicallyBasedMaterial
     let facades: [PhysicallyBasedMaterial]
+    /// Near-black wet asphalt for the street aprons and cross streets; red-white chevron barricades;
+    /// red arrow signal panels (left, ahead, right).
+    let asphalt: PhysicallyBasedMaterial
+    let chevron: UnlitMaterial
+    let arrowSigns: [UnlitMaterial]
     let skyline: PhysicallyBasedMaterial
     let tubeWall: PhysicallyBasedMaterial
     private var holoCache: [String: UnlitMaterial] = [:]
@@ -52,11 +57,12 @@ final class SceneMaterials {
         switch theme {
         case .sunsetCanyon: environment = try EnvironmentResource(equirectangular: ProceduralTextures.environmentSunset(), withName: "sunset")
         case .neonCity: environment = try EnvironmentResource(equirectangular: ProceduralTextures.environment(), withName: "night")
-        case .theGrid: environment = try EnvironmentResource(equirectangular: ProceduralTextures.environmentGrid(), withName: "grid")
+        case .theGrid: environment = try EnvironmentResource(equirectangular: ProceduralTextures.environmentGrid(accent: Theme.gridAccent), withName: "grid-\(Theme.gridPalette)")
         }
         if theme == .theGrid {
             // floor: dark, glossy (IBL reflection sells it), grid lines in the emissive map
-            let (fb, fe) = ProceduralTextures.gridFloor()
+            let accent = Theme.gridAccent
+            let (fb, fe) = ProceduralTextures.gridFloor(accent: accent)
             var gm = PhysicallyBasedMaterial()
             gm.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(fb, .color)))
             gm.emissiveColor = .init(color: .black, texture: Self.repeating(try Self.texture(fe, .color)))
@@ -65,7 +71,7 @@ final class SceneMaterials {
             gm.metallic = .init(floatLiteral: 0.0)
             gm.specular = .init(floatLiteral: 1.0)
             gridFloor = gm
-            let (wb, we) = ProceduralTextures.gridWall()
+            let (wb, we) = ProceduralTextures.gridWall(accent: accent)
             var wm = PhysicallyBasedMaterial()
             wm.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(wb, .color)))
             wm.emissiveColor = .init(color: .black, texture: Self.repeating(try Self.texture(we, .color)))
@@ -76,7 +82,7 @@ final class SceneMaterials {
             if let img = Art.image("grid-bowl") {
                 let tex = try Self.texture(Art.keyedBlack(img, lift: 4.0), .color)
                 var m = UnlitMaterial()
-                m.color = .init(tint: .rgb(0.7, 0.9, 1.0), texture: .init(tex))   // the gain whitens the lights; pull them back to cyan
+                m.color = .init(tint: .rgb(SIMD3(0.55, 0.55, 0.55) + accent * 0.45), texture: .init(tex))   // the lift whitens the lights; pull them back to the accent
                 m.blending = .transparent(opacity: .init(scale: 1, texture: .init(tex)))
                 artBowl = m
             }
@@ -109,6 +115,23 @@ final class SceneMaterials {
         cm.baseColor = .init(tint: day ? .rgb(0.50, 0.44, 0.38) : .rgb(0.04, 0.042, 0.055))
         cm.roughness = .init(floatLiteral: 0.85)
         concrete = cm
+        var am = PhysicallyBasedMaterial()
+        am.baseColor = .init(tint: .rgb(0.010, 0.011, 0.016))
+        am.roughness = .init(floatLiteral: 0.55)
+        am.metallic = .init(floatLiteral: 0.0)
+        am.specular = .init(floatLiteral: 0.6)
+        asphalt = am
+        var chev = UnlitMaterial()
+        chev.color = .init(tint: .white, texture: Self.repeating(try Self.texture(ProceduralTextures.chevronStripes(), .color)))
+        chev.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(6, 1), rotation: 0)
+        chevron = chev
+        var arrows: [UnlitMaterial] = []
+        for dir in [-1, 0, 1] {
+            var m = UnlitMaterial()
+            m.color = .init(tint: .white, texture: .init(try Self.texture(ProceduralTextures.arrowSign(direction: dir), .color)))
+            arrows.append(m)
+        }
+        arrowSigns = arrows
 
         // tunnel interiors: dark rock by day (IBL ignores occlusion, so fake the shade), barrier panels by night
         var tm = PhysicallyBasedMaterial()
@@ -154,7 +177,7 @@ final class SceneMaterials {
             for img in Art.images("neon-facade") {
                 let tex = Self.repeating(try Self.texture(img, .color))
                 var m = PhysicallyBasedMaterial()
-                m.baseColor = .init(tint: .rgb(0.5, 0.5, 0.58), texture: tex)
+                m.baseColor = .init(tint: .rgb(0.38, 0.38, 0.46), texture: tex)
                 m.emissiveColor = .init(color: .black, texture: tex)
                 m.emissiveIntensity = 1.25
                 m.roughness = .init(floatLiteral: 0.6)

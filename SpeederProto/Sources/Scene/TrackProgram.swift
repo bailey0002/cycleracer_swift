@@ -8,8 +8,10 @@ enum SegmentStyle: String {
 /// One entry of the scripted track. `curvature` is the lateral distance (m) the road
 /// gains over the segment: positive bends right. `obstacleRows` is 0...3.
 struct TrackBlock {
-    /// Landmark dressing on a city block: an overpass crossing the road, or a lit gateway.
-    enum Dressing { case none, overpass, gateway }
+    /// Landmark dressing on a city block: an overpass crossing the road, a lit gateway, or a crossroads
+    /// (a cross street through the building rows, closed by red chevron barricades, red arrow signals
+    /// over the road pointing the way the road bends).
+    enum Dressing { case none, overpass, gateway, crossroad }
     var style: SegmentStyle
     var curvature: Float = 0
     var obstacleRows: Int = 0
@@ -107,7 +109,9 @@ struct TrackComposer {
                 let dir: Float = abs(offset) > 12 ? (offset > 0 ? -1 : 1) : (rng.chance(0.5) ? 1 : -1)
                 let label = dir > 0 ? "\(place) - right bend" : "\(place) - left bend"
                 let amp = rng.float(3, 5)
-                out.append(.city(dir * amp, rows: 1, label))
+                var lead = TrackBlock.city(dir * amp, rows: 1, label)
+                if rng.chance(0.65) { lead.dressing = .crossroad; lead.name = "\(place) - crossroads, \(dir > 0 ? "right" : "left")" }
+                out.append(lead)
                 out.append(.city(dir * (amp + 1), rows: 1, label))
                 out.append(.city(dir * amp * 0.6, rows: 0, label))
                 offset += dir * (amp * 2.6 + 1)
