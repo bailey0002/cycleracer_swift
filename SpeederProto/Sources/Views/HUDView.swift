@@ -72,7 +72,7 @@ struct HUDView: View {
     private var cardUp: Bool {
         if controller.matchResult != nil || controller.screen != .game { return true }
         switch controller.mission.phase {
-        case .briefing, .rivalIntro, .success, .failed: return true
+        case .chapter, .briefing, .rivalIntro, .success, .failed: return true
         default: return false
         }
     }
@@ -388,10 +388,13 @@ struct HUDView: View {
             matchCard(r, credits: m.credits)
         }
         switch m.phase {
+        case .chapter:
+            chapterCard(m)
         case .briefing:
             card(footer: m.browsing ? "LOAD THIS JOB" : "ACCEPT") {
                 HStack(alignment: .firstTextBaseline) {
                     Text("CHAPTER \(m.chapter)  //  \(m.chapterTitle)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                    if m.messageCount > 0 { messagesChip(m) }
                     Spacer()
                     identityRow(m)
                 }
@@ -484,6 +487,53 @@ struct HUDView: View {
                 }
             }
         }
+    }
+
+    /// The chapter card (Art of Rally's era text, Wipeout 2048's seasons): the district, one paragraph, the
+    /// cast's standing. Shown once, before the first briefing of each chapter; A / tap goes on to the briefing.
+    private func chapterCard(_ m: MissionState) -> some View {
+        card(footer: "OPEN CHAPTER") {
+            Text("CHAPTER \(m.chapter)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(3).foregroundStyle(.white.opacity(0.5))
+            Text(m.chapterTitle).font(HUDStyle.display(HUDStyle.cardTitleSize + 6)).tracking(4).foregroundStyle(accent)
+                .shadow(color: accent.opacity(0.6), radius: 10)
+            hairline(accent.opacity(0.35))
+            Text(m.chapterIntro).font(HUDStyle.body(HUDStyle.bodySize + 1)).lineSpacing(3).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 2)
+            HStack(alignment: .top, spacing: 16) {
+                ForEach(m.chapterCast, id: \.name) { c in
+                    let known = c.standing != .unknown
+                    let tint = HUDStyle.color(Rival.named(c.name)?.color ?? Rival.vessColor)
+                    VStack(spacing: 3) {
+                        portrait(c.name, tint: known ? tint : .white.opacity(0.25), size: 44).saturation(known ? 1 : 0).opacity(known ? 1 : 0.45).blur(radius: known ? 0 : 2.5)
+                        Text(known ? c.name : "????").font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(known ? tint : .white.opacity(0.4))
+                        Text(c.standing.rawValue).font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1)
+                            .foregroundStyle(c.standing == .rival ? .red : (c.standing == .unknown ? .white.opacity(0.35) : .white.opacity(0.6)))
+                    }
+                }
+                Spacer(minLength: 0)
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 3)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
+                    Text(m.playerTitle).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(.white.opacity(0.5))
+                    Text("\(m.credits) CREDITS").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).monospacedDigit().foregroundStyle(.white.opacity(0.5))
+                }
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    /// The message log's chip on the briefing: count, unread, a tap opens the log.
+    private func messagesChip(_ m: MissionState) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "envelope").font(.system(size: 9, weight: .semibold))
+            Text(m.unreadMessages > 0 ? "\(m.unreadMessages) NEW" : "MESSAGES").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1)
+        }
+        .foregroundStyle(m.unreadMessages > 0 ? .black : .white.opacity(0.7))
+        .padding(.horizontal, 6).padding(.vertical, 2)
+        .background(m.unreadMessages > 0 ? accent : .white.opacity(0.12))
+        .clipShape(CutCorner(cut: 4))
+        .contentShape(Rectangle())
+        .onTapGesture { controller.openMessages() }
+        .padding(.leading, 8)
     }
 
     /// Callsign, title and livery swatch. Tap the callsign to type a new one; tap the swatch to cycle the livery.

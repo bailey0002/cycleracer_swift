@@ -10,6 +10,7 @@ enum Screen: Equatable {
     case settings     // the player's settings
     case rider        // callsign and livery (the first run asks here before the first briefing)
     case paused       // over a run: RESUME / SETTINGS / QUIT TO TITLE
+    case messages     // the message log (from the title, the pause menu and the briefing)
     case game         // the HUD and the job cards
 }
 
@@ -151,6 +152,7 @@ extension GameController {
             return [
                 MenuRow(id: "continue", label: missions.hasProgress ? "CONTINUE" : "START", detail: "\(m.code)  //  \(m.title)"),
                 MenuRow(id: "freeplay", label: "FREE PLAY", detail: "ANY WORLD, NO JOB"),
+            ] + messagesRow + [
                 MenuRow(id: "settings", label: "SETTINGS", detail: "SOUND, GRAPHICS, RIDER"),
             ]
         case .worlds:
@@ -182,15 +184,27 @@ extension GameController {
                 MenuRow(id: "confirm", label: riderFirstRun ? "RIDE" : "DONE", detail: riderFirstRun ? "\(m.code)  //  \(m.title)" : ""),
                 MenuRow(id: "back", label: "BACK"),
             ]
+        case .messages:
+            return [MenuRow(id: "back", label: "BACK")]
         case .paused:
             var rows = [
                 MenuRow(id: "resume", label: "RESUME"),
+            ] + (missionActive ? messagesRow : []) + [
                 MenuRow(id: "settings", label: "SETTINGS"),
-                MenuRow(id: "title", label: "QUIT TO TITLE", detail: missionActive && missions.phase != .briefing ? "THE JOB STARTS OVER" : ""),
+                MenuRow(id: "title", label: "QUIT TO TITLE", detail: missionActive && !missions.isParked ? "THE JOB STARTS OVER" : ""),
             ]
             if prefs.devUnlocked { rows.append(MenuRow(id: "dev", label: "DEVELOPER PANEL", kind: .toggle(panelVisible))) }
             return rows
         }
+    }
+
+    /// MESSAGES: the log, once there is anything in it; the detail names the newest sender and the unread count.
+    private var messagesRow: [MenuRow] {
+        let n = missions.messages.count
+        guard n > 0 else { return [] }
+        let unread = missions.log.unread
+        let last = missions.messages.last?.sender ?? ""
+        return [MenuRow(id: "messages", label: "MESSAGES", detail: unread > 0 ? "\(unread) NEW  //  LAST FROM \(last)" : "\(n)  //  LAST FROM \(last)")]
     }
 
     /// A tap on a row: select it and run it (value rows take their taps on the values instead).
@@ -211,6 +225,7 @@ extension GameController {
             guard worldReady else { return }
             if missions.isFirstRun { riderFirstRun = true; push(.rider) } else { startJobs() }
         case "freeplay": push(.worlds)
+        case "messages": openMessages()
         case "settings": push(.settings)
         case "rider": riderFirstRun = false; push(.rider)
         case "back": pop()
@@ -350,6 +365,14 @@ extension GameController {
         }
     }
 
+    /// The message log over the title, the pause or the briefing.
+    func openMessages() {
+        guard missions.messages.count > 0 else { return }
+        push(.messages)
+        missions.markMessagesRead()
+        mission = missions.snapshot()
+    }
+
     // MARK: Transitions
 
     /// START / CONTINUE: the job loop in the job's world (rebuilt when free play or another world is up).
@@ -384,7 +407,7 @@ extension GameController {
     /// QUIT TO TITLE: the job goes back to its briefing and the title sits over its world, parked.
     func returnToTitle() {
         let theme = missions.current.theme
-        let clean = builtForJobs && missions.phase == .briefing && missions.previewIndex == missions.index && settings.environment == theme.rawValue
+        let clean = builtForJobs && missions.isParked && missions.previewIndex == missions.index && settings.environment == theme.rawValue
         missions.abandon()
         mission = missions.snapshot()
         matchResult = nil
@@ -426,6 +449,7 @@ extension GameController {
         case "settings": return [.title, .settings]
         case "rider": riderFirstRun = true; return [.title, .rider]
         case "paused": return [.game, .paused]
+        case "messages": return [.title, .messages]
         case "game": return [.game]
         default: return [.title]
         }

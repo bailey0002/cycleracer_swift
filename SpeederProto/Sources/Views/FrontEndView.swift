@@ -32,7 +32,7 @@ struct FrontEndView: View {
     /// The select / back art: the pad's buttons, else the keyboard's keys.
     private var selectSymbol: String { glyphs.connected ? glyphs.a : "return" }
     private var backSymbol: String { glyphs.connected ? glyphs.b : "escape" }
-    private var compactList: Bool { screen == .settings || screen == .rider }
+    private var compactList: Bool { screen == .settings || screen == .rider || screen == .messages }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -84,7 +84,8 @@ struct FrontEndView: View {
             VStack(alignment: .leading, spacing: compactList ? 5 : 8) {
                 Spacer(minLength: 0)
                 if compactList {
-                    heading(screen == .settings ? "SETTINGS" : (controller.riderFirstRun ? "WHO'S RIDING?" : "RIDER"), over: "SPEEDER")
+                    heading(screen == .settings ? "SETTINGS" : (screen == .messages ? "MESSAGES" : (controller.riderFirstRun ? "WHO'S RIDING?" : "RIDER")), over: "SPEEDER")
+                    if screen == .messages { messageList }
                 } else {
                     Text("SPEEDER").font(HUDStyle.display(HUDStyle.wordmarkSize)).tracking(10).foregroundStyle(.white)
                         .shadow(color: accent.opacity(0.8), radius: 14)
@@ -129,7 +130,8 @@ struct FrontEndView: View {
                 .ignoresSafeArea()
             VStack(alignment: .leading, spacing: 8) {
                 Spacer(minLength: 0)
-                heading(screen == .paused ? "PAUSED" : (screen == .settings ? "SETTINGS" : "RIDER"), over: pauseContext)
+                heading(screen == .paused ? "PAUSED" : (screen == .settings ? "SETTINGS" : (screen == .messages ? "MESSAGES" : "RIDER")), over: pauseContext)
+                if screen == .messages { messageList }
                 rows
                 footer.padding(.top, 2)
             }
@@ -144,6 +146,41 @@ struct FrontEndView: View {
     private var pauseContext: String {
         if controller.missionActive { return "\(controller.mission.code)  //  \(controller.mission.title)" }
         return "FREE PLAY  //  \(theme.displayName)"
+    }
+
+    // MARK: - Messages
+
+    /// The message log, newest first, grouped under chapter lines: the contact's brief and debrief per job,
+    /// the game's notices, and the unseen sender's static. Scrolls; the BACK row sits under it.
+    private var messageList: some View {
+        let msgs = controller.missions.messages.reversed()
+        return ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach(Array(msgs), id: \.id) { m in messageRow(m) }
+            }
+            .padding(.trailing, 12)
+        }
+        .frame(width: 440)
+        .frame(maxHeight: HUDStyle.cardMaxHeight - 60)
+    }
+
+    private func messageRow(_ m: Message) -> some View {
+        let tint: Color = m.isStatic ? .white.opacity(0.45) : (m.kind == .notice || m.kind == .chapter ? .white.opacity(0.6) : HUDStyle.color(Rival.named(m.sender)?.color ?? Rival.vessColor))
+        return HStack(alignment: .top, spacing: 8) {
+            Rectangle().fill(m.isStatic ? Color.white.opacity(0.2) : tint.opacity(0.8)).frame(width: 2).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(m.sender).font(HUDStyle.display(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(tint)
+                    if !m.code.isEmpty { Text(m.code).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.4)) }
+                    if m.kind == .brief { Text("BRIEF").font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).foregroundStyle(.white.opacity(0.3)) }
+                }
+                Text(m.isStatic ? m.text : m.text)
+                    .font(m.isStatic ? .system(size: HUDStyle.bodySize - 1, design: .monospaced) : HUDStyle.body(HUDStyle.bodySize))
+                    .lineSpacing(2)
+                    .foregroundStyle(m.isStatic ? .white.opacity(0.55) : .white.opacity(0.88))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     // MARK: - Lists

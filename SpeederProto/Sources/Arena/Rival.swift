@@ -46,8 +46,11 @@ struct Rival: Equatable {
     static let sable = Rival(name: "SABLE", temper: .runner, color: SIMD3(1.0, 0.80, 0.15), skill: .keen)
     /// The dispatcher, on a cycle for the last duel: rides like Kade taught it, at Sable's sharpness.
     static let vess = Rival(name: "VESS", temper: .hunter, color: SIMD3(0.35, 0.9, 1.0), skill: .keen)
-    /// Free-play roster, in the order a match sequence meets them.
+    /// Free-play roster, in the order a match sequence meets them. Once the arc is done VESS rides too.
     static let roster: [Rival] = [.kade, .orin, .sable]
+    static var freePlayRoster: [Rival] {
+        UserDefaults.standard.integer(forKey: "cleared") >= Mission.deliveries.count ? roster + [.vess] : roster
+    }
 
     static func named(_ name: String) -> Rival? { roster.first { $0.name == name } }
 

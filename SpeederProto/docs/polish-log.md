@@ -280,3 +280,34 @@ started at 1, which would have pulled the demo's first seconds toward the title 
 Not verified here (the phone): the launch screen on the device (iOS caches launch screens; reboot the
 phone if the old black one shows), Backbone navigation and the callsign letter entry, the keyboard
 callsign in landscape, the haptics switch, the music / effects levels by ear.
+
+## Story pass: the spine, the message log, chapter cards, the rival's voice (27 Sep 2026)
+
+From `docs/assessment-2026-09-27-story.md` (sections 5.1 to 5.4). Branch `claude/story` off master
+after PR #3 (the front end) was merged. Simulator shots in `Captures/polish/p9/sim/`, the Mac A/B
+frames in `Captures/polish/p9/cruise/`, the duel log in `Captures/polish/p9/duel/log.txt`.
+
+Findings that shaped it: the player had no want and the packets were never revealed ("do not ask what
+is in them" was never answered); debriefs flashed once on a card and were gone; a chapter change was a
+world rebuild with no threshold; the ending was a payout line; the rival was silent during the duel.
+
+| Item | What changed | Shot / proof |
+|---|---|---|
+| 5.1 The spine | `Mission.deliveries`: every program rides a route (its name, its right to ride); the player's is provisional and VESS holds the licence; the packets are riders' routes, SABLE buys them and derezzes the rider; the last chapter-1 packet carried the player's own; the ledger's last line is the player's. About a dozen brief / debrief lines rewritten, nothing contradicted. The ending is true: `Player.title(finished:)` gives ROUTE-HOLDER once every job is cleared (earned by the story, not by golds), a last message from KADE and a signed-off line from the unseen sender post to the log, and VESS joins the free-play roster (`Rival.freePlayRoster`) | `tap-a` (RELAY 01's brief) |
+| 5.2 The message log | `Missions/MessageLog.swift`: briefs (posted on launch, once per job), debriefs and the reactive line (on the card), garage purchases and unlock notices (INBOX), chapter openings, and the unseen sender `??` (one static line per chapter, Tron 2.0's "Guest", resolved by the reveal; `Mission.staticLine`). Persisted as one array (`messages`, capped at 160, deduplicated on sender + text; `messages.read` for the unread count; cleared by RESET PROGRESS). Read from the title (MESSAGES row, "n NEW // LAST FROM x"), the pause menu (in a job), and the briefing (the envelope chip next to the chapter line, a tap opens it). `Screen.messages`, `openMessages()`, `SPEEDER_SCREEN=messages` | `messages-briefing`, `msgscreen-22`, `title-22` |
+| 5.3 Chapter cards | `MissionState.Phase.chapter`: the first job of a chapter shows a card once (`chapter.seen.<n>`): district, a forty-word paragraph (`Mission.chapterIntro`), the cast's standing (CONTACT / RIVAL / WITH YOU, unknowns greyed, blurred and `????`), the rider's callsign, title and purse. OPEN CHAPTER (A / tap) goes to the briefing and posts the chapter and the static line. Shown on launch, after a success into a new chapter, after a reset, and after quitting to the title. `SPEEDER_CHAPTER_CARDS=0` marks all seen (captures); `SPEEDER_HOLD_BRIEFING=1` holds the card too | `chapter1`, `duel-29` (chapter 2 over the canyon rebuild) |
+| 5.4 The rival's voice | `Debrief.rivalLine` and `GameController.rivalSay`: one line per round at most, chosen from the round's outcome (won, cut off, boxed yourself, other), the lead, match point, and the record at match start ("Again? 2 - 1."), shown as the comms stamp in the rival's colour 2.4 s after the derez, once the attribution stamp has cleared; never on the derez frame, never after the match beat. `Debrief.taunt` gains a third-meeting tier per rival | `duel/log.txt`: `comms: KADE: ONE MORE AND I WILL REMEMBER IT. at 14.5 s` (match point, 1-0) |
+
+Verified: the simulator by touch (fresh slate: chapter card -> OPEN CHAPTER -> RELAY 01 briefing with the
+new brief and "2 NEW" -> the log with the static line and the chapter; one tap moves one step); the demo
+duel on the Mac (DUEL 01 with `SPEEDER_ARENA_KILL_RIVAL=6 SPEEDER_ARENA_IMMORTAL=1`: the comms line at
+match point, the match won, the chapter 2 card, RELAY 04 running in the canyon at t=33); the Mac
+cruise frames (`p9/cruise`, RELAY 01 at t = 4 / 9, `SPEEDER_MISSION=0 SPEEDER_CHAPTER_CARDS=0`): the
+Neon City look is unchanged by eye (nothing in this pass touches rendering); a pixel diff against
+`p7/cruise` is not meaningful because that baseline predates pass 2's rain and blur and ran the endless
+track, so the next thread should refresh the baseline from master before its own A/B. The phone got the
+Release build (installed and launched on the iPhone 12).
+Not verified (the phone): the log on the Backbone (Menu -> MESSAGES), the chapter card's read on a
+390 pt screen (it scrolls like every card), the rival's line by eye mid-duel.
+Not built from the assessment: 5.5 (agency: two jobs unlocked at once, side offers, the fork
+acknowledged) is owed after the phone pass, and D4 (the cast) is Mark's.

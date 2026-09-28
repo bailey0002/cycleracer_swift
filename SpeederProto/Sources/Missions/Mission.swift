@@ -150,21 +150,23 @@ struct Mission: Identifiable {
     /// The job list: three chapters, eighteen jobs, Tron-clean and terse. Every corridor track is
     /// composed over its full length (`TrackComposer`); the chapter sets the obstacle density.
     ///
-    /// The story in one breath: VESS dispatches packets across the downtown grid; KADE wants them
-    /// and loses the duel; out in the canyon KADE becomes the contact and ORIN is the rival; in the
-    /// core it turns out VESS has been selling the packets to SABLE all along, ORIN rides with you,
-    /// and the last duels settle it.
+    /// The story in one breath: every program rides a route (its name and its right to ride), and the
+    /// player's is provisional, licensed by VESS. VESS dispatches packets across the downtown grid; KADE
+    /// wants them and loses the duel; out in the canyon KADE becomes the contact and shows that the
+    /// packets are riders' routes, sold to SABLE, who derezzes the rider and keeps the route; ORIN is the
+    /// rival, then the contact; in the core the ledger's last line is the player's own route, and the
+    /// last duels make it theirs. Told in briefs, debriefs, comms and the message log (`MessageLog`).
     static let deliveries: [Mission] = {
         let d1: Float = 0.8, d2: Float = 1.0, d3: Float = 1.3
         return [
         // --- chapter 1: downtown (VESS)
         Mission(id: 0, kind: .delivery, code: "RELAY 01", title: "FIRST PACKET", contact: "VESS",
-                brief: "New rider. Packet for the downtown relay. Impacts and boost burn the hull; what is left pays. Do not stop.",
+                brief: "New rider. Your route is provisional and I hold the licence. Packet for the downtown relay: impacts and boost burn the hull, what is left pays. Ride clean and the route becomes yours.",
                 theme: .neonCity,
                 blocks: track(2400, [.straight(2), .bend, .straight(1), .landmark, .field, .bend, .straight(2), .sBend, .landmark, .straight(1)],
                               theme: .neonCity, finish: "relay", seed: 101, density: d1),
                 distance: 2400, timeLimit: 66, basePay: 200, chapter: 1,
-                debrief: "VESS: Clean enough. There is more where that came from. Do not ask what is in them."),
+                debrief: "VESS: Clean enough. Twenty more like that and the route is yours. Do not ask what is in the packets."),
         Mission(id: 1, kind: .search, code: "SWEEP 01", title: "BEACONS", contact: "VESS",
                 brief: "Someone seeded the grid with beacons. Fly through them; some sit high. Five of seven and the map is ours.",
                 theme: .neonCity,
@@ -196,7 +198,7 @@ struct Mission: Identifiable {
         Mission(id: 5, kind: .duel, code: "DUEL 01", title: "KADE", contact: "VESS",
                 brief: "Kade wants the packet and will not ask twice. Settle it on the Grid. Light cycles, first to two derezzes. Kade hunts: expect a wheel on your tail.",
                 theme: .theGrid, blocks: [], distance: 0, timeLimit: 0, basePay: 500, chapter: 1,
-                debrief: "KADE: You ride clean. Vess does not. Come out to the canyon and I will show you what the packets are.",
+                debrief: "KADE: You ride clean. Vess does not. That packet you took down the conduit? Come out to the canyon and I will show you whose it was.",
                 duelTarget: 2, rival: .kade),
         // --- chapter 2: outlands (KADE)
         Mission(id: 6, kind: .delivery, code: "RELAY 04", title: "OUTLANDS", contact: "KADE",
@@ -219,7 +221,7 @@ struct Mission: Identifiable {
                 blocks: track(3200, [.straight(1), .field, .bend, .field, .landmark, .sBend, .field, .bend, .field, .landmark],
                               theme: .sunsetCanyon, finish: "salvage drop", seed: 108, density: d2),
                 distance: 3200, timeLimit: 88, basePay: 450, chapter: 2,
-                debrief: "KADE: Packets in every crate. Addresses in the core. Vess is not delivering these. Vess is selling them.", killsRequired: 8),
+                debrief: "KADE: Routes in every crate. A rider's route is its right to ride; Sable buys them and derezzes the rider. Vess is not delivering these. Vess is selling them.", killsRequired: 8),
         Mission(id: 9, kind: .escape, code: "RUN 02", title: "ORIN'S TAIL", contact: "KADE",
                 brief: "Orin is behind you and it is not a drone. Keep the gap through the tunnel. The skyway is faster than it looks.",
                 theme: .sunsetCanyon,
@@ -237,11 +239,11 @@ struct Mission: Identifiable {
         Mission(id: 11, kind: .duel, code: "DUEL 02", title: "ORIN", contact: "KADE",
                 brief: "Orin runs the canyon relays and wants them back. Kade owes you one: the Grid is booked. Orin boxes: it will cut across your line and close the door.",
                 theme: .theGrid, blocks: [], distance: 0, timeLimit: 0, basePay: 650, chapter: 2,
-                debrief: "ORIN: Fine. You win. But you are working for the wrong dispatcher. Vess sells to Sable. Come to the core and I will prove it.",
+                debrief: "ORIN: Fine. You win. But you are working for the wrong dispatcher. Vess sells to Sable, and the last packet you carried downtown had your route in it. Come to the core and I will prove it.",
                 duelTarget: 2, rival: .orin),
         // --- chapter 3: the core (ORIN)
         Mission(id: 12, kind: .escape, code: "RUN 03", title: "DOUBLE CROSS", contact: "ORIN",
-                brief: "Vess knows. Its drones are on you from the first metre and they are close. Boost early, thread the fields, reach the core relay.",
+                brief: "Vess knows you have seen the crates. Your route is on Sable's list now and the drones are on you from the first metre. Boost early, thread the fields, reach the core relay.",
                 theme: .neonCity,
                 blocks: track(3400, [.straight(1), .field, .bend, .landmark, .conduit, .field, .sBend, .skyway, .field, .landmark, .bend],
                               theme: .neonCity, finish: "core relay", seed: 112, density: d3),
@@ -267,16 +269,16 @@ struct Mission: Identifiable {
                 blocks: track(4000, [.straight(1), .bend, .field, .landmark, .sBend, .skyway, .field, .bend, .undercity, .field, .landmark, .bend],
                               theme: .neonCity, finish: "sweep end", seed: 115, density: d3),
                 distance: 4000, timeLimit: 100, basePay: 700, chapter: 3,
-                debrief: "ORIN: It is all there. Every packet, every buyer. Sable has booked the Grid and named you.", beacons: 10, beaconsRequired: 8),
+                debrief: "ORIN: It is all there. Every route, every buyer. Yours is the last line. Sable has booked the Grid and named you.", beacons: 10, beaconsRequired: 8),
         Mission(id: 16, kind: .duel, code: "DUEL 03", title: "SABLE", contact: "ORIN",
                 brief: "Sable does not box and does not hunt. Sable runs: open ground, the pads, the deck, and it will out-speed you if you let it. First to three.",
                 theme: .theGrid, blocks: [], distance: 0, timeLimit: 0, basePay: 900, chapter: 3,
-                debrief: "SABLE: Derezzed twice by a courier. Vess picked the wrong rider to sell out. Vess is on the Grid. Go.",
+                debrief: "SABLE: Derezzed by a courier I already paid for. Vess sold me a route it could not deliver. Vess is on the Grid. Go and collect.",
                 duelTarget: 3, rival: .sable),
         Mission(id: 17, kind: .duel, code: "DUEL 04", title: "VESS", contact: "ORIN",
                 brief: "Vess rides its own cycle tonight, and it rides like Kade taught it: on your tail, grinding your line. First to three. End it.",
                 theme: .theGrid, blocks: [], distance: 0, timeLimit: 0, basePay: 1200, chapter: 3,
-                debrief: "ORIN: The route is yours. Every relay from downtown to the canyon. Ride it however you like.",
+                debrief: "ORIN: The licence is void. The route is yours: every relay from downtown to the canyon. Nobody dispatches you again.",
                 duelTarget: 3, rival: .vess),
         ]
     }()
