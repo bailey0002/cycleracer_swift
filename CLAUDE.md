@@ -101,6 +101,14 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   (`Missions/MessageLog.swift`, `Screen.messages`, chip on the briefing, `SPEEDER_SCREEN=messages`), chapter
   cards (`Phase.chapter`, `SPEEDER_CHAPTER_CARDS=0` to skip), the rival's in-duel comms (`Debrief.rivalLine`,
   logged as `comms:` in demo mode). Owed: 5.5 agency (after the phone pass), D4 the cast (Mark, CC5 / iClone).
+- Evening 27 Sep 2026 (branch `claude/phone-pass`, off master after PR #4): the phone stayed locked, so
+  the Backbone pass is still owed. Built instead: `Tests/MissionLoopTests.swift` (a hosted macOS test
+  target, `xcodebuild test -scheme SpeederProto-macOS`, `SPEEDER_TESTS=1` makes the app a bare host; a
+  60 Hz headless loop over `MissionRunner` with rider profiles), the balance from it (windows = net
+  cruise time + 30 %, score / 20 into the purse, garage doubled; `docs/polish-log.md` has the table),
+  and assessment 5.5 (cleared jobs as a bitmask with two jobs open at once, `SideOffer`s from KADE /
+  ORIN / SABLE as amber inbox chips, the fork acknowledged on the card). `MissionRunner` takes its
+  `UserDefaults` in `init`; `SPEEDER_FLAGS=<job>:<mask>` sets flags for captures.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

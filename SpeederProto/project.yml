@@ -65,3 +65,41 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         DEVELOPMENT_TEAM: HNBN55RN29
         INFOPLIST_KEY_UIStatusBarHidden: YES
+  SpeederProtoTests:
+    # Headless 60 Hz loops over the pure game logic (MissionRunner, LightCycle, TrailSystem), hosted
+    # by the Mac app: `xcodebuild test -scheme SpeederProto-macOS ...` (see README, "Tests").
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests
+    dependencies:
+      - target: SpeederProto-macOS
+    settings:
+      base:
+        CODE_SIGN_IDENTITY: "-"
+        PRODUCT_BUNDLE_IDENTIFIER: com.markbailey.speeder.tests
+        # the app's product is SpeederProto, not the target name
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/SpeederProto.app/Contents/MacOS/SpeederProto"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+schemes:
+  SpeederProto-macOS:
+    build:
+      targets:
+        SpeederProto-macOS: all
+        SpeederProtoTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - SpeederProtoTests
+      environmentVariables:
+        SPEEDER_SOUND: "0"
+        SPEEDER_TITLE: "0"
+        SPEEDER_TESTS: "1"
+  SpeederProto-iOS:
+    build:
+      targets:
+        SpeederProto-iOS: all
+    run:
+      config: Debug

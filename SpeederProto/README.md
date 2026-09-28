@@ -543,6 +543,35 @@ spine) against twenty-three narrative-driven vehicle games; this pass built its 
   from the round's outcome, the lead, match point and the record at match start; shown 2.4 s after the
   derez once the attribution has cleared. The intro taunt gains a third-meeting tier.
 
+## Headless tests, balance, agency (27 Sep 2026, evening)
+
+Branch `claude/phone-pass` (`docs/polish-log.md`, last section; `Captures/polish/p10/`).
+
+- **Tests** (`Tests/MissionLoopTests.swift`, target `SpeederProtoTests`, hosted by the Mac app with
+  `SPEEDER_TESTS=1` so no world is built): a 60 Hz headless loop over `MissionRunner` with the game's
+  speed model and a `Rider` profile (cruise, hits, boost, beacons, targets, the split). Fourteen tests
+  cover the boost hysteresis, the accept edge, gate time, replay pay, salvage and sweep failure, the
+  dive bruise, the helmet, the inbox and garage, the unlock order, the save migration, the side offers
+  and the balance table. Run:
+
+  ```bash
+  cd SpeederProto && export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer && xcodebuild test -project SpeederProto.xcodeproj -scheme SpeederProto-macOS -configuration Debug -derivedDataPath build-tests CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "error:|Test Case.*(passed|failed)|Executed|credits per"
+  ```
+- **Balance** from that loop: windows are the net cruise time (distance at 45 m/s less the gate refunds)
+  plus 30 % (RELAY 01 66 -> 50 s, DIVE 01 62 -> 50 s, every job in the log's table), so plain cruise
+  keeps a quarter of the window and FAST needs boost; the purse takes score / 20 (was / 5) and 3 per
+  second left (was 5); salvage targets count in the gold ceiling; the garage doubled (HULL 1,200 /
+  2,400, BOOST 1,000 / 2,000, SPARE CORE 1,800, HELMET 1,400) against a clean chapter of about 5,700
+  credits. A clean run is gold, a sloppy one bronze, a reckless dive fails.
+- **Agency** (assessment 5.5): cleared jobs are a bitmask, so the first job of a chapter opens the next
+  two, each further job needs one more cleared, the duel waits for all, and the runner moves to the next
+  open job. Three **side offers** (`SideOffer`, `Mission.offers`) sit after the jobs as amber chips once
+  their flag is earned: KADE's tunnel line (CLEAN on RELAY 02: the split through the tunnel, +150),
+  ORIN's dark pipe (FAST on RUN 02: DIVE 01 with ten seconds less, +300), SABLE's whole ledger (GOLD on
+  SALVAGE 02: every beacon of SWEEP 03, +500); the sender briefs it, the bonus pays once, the rule can
+  fail the run (`TOOK THE SKYWAY`). The contact acknowledges the **fork** on the result card
+  ("The tunnel. Kade saw that."). `SPEEDER_FLAGS=2:1` puts an offer on the table for a capture.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

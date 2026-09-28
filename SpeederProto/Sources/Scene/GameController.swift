@@ -579,7 +579,8 @@ final class GameController: ObservableObject {
                 if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9); sound.play(.beacon) }
             }
             missions.update(dt: simDt, travel: speed * simDt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed,
-                            scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits)
+                            scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits,
+                            branch: world.lastDecision == "tunnel" ? -1 : (world.lastDecision == "skyway" ? 1 : 0))
             missionHitsSeen = hits
             missionKillsSeen = kills
             if missions.isRunning, let s = missions.scoredNow {

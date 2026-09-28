@@ -1,0 +1,133 @@
+2026-09-27 22:13:16.414231-0400 SpeederProto[58836:2003485] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.414812-0400 SpeederProto[58836:2003499] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.414840-0400 SpeederProto[58836:2003499] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.415433-0400 SpeederProto[58836:2003503] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.415898-0400 SpeederProto[58836:2003499] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.417746-0400 SpeederProto[58836:2003503] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.416371-0400 SpeederProto[58836:2003486] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.416833-0400 SpeederProto[58836:2003504] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.419437-0400 SpeederProto[58836:2003486] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.419442-0400 SpeederProto[58836:2003504] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.417291-0400 SpeederProto[58836:2003505] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.417761-0400 SpeederProto[58836:2003499] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.419695-0400 SpeederProto[58836:2003505] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.419943-0400 SpeederProto[58836:2003506] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-27 22:13:16.419954-0400 SpeederProto[58836:2003506] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+rider        job         kind     result  time                          hits  resp  score / gold      rank    pay    hull
+cruise RELAY 01 DELIVERY OK  53.9s of  50s (14.1s left)  hits  0  resp 0  score  3400 / gold  2380  GOLD  pay   612  hull 1.00 
+cruise SWEEP 01 SWEEP OK  67.3s of  63s (18.2s left)  hits  0  resp 0  score 12100 / gold  9100  GOLD  pay  1389  hull 1.00 
+cruise RELAY 02 DELIVERY OK  80.6s of  76s (22.4s left)  hits  0  resp 0  score  5800 / gold  4060  GOLD  pay   856  hull 1.00 
+cruise RUN 01 ESCAPE FAIL  44.2s of  59s (28.3s left)  hits  0  resp 0  score  2200 / gold  2940  -  pay     0  hull 1.00 CAUGHT
+cruise RELAY 03 DELIVERY OK  67.3s of  63s (18.2s left)  hits  0  resp 0  score  4600 / gold  3220  GOLD  pay   884  hull 1.00 
+cruise DUEL 01 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   700  hull 1.00 
+cruise RELAY 04 DELIVERY OK  94.0s of  88s (25.6s left)  hits  0  resp 0  score  7000 / gold  4900  GOLD  pay  1125  hull 1.00 
+cruise SWEEP 02 SWEEP OK  76.2s of  72s (21.3s left)  hits  0  resp 0  score 14100 / gold 10500  GOLD  pay  1638  hull 1.00 
+cruise SALVAGE 01 SALVAGE OK  71.7s of  67s (19.3s left)  hits  0  resp 0  score  6300 / gold  4620  GOLD  pay  1262  hull 1.00 
+cruise RUN 02 ESCAPE FAIL  39.2s of  67s (39.8s left)  hits  0  resp 0  score  1800 / gold  3500  -  pay     0  hull 1.00 CAUGHT
+cruise DIVE 01 DIVE OK  58.4s of  50s (11.1s left)  hits  0  resp 0  score  3800 / gold  2660  GOLD  pay  1123  hull 1.00 
+cruise DUEL 02 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   850  hull 1.00 
+cruise RUN 03 ESCAPE FAIL  34.2s of  72s (48.3s left)  hits  0  resp 0  score  1400 / gold  3780  -  pay     0  hull 1.00 CAUGHT
+cruise SALVAGE 02 SALVAGE OK  85.1s of  80s (23.4s left)  hits  0  resp 0  score  8200 / gold  6020  GOLD  pay  1689  hull 1.00 
+cruise DIVE 02 DIVE OK  67.3s of  58s (13.2s left)  hits  0  resp 0  score  4600 / gold  3220  GOLD  pay  1319  hull 1.00 
+cruise SWEEP 03 SWEEP OK  89.5s of  84s (24.5s left)  hits  0  resp 0  score 17700 / gold 13020  GOLD  pay  2257  hull 1.00 
+cruise DUEL 03 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1200  hull 1.00 
+cruise DUEL 04 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1500  hull 1.00 
+cruise credits per chapter: 4441 / 5998 / 7965  (total 18404; the garage costs 9800)
+clean RELAY 01 DELIVERY OK  49.5s of  50s (18.5s left)  hits  0  resp 0  score  3400 / gold  2380  GOLD  pay   624  hull 1.00 
+clean SWEEP 01 SWEEP OK  61.5s of  63s (24.0s left)  hits  0  resp 0  score 12100 / gold  9100  GOLD  pay  1400  hull 0.98 
+clean RELAY 02 DELIVERY OK  74.2s of  76s (28.8s left)  hits  0  resp 0  score  5800 / gold  4060  GOLD  pay   874  hull 1.00 
+clean RUN 01 ESCAPE OK  57.7s of  59s (22.3s left)  hits  0  resp 0  score  4200 / gold  2940  GOLD  pay  1236  hull 1.00 
+clean RELAY 03 DELIVERY OK  61.5s of  63s (24.0s left)  hits  0  resp 0  score  4600 / gold  3220  GOLD  pay   895  hull 0.98 
+clean DUEL 01 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   700  hull 1.00 
+clean RELAY 04 DELIVERY OK  86.1s of  88s (33.4s left)  hits  0  resp 0  score  7000 / gold  4900  GOLD  pay  1145  hull 0.98 
+clean SWEEP 02 SWEEP OK  69.7s of  72s (27.8s left)  hits  0  resp 0  score 14100 / gold 10500  GOLD  pay  1652  hull 0.98 
+clean SALVAGE 01 SALVAGE OK  65.9s of  67s (25.1s left)  hits  0  resp 0  score  6300 / gold  4620  GOLD  pay  1280  hull 1.00 
+clean RUN 02 ESCAPE OK  65.9s of  67s (25.1s left)  hits  0  resp 0  score  5000 / gold  3500  GOLD  pay  1395  hull 1.00 
+clean DIVE 01 DIVE OK  53.3s of  50s (16.2s left)  hits  0  resp 0  score  3800 / gold  2660  GOLD  pay  1130  hull 0.98 
+clean DUEL 02 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   850  hull 1.00 
+clean RUN 03 ESCAPE OK  69.7s of  72s (27.8s left)  hits  0  resp 0  score  5400 / gold  3780  GOLD  pay  1593  hull 0.98 
+clean SALVAGE 02 SALVAGE OK  77.9s of  80s (30.6s left)  hits  0  resp 0  score  8200 / gold  6020  GOLD  pay  1706  hull 0.98 
+clean DIVE 02 DIVE OK  61.5s of  58s (19.0s left)  hits  0  resp 0  score  4600 / gold  3220  GOLD  pay  1326  hull 0.98 
+clean SWEEP 03 SWEEP OK  82.4s of  84s (31.6s left)  hits  0  resp 0  score 17700 / gold 13020  GOLD  pay  2278  hull 1.00 
+clean DUEL 03 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1200  hull 1.00 
+clean DUEL 04 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1500  hull 1.00 
+clean credits per chapter: 5729 / 7452 / 9603  (total 22784; the garage costs 9800)
+clean+boost RELAY 01 DELIVERY OK  44.7s of  50s (23.3s left)  hits  0  resp 0  score  3400 / gold  2380  GOLD  pay   569  hull 0.65 
+clean+boost SWEEP 01 SWEEP OK  55.0s of  63s (30.5s left)  hits  0  resp 0  score 12100 / gold  9100  GOLD  pay  1383  hull 0.80 
+clean+boost RELAY 02 DELIVERY OK  66.8s of  76s (36.2s left)  hits  0  resp 0  score  5800 / gold  4060  GOLD  pay   798  hull 0.50 
+clean+boost RUN 01 ESCAPE OK  52.0s of  59s (28.0s left)  hits  0  resp 0  score  4200 / gold  2940  GOLD  pay  1709  hull 0.60 
+clean+boost RELAY 03 DELIVERY OK  55.0s of  63s (30.5s left)  hits  0  resp 0  score  4600 / gold  3220  GOLD  pay   798  hull 0.40 
+clean+boost DUEL 01 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   700  hull 1.00 
+clean+boost RELAY 04 DELIVERY OK  77.6s of  88s (41.9s left)  hits  0  resp 0  score  7000 / gold  4900  GOLD  pay  1039  hull 0.34 
+clean+boost SWEEP 02 SWEEP OK  62.4s of  72s (35.1s left)  hits  0  resp 0  score 14100 / gold 10500  GOLD  pay  1638  hull 0.80 
+clean+boost SALVAGE 01 SALVAGE OK  59.4s of  67s (31.6s left)  hits  0  resp 0  score  6300 / gold  4620  GOLD  pay  1288  hull 0.95 
+clean+boost RUN 02 ESCAPE OK  59.4s of  67s (31.6s left)  hits  0  resp 0  score  5000 / gold  3500  GOLD  pay  1937  hull 0.55 
+clean+boost DIVE 01 DIVE OK  47.7s of  50s (21.8s left)  hits  0  resp 0  score  3800 / gold  2660  GOLD  pay   929  hull 0.45 
+clean+boost DUEL 02 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   850  hull 1.00 
+clean+boost RUN 03 ESCAPE OK  62.4s of  72s (35.1s left)  hits  0  resp 0  score  5400 / gold  3780  GOLD  pay  2175  hull 0.35 
+clean+boost SALVAGE 02 SALVAGE OK  69.8s of  80s (38.7s left)  hits  0  resp 0  score  8200 / gold  6020  GOLD  pay  1692  hull 0.80 
+clean+boost DIVE 02 DIVE OK  55.0s of  58s (25.5s left)  hits  0  resp 0  score  4600 / gold  3220  GOLD  pay  1111  hull 0.40 
+clean+boost SWEEP 03 SWEEP OK  74.2s of  84s (39.8s left)  hits  0  resp 0  score 17700 / gold 13020  GOLD  pay  2302  hull 1.00 
+clean+boost DUEL 03 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1200  hull 1.00 
+clean+boost DUEL 04 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1500  hull 1.00 
+clean+boost credits per chapter: 5957 / 7681 / 9980  (total 23618; the garage costs 9800)
+1-2 hits RELAY 01 DELIVERY OK  48.6s of  50s (19.4s left)  hits  1  resp 0  score  2150 / gold  2380  SILVER  pay   564  hull 1.00 
+1-2 hits SWEEP 01 SWEEP OK  60.2s of  63s (25.4s left)  hits  2  resp 0  score  9150 / gold  9100  GOLD  pay  1198  hull 0.69 
+1-2 hits RELAY 02 DELIVERY OK  72.9s of  76s (30.2s left)  hits  2  resp 0  score  3300 / gold  4060  SILVER  pay   743  hull 0.94 
+1-2 hits RUN 01 ESCAPE OK  56.6s of  59s (23.4s left)  hits  1  resp 0  score  2800 / gold  2940  SILVER  pay  1279  hull 1.00 
+1-2 hits RELAY 03 DELIVERY OK  60.2s of  63s (25.4s left)  hits  2  resp 0  score  2850 / gold  3220  SILVER  pay   753  hull 0.69 
+1-2 hits DUEL 01 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   700  hull 1.00 
+1-2 hits RELAY 04 DELIVERY OK  84.5s of  88s (35.1s left)  hits  2  resp 0  score  4200 / gold  4900  SILVER  pay  1001  hull 0.93 
+1-2 hits SWEEP 02 SWEEP OK  68.5s of  72s (29.1s left)  hits  2  resp 0  score  9800 / gold 10500  SILVER  pay  1433  hull 0.94 
+1-2 hits SALVAGE 01 SALVAGE OK  64.9s of  67s (26.2s left)  hits  2  resp 0  score  3950 / gold  4620  SILVER  pay  1143  hull 0.90 
+1-2 hits RUN 02 ESCAPE OK  64.9s of  67s (26.2s left)  hits  2  resp 0  score  2950 / gold  3500  SILVER  pay  1369  hull 0.85 
+1-2 hits DIVE 01 DIVE OK  52.2s of  50s (17.4s left)  hits  1  resp 0  score  2450 / gold  2660  SILVER  pay   949  hull 0.70 
+1-2 hits DUEL 02 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   850  hull 1.00 
+1-2 hits RUN 03 ESCAPE OK  68.5s of  72s (29.1s left)  hits  2  resp 0  score  3100 / gold  3780  SILVER  pay  1568  hull 0.79 
+1-2 hits SALVAGE 02 SALVAGE OK  76.5s of  80s (32.1s left)  hits  2  resp 0  score  4975 / gold  6020  SILVER  pay  1540  hull 0.93 
+1-2 hits DIVE 02 DIVE OK  60.2s of  58s (20.4s left)  hits  2  resp 0  score  2850 / gold  3220  SILVER  pay   968  hull 0.29 
+1-2 hits SWEEP 03 SWEEP OK  80.9s of  84s (33.2s left)  hits  2  resp 0  score 13400 / gold 13020  GOLD  pay  2069  hull 1.00 
+1-2 hits DUEL 03 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1200  hull 1.00 
+1-2 hits DUEL 04 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1500  hull 1.00 
+1-2 hits credits per chapter: 5237 / 6745 / 8845  (total 20827; the garage costs 9800)
+sloppy RELAY 01 DELIVERY OK  51.6s of  50s (16.5s left)  hits  4  resp 0  score  1100 / gold  2380  BRONZE  pay   453  hull 0.75 
+sloppy SWEEP 01 SWEEP OK  64.2s of  63s (21.5s left)  hits  5  resp 0  score  5050 / gold  9100  BRONZE  pay   995  hull 0.75 
+sloppy RELAY 02 DELIVERY OK  77.4s of  76s (25.9s left)  hits  6  resp 0  score  1700 / gold  4060  BRONZE  pay   610  hull 0.75 
+sloppy RUN 01 ESCAPE OK  60.3s of  59s (20.0s left)  hits  4  resp 0  score  1350 / gold  2940  BRONZE  pay   852  hull 0.93 
+sloppy RELAY 03 DELIVERY OK  64.2s of  63s (21.5s left)  hits  5  resp 0  score  1400 / gold  3220  BRONZE  pay   675  hull 0.71 
+sloppy DUEL 01 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   700  hull 1.00 
+sloppy RELAY 04 DELIVERY OK  90.0s of  88s (29.9s left)  hits  7  resp 0  score  2000 / gold  4900  BRONZE  pay   829  hull 0.71 
+sloppy SWEEP 02 SWEEP OK  73.0s of  72s (24.8s left)  hits  5  resp 0  score  5700 / gold 10500  BRONZE  pay  1227  hull 1.00 
+sloppy SALVAGE 01 SALVAGE OK  69.0s of  67s (22.3s left)  hits  5  resp 0  score  2100 / gold  4620  BRONZE  pay  1043  hull 0.91 
+sloppy RUN 02 ESCAPE OK  69.0s of  67s (22.3s left)  hits  5  resp 0  score  1500 / gold  3500  BRONZE  pay   923  hull 0.88 
+sloppy DIVE 01 DIVE OK  57.0s of  50s (12.7s left)  hits  4  resp 0  score  1200 / gold  2660  BRONZE  pay   692  hull 0.24 
+sloppy DUEL 02 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   850  hull 1.00 
+sloppy RUN 03 ESCAPE OK  73.0s of  72s (24.8s left)  hits  5  resp 0  score  1650 / gold  3780  BRONZE  pay  1100  hull 0.91 
+sloppy SALVAGE 02 SALVAGE OK  81.6s of  80s (27.3s left)  hits  6  resp 0  score  2800 / gold  6020  BRONZE  pay  1385  hull 0.77 
+sloppy DIVE 02 DIVE OK  65.4s of  58s (11.3s left)  hits  5  resp 1  score  1400 / gold  3220  BRONZE  pay   953  hull 0.50 
+sloppy SWEEP 03 SWEEP OK  86.0s of  84s (28.3s left)  hits  6  resp 0  score  7050 / gold 13020  BRONZE  pay  1736  hull 1.00 
+sloppy DUEL 03 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1200  hull 1.00 
+sloppy DUEL 04 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1500  hull 1.00 
+sloppy credits per chapter: 4285 / 5564 / 7874  (total 17723; the garage costs 9800)
+reckless RELAY 01 DELIVERY OK  52.1s of  50s (12.3s left)  hits  8  resp 1  score   750 / gold  2380  BRONZE  pay   373  hull 0.50 
+reckless SWEEP 01 SWEEP OK  61.0s of  63s (25.0s left)  hits 10  resp 0  score  3100 / gold  9100  BRONZE  pay   768  hull 0.05 
+reckless RELAY 02 DELIVERY OK  78.2s of  76s (21.4s left)  hits 12  resp 1  score  1100 / gold  4060  BRONZE  pay   424  hull 0.03 
+reckless RUN 01 ESCAPE OK  60.1s of  59s (16.4s left)  hits  9  resp 1  score   850 / gold  2940  BRONZE  pay   720  hull 0.21 
+reckless RELAY 03 DELIVERY OK  64.3s of  63s (17.7s left)  hits 10  resp 1  score   900 / gold  3220  BRONZE  pay   504  hull 0.05 
+reckless DUEL 01 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   700  hull 1.00 
+reckless RELAY 04 DELIVERY OK  92.2s of  88s (24.1s left)  hits 14  resp 1  score  1300 / gold  4900  BRONZE  pay   639  hull 0.01 
+reckless SWEEP 02 SWEEP OK  69.7s of  72s (28.5s left)  hits 11  resp 0  score  3600 / gold 10500  BRONZE  pay   960  hull 0.13 
+reckless SALVAGE 01 SALVAGE OK  69.6s of  67s (22.0s left)  hits 10  resp 0  score  1425 / gold  4620  BRONZE  pay   866  hull 0.21 
+reckless RUN 02 ESCAPE OK  69.0s of  67s (18.5s left)  hits 10  resp 1  score  1000 / gold  3500  BRONZE  pay   780  hull 0.21 
+reckless DIVE 01 DIVE FAIL  23.2s of  50s (27.9s left)  hits  4  resp 2  score   300 / gold  2660  -  pay     0  hull 0.00 HULL BREACHED
+reckless DUEL 02 DUEL OK  24.0s of   0s ( 0.0s left)  hits  0  resp 0  score   200 / gold     0  GOLD  pay   850  hull 1.00 
+reckless RUN 03 ESCAPE OK  73.8s of  72s (20.3s left)  hits 11  resp 1  score  1050 / gold  3780  BRONZE  pay   858  hull 0.13 
+reckless SALVAGE 02 SALVAGE OK  83.0s of  80s (26.2s left)  hits 12  resp 0  score  1975 / gold  6020  BRONZE  pay  1236  hull 0.25 
+reckless DIVE 02 DIVE FAIL  23.2s of  58s (35.9s left)  hits  4  resp 2  score   300 / gold  3220  -  pay     0  hull 0.00 HULL BREACHED
+reckless SWEEP 03 SWEEP OK  82.5s of  84s (32.3s left)  hits 13  resp 0  score  4600 / gold 13020  BRONZE  pay  1468  hull 0.21 
+reckless DUEL 03 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1200  hull 1.00 
+reckless DUEL 04 DUEL OK  36.0s of   0s ( 0.0s left)  hits  0  resp 0  score   300 / gold     0  GOLD  pay  1500  hull 1.00 
+reckless credits per chapter: 3489 / 4095 / 6262  (total 13846; the garage costs 9800)
+	 Executed 10 tests, with 0 failures (0 unexpected) in 2.238 (2.242) seconds
+	 Executed 10 tests, with 0 failures (0 unexpected) in 2.238 (2.243) seconds
+	 Executed 10 tests, with 0 failures (0 unexpected) in 2.238 (2.244) seconds

@@ -12,6 +12,7 @@
 		0572127472CC24B84BA3D7B9 /* ChakraPetch-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 824850DBC01AACD8E876F1F6 /* ChakraPetch-Medium.ttf */; };
 		070BB31D4D19848AA63BFC0C /* Rival.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CB4715E79FFE27B9C57F3 /* Rival.swift */; };
 		077FD038A6003EABA8B6BC90 /* MissionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */; };
+		088917E1D587A1942F8A4173 /* MissionLoopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D08AF1ABC5FDF097E48537 /* MissionLoopTests.swift */; };
 		08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
 		0D32B607D31D661EFC1677E8 /* FrontEnd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BC6E99698AE6DC5426F78B /* FrontEnd.swift */; };
 		0DA9524FD78109DD0B910430 /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
@@ -103,6 +104,16 @@
 		FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		FB3FBA02EFE8D063EE56F999 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 37DAD9E77CF0F3F1602E4393 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C86F460BDBF42AC26B02E533;
+			remoteInfo = "SpeederProto-macOS";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialFactory.swift; sourceTree = "<group>"; };
 		1362513C3D8ABE25AC8315B7 /* Mission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mission.swift; sourceTree = "<group>"; };
@@ -114,6 +125,7 @@
 		37A7B277A67AB843AA132612 /* MissionProps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionProps.swift; sourceTree = "<group>"; };
 		44E74DD4583F19C94BE32E39 /* CameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRig.swift; sourceTree = "<group>"; };
 		4CEFC5EEF0192DCE155B6328 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
+		52D08AF1ABC5FDF097E48537 /* MissionLoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionLoopTests.swift; sourceTree = "<group>"; };
 		581F3F2FFB2CAAC00E963959 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		58455DAE604D8289457A1546 /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameMode.swift; sourceTree = "<group>"; };
 		59796A2FF75D69C574FE80A0 /* PostFX.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = PostFX.metal; sourceTree = "<group>"; };
@@ -142,6 +154,7 @@
 		BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meshes.swift; sourceTree = "<group>"; };
 		C9878B4DE09B4382EE413D42 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederController.swift; sourceTree = "<group>"; };
+		D53555799C92B0DC533C8214 /* SpeederProtoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpeederProtoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA03C8CBB3AECCC551185AD4 /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
 		E41CB4715E79FFE27B9C57F3 /* Rival.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rival.swift; sourceTree = "<group>"; };
 		E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionRunner.swift; sourceTree = "<group>"; };
@@ -186,6 +199,7 @@
 			children = (
 				F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */,
 				FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */,
+				D53555799C92B0DC533C8214 /* SpeederProtoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -271,6 +285,14 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		A35A8652DF0471FBC4EB794F /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				52D08AF1ABC5FDF097E48537 /* MissionLoopTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
 		E87E23EDACC0C849C6E4598B /* Arena */ = {
 			isa = PBXGroup;
 			children = (
@@ -303,6 +325,7 @@
 			children = (
 				60DE0E2CE1A5F121C9BB663F /* Resources */,
 				3EC52E6DA14A3B093018CA9C /* Sources */,
+				A35A8652DF0471FBC4EB794F /* Tests */,
 				1D81532A7ED34F18CB861870 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -327,6 +350,24 @@
 			productName = "SpeederProto-iOS";
 			productReference = F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */;
 			productType = "com.apple.product-type.application";
+		};
+		9FE6C8A3E387AB0F61540818 /* SpeederProtoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EBEB21594238E290B153C80F /* Build configuration list for PBXNativeTarget "SpeederProtoTests" */;
+			buildPhases = (
+				0DFA955FBA36579E5E60B45C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F2940D8A59D94F7C60E4F91A /* PBXTargetDependency */,
+			);
+			name = SpeederProtoTests;
+			packageProductDependencies = (
+			);
+			productName = SpeederProtoTests;
+			productReference = D53555799C92B0DC533C8214 /* SpeederProtoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		C86F460BDBF42AC26B02E533 /* SpeederProto-macOS */ = {
 			isa = PBXNativeTarget;
@@ -359,6 +400,9 @@
 						DevelopmentTeam = HNBN55RN29;
 						ProvisioningStyle = Automatic;
 					};
+					9FE6C8A3E387AB0F61540818 = {
+						ProvisioningStyle = Automatic;
+					};
 					C86F460BDBF42AC26B02E533 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -380,6 +424,7 @@
 			targets = (
 				65EA62C835504348EF2BD156 /* SpeederProto-iOS */,
 				C86F460BDBF42AC26B02E533 /* SpeederProto-macOS */,
+				9FE6C8A3E387AB0F61540818 /* SpeederProtoTests */,
 			);
 		};
 /* End PBXProject section */
@@ -418,6 +463,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0DFA955FBA36579E5E60B45C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				088917E1D587A1942F8A4173 /* MissionLoopTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DBDBC7C426FCC48255285BE3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -512,7 +565,32 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		F2940D8A59D94F7C60E4F91A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C86F460BDBF42AC26B02E533 /* SpeederProto-macOS */;
+			targetProxy = FB3FBA02EFE8D063EE56F999 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		297F036DC2CAD6CDA3540032 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.markbailey.speeder.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SpeederProto.app/Contents/MacOS/SpeederProto";
+			};
+			name = Release;
+		};
 		4E1E2D5D5415D62C36ACDAA1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -613,6 +691,23 @@
 				SDKROOT = macosx;
 			};
 			name = Release;
+		};
+		7AD5208AD0C3F770672B569E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.markbailey.speeder.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SpeederProto.app/Contents/MacOS/SpeederProto";
+			};
+			name = Debug;
 		};
 		88A21B304C939F98ACF0CAD6 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -748,6 +843,15 @@
 			buildConfigurations = (
 				88A21B304C939F98ACF0CAD6 /* Debug */,
 				4E1E2D5D5415D62C36ACDAA1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EBEB21594238E290B153C80F /* Build configuration list for PBXNativeTarget "SpeederProtoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7AD5208AD0C3F770672B569E /* Debug */,
+				297F036DC2CAD6CDA3540032 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -311,3 +311,83 @@ Not verified (the phone): the log on the Backbone (Menu -> MESSAGES), the chapte
 390 pt screen (it scrolls like every card), the rival's line by eye mid-duel.
 Not built from the assessment: 5.5 (agency: two jobs unlocked at once, side offers, the fork
 acknowledged) is owed after the phone pass, and D4 (the cast) is Mark's.
+
+## Headless loop, balance, agency (27 Sep 2026, evening)
+
+Branch `claude/phone-pass` off master (PRs #3 and #4 merged). The phone was locked for the whole
+thread: the Release build was installed on the iPhone 12 but never launched (`devicectl` refuses a
+launch on a locked phone), so the phone pass with the Backbone is still Mark's. What could be done
+from the Mac was done: the headless test loop the kickoff's item 3 asked for, the balance numbers
+from it (item 2), and assessment 5.5 (agency). Captures in `Captures/polish/p10/`.
+
+### The headless loop (`Tests/MissionLoopTests.swift`, target `SpeederProtoTests`)
+
+A macOS unit-test bundle hosted by the Mac app (`SPEEDER_TESTS=1` makes the app a bare window with
+no world build, so the suite runs in about three seconds after the build):
+
+```bash
+cd SpeederProto && export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer && xcodebuild test -project SpeederProto.xcodeproj -scheme SpeederProto-macOS -configuration Debug -derivedDataPath build-tests CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "error:|Test Case.*(passed|failed)|Executed|credits per"
+```
+
+`HeadlessLoop.play` steps `MissionRunner.update` at 60 Hz with the game's own speed model (damp to
+the target at 1.6 / 2.0, a hit takes 40 % of the speed and 70 ms of hit-stop, boost at 1.8x) for a
+`Rider` (cruise, hits every n metres, boost share, beacon and target shares, the split taken).
+`MissionRunner` takes its `UserDefaults` suite in `init` now, so every test has a fresh slate.
+Fourteen tests: the boost hysteresis at an empty hull (the flicker class), one accept on the success
+card advances once, a gate refunds 1.5 s, a replay pays half, salvage fails on missed targets, a
+sweep fails short of the quota, the dive's double bruise, the helmet takes the first hit, inbox wrap
+and garage refusal, the unlock order, the cleared-count migration, the tunnel offer end to end, the
+offer rules, and the balance table (asserting the rank shape below).
+
+### Balance (item 2) from the loop, not the phone
+
+The table (`Captures/polish/p10/balance-table.txt`) plays the whole arc with six riders. Before:
+
+| Finding (before) | Number |
+|---|---|
+| Every window left 30 to 50 s at plain cruise (the gates refund 1.5 s each, 12 to 20 per job) | RELAY 01: 30 s of 66 left; DIVE 01: 30 s of 62 |
+| The FAST flag (a third of the window left) came free at cruise | every corridor job |
+| A fifth of the streak score went into the purse | SWEEP 03 paid 5,085 credits, 3,540 of it score |
+| Income per chapter for a rider with one or two hits per job | 11,011 / 13,681 / 15,652 |
+| The garage (4,900) was bought outright in chapter 1 | – |
+| Salvage kills were not in the gold ceiling | a sloppy SALVAGE run ranked silver |
+
+Changed (`Mission.deliveries`, `Mission.maxScore`, `MissionRunner.update`, `Upgrades.items`):
+
+| Knob | Was | Now | Rule |
+|---|---|---|---|
+| Windows (s), RELAY 01 / SWEEP 01 / RELAY 02 / RUN 01 / RELAY 03 | 66 / 80 / 90 / 76 / 76 | 50 / 63 / 76 / 59 / 63 | net cruise time (distance at 45 m/s minus the gate refunds) with a 30 % margin |
+| RELAY 04 / SWEEP 02 / SALVAGE 01 / RUN 02 / DIVE 01 | 100 / 90 / 88 / 84 / 62 | 88 / 72 / 67 / 67 / 50 | same |
+| RUN 03 / SALVAGE 02 / DIVE 02 / SWEEP 03 | 86 / 96 / 68 / 100 | 72 / 80 / 58 / 84 | same |
+| Purse: time bonus per second left | 5 | 3 | |
+| Purse: streak score share | score / 5 | score / 20 | |
+| Gold ceiling | gates + beacons | + salvage targets at the capped streak | |
+| Garage: HULL I / II, BOOST I / II, SPARE CORE, HELMET | 600 / 1200, 500 / 1000, 900, 700 | 1200 / 2400, 1000 / 2000, 1800, 1400 | the set (9,800) is about 1.7 chapters of a clean rider's income |
+
+After (the same riders; "clean" boosts 15 % of the time, "sloppy" hits every 600 m, "reckless"
+every 300 m with half the run boosted):
+
+| Rider | Corridor ranks | Credits per chapter | Notes |
+|---|---|---|---|
+| cruise (never boosts) | gold | 4,441 / 5,998 / 7,965 | 11 to 25 s left, never FAST; caught on every escape (by design: boost opens the gap) |
+| clean | gold everywhere | 5,729 / 7,452 / 9,603 | 16 to 39 s left |
+| 1-2 hits | silver (gold on the sweeps) | 5,237 / 6,745 / 8,845 | |
+| sloppy | bronze everywhere | 4,285 / 5,564 / 7,874 | 11 to 35 s left, one respawn on DIVE 02 |
+| reckless | bronze; both dives fail (HULL BREACHED) | 3,489 / 4,095 / 6,262 | |
+
+So a clean run is gold, a sloppy one bronze, the FAST flag takes boost, a dive punishes recklessness,
+and the garage is two pieces in chapter 1 and complete late in chapter 3. Not measurable here and
+still owed on the phone: the chapter-3 density (1.3), the KEEN tier's 0.10 s tick, and whether the
+30 % margin feels tight or mean with real steering (the loop has no lateral cost; if the phone says
+mean, raise the margin in one place, the comment over `Mission.gateSpacing`).
+
+### Agency (assessment 5.5)
+
+| Item | What changed | Proof |
+|---|---|---|
+| Order inside a chapter | Cleared jobs are a bitmask (`cleared.mask`; the `cleared` count stays for the roster, the titles and the debrief picker, and a count-only save migrates). The first job of a chapter opens the next two, each job after that needs one more cleared, a duel waits for every job before it, a chapter waits for the duel. After a success the runner moves to the next open job in order. Unlock notices per newly opened job | `testUnlockOrderInsideAChapter`, `testClearedCountMigrates` |
+| Side offers | `SideOffer` in `Mission.swift`: a cleared job ridden again under one rule for a sender from the other side, opened by a flag on the base job, listed after the jobs as an amber chip with its bonus, posted to the log by the sender when the flag is earned. SIDE 01 THE TUNNEL LINE (KADE, CLEAN on RELAY 02: the split through the tunnel, +150; the skyway fails `TOOK THE SKYWAY`), SIDE 02 THE PIPE, DARK (ORIN, FAST on RUN 02: DIVE 01 with ten seconds less, +300), SIDE 03 THE WHOLE LEDGER (SABLE, GOLD on SALVAGE 02: SWEEP 03 with all ten beacons, +500). The bonus pays once on top of the replay rule; the offer's debrief goes to the log; a retry keeps the offer; the arc resumes after | `testSideOfferTunnelLine`, `testSideOfferRules`; simulator shot `p10/sim/offer-*` |
+| The fork acknowledged | `WorldScroller.lastDecision` reaches `MissionRunner.update(branch:)`; `Debrief.Outcome.branch` prefixes the reactive line per contact ("The tunnel. Kade saw that." / "The skyway. Half the city saw that." for VESS; KADE, ORIN and a default for the offers) | `testSideOfferTunnelLine` |
+
+Hooks: `SPEEDER_FLAGS=2:1,9:2` gives jobs their flags at launch (1 clean, 2 fast, 4 gold), which puts
+the offers on the table for a capture; `MissionRunner.testSetFlags` does the same in a test.

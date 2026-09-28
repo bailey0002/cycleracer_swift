@@ -8,14 +8,14 @@ struct Mission: Identifiable {
     enum Kind { case delivery, search, escape, duel, salvage, dive }
     let id: Int
     let kind: Kind
-    let code: String            // "RELAY 01"
-    let title: String           // "DOWNTOWN"
-    let contact: String
-    let brief: String
+    var code: String            // "RELAY 01"
+    var title: String           // "DOWNTOWN"
+    var contact: String
+    var brief: String
     let theme: Theme
     let blocks: [TrackBlock]
     let distance: Float         // metres to the drop
-    let timeLimit: Float        // seconds
+    var timeLimit: Float        // seconds
     let basePay: Int
     // story
     var chapter: Int = 1
@@ -24,6 +24,8 @@ struct Mission: Identifiable {
     // search
     var beacons: Int = 0
     var beaconsRequired: Int = 0
+    /// Set when this is a side offer riding the job (`applying`): the sender, the rule and the bonus.
+    var offer: SideOffer? = nil
     // escape
     var startGap: Float = 70
     // duel
@@ -39,6 +41,11 @@ struct Mission: Identifiable {
     /// Streak scoring: a gate every `gateSpacing` metres, beacons and kills, each worth its base
     /// times the streak; a hit resets the streak. Rank thresholds are fractions of the job's
     /// theoretical maximum, so they are per job without hand tuning.
+    ///
+    /// Windows (27 Sep 2026, from the headless loop in `Tests/MissionLoopTests.swift`): the net cruise
+    /// time (distance at 45 m/s minus the gate refunds) with a 30 % margin, so plain cruise arrives with
+    /// about a quarter of the window left and the FAST flag (a third left) takes some boost; escapes
+    /// need boost anyway.
     static let gateSpacing: Float = 200
     static let gateValue = 50, beaconValue = 150, killValue = 25, maxStreak = 8
     /// Every gate adds a little time to the window (Crazy Taxi: arriving fast buys time).
@@ -50,6 +57,8 @@ struct Mission: Identifiable {
         for _ in 0..<(gates + beacons) { s += Mission.gateValue * streak; streak = min(Mission.maxStreak, streak + 1) }
         // beacons taken on a capped streak: the ceiling assumes the clean run, so gold is earned
         s += beacons * (Mission.beaconValue - Mission.gateValue) * Mission.maxStreak
+        // salvage targets do not climb the streak but ride it: count them at the cap too
+        s += killsRequired * Mission.killValue * Mission.maxStreak
         return s
     }
     var silverScore: Int { Int(Float(maxScore) * 0.40) }
@@ -77,6 +86,20 @@ struct Mission: Identifiable {
         case .salvage:  return "SALVAGE \(distanceText)   WINDOW \(timeText)   DESTROY \(killsRequired) TARGETS"
         case .dive:     return "DIVE \(distanceText)   WINDOW \(timeText)   NO WEAPONS   HULL BRUISES x2"
         }
+    }
+    /// The goal line with the side offer's rule appended.
+    var goalLine: String { offer.map { "\(goalText)   \($0.modifier.text)" } ?? goalText }
+    /// This job under a side offer: the sender's code, title and line, the rule applied.
+    func applying(_ o: SideOffer) -> Mission {
+        var m = self
+        m.code = o.code; m.title = o.title; m.contact = o.sender; m.brief = o.line; m.debrief = o.debrief
+        m.offer = o
+        switch o.modifier {
+        case .tunnelBranch: break
+        case .tightWindow(let delta): m.timeLimit = max(10, m.timeLimit + delta)
+        case .allBeacons: m.beaconsRequired = m.beacons
+        }
+        return m
     }
     var successTitle: String {
         switch kind {
@@ -147,6 +170,24 @@ struct Mission: Identifiable {
         var text: String { Flags.all.map { contains($0.0) ? "[\($0.1)]" : " \($0.1) " }.joined(separator: " ") }
     }
 
+    /// Side offers (assessment 5.5): optional jobs in the inbox from the other side of the story, each a
+    /// cleared job with one rule changed and a bonus on top, opened by a flag earned on the base job.
+    static let offers: [SideOffer] = [
+        SideOffer(id: 0, job: 2, sender: "KADE", code: "SIDE 01", title: "THE TUNNEL LINE",
+                  line: "Vess sends you over the skyway because Vess is watched there. Ride the split through the tunnel instead and I pay the difference. Nobody counts the tunnel.",
+                  debrief: "KADE: The tunnel. Good instinct. Vess will not know that run happened, and I will.",
+                  requires: (job: 2, flag: .clean), modifier: .tunnelBranch, bonus: 150),
+        SideOffer(id: 1, job: 10, sender: "ORIN", code: "SIDE 02", title: "THE PIPE, DARK",
+                  line: "You keep gaps. Now keep a window: the rock pipe again with ten seconds less. Kade pays in favours. I pay in credits.",
+                  debrief: "ORIN: A core time out of a canyon pipe. Kade did not tell me you were that fast.",
+                  requires: (job: 9, flag: .fast), modifier: .tightWindow(-10), bonus: 300),
+        SideOffer(id: 2, job: 15, sender: "SABLE", code: "SIDE 03", title: "THE WHOLE LEDGER",
+                  line: "You are wrecking my shipments, so let us do business. Sweep Vess's ledger again, all ten beacons this time, and I pay more than Orin does.",
+                  debrief: "SABLE: Paid. Now I know what Vess knows. Do not mistake this for friendship.",
+                  requires: (job: 13, flag: .gold), modifier: .allBeacons, bonus: 500),
+    ]
+    static func offer(_ id: Int) -> SideOffer? { offers.first { $0.id == id } }
+
     /// The job list: three chapters, eighteen jobs, Tron-clean and terse. Every corridor track is
     /// composed over its full length (`TrackComposer`); the chapter sets the obstacle density.
     ///
@@ -165,35 +206,35 @@ struct Mission: Identifiable {
                 theme: .neonCity,
                 blocks: track(2400, [.straight(2), .bend, .straight(1), .landmark, .field, .bend, .straight(2), .sBend, .landmark, .straight(1)],
                               theme: .neonCity, finish: "relay", seed: 101, density: d1),
-                distance: 2400, timeLimit: 66, basePay: 200, chapter: 1,
+                distance: 2400, timeLimit: 50, basePay: 200, chapter: 1,
                 debrief: "VESS: Clean enough. Twenty more like that and the route is yours. Do not ask what is in the packets."),
         Mission(id: 1, kind: .search, code: "SWEEP 01", title: "BEACONS", contact: "VESS",
                 brief: "Someone seeded the grid with beacons. Fly through them; some sit high. Five of seven and the map is ours.",
                 theme: .neonCity,
                 blocks: track(3000, [.straight(2), .bend, .field, .sBend, .landmark, .skyway, .bend, .straight(2), .field, .landmark],
                               theme: .neonCity, finish: "sweep end", seed: 102, density: d1),
-                distance: 3000, timeLimit: 80, basePay: 250, chapter: 1,
+                distance: 3000, timeLimit: 63, basePay: 250, chapter: 1,
                 debrief: "VESS: The beacons were Kade's. Now Kade knows your trail colour.", beacons: 7, beaconsRequired: 5),
         Mission(id: 2, kind: .delivery, code: "RELAY 02", title: "THE SPLIT", contact: "VESS",
                 brief: "Relay sits past the split. Tunnel or skyway, your call. Heavier traffic this time.",
                 theme: .neonCity,
                 blocks: track(3600, [.straight(1), .bend, .field, .split, .landmark, .sBend, .field, .bend, .landmark, .straight(1), .field],
                               theme: .neonCity, finish: "relay", seed: 103, density: d1),
-                distance: 3600, timeLimit: 90, basePay: 300, chapter: 1,
+                distance: 3600, timeLimit: 76, basePay: 300, chapter: 1,
                 debrief: "VESS: Delivered. A rider named Kade asked about you at the relay. I said nothing."),
         Mission(id: 3, kind: .escape, code: "RUN 01", title: "TAIL", contact: "VESS",
                 brief: "You picked up a tail. It is faster than your cruise. Boost opens the gap and burns hull. Reach the relay with it still behind you.",
                 theme: .neonCity,
                 blocks: track(2800, [.straight(2), .bend, .undercity, .sBend, .landmark, .field, .bend, .straight(2), .landmark],
                               theme: .neonCity, finish: "relay", seed: 104, density: d1),
-                distance: 2800, timeLimit: 76, basePay: 350, chapter: 1,
+                distance: 2800, timeLimit: 59, basePay: 350, chapter: 1,
                 debrief: "VESS: That was Kade's drone. It will not be a drone next time.", startGap: 70),
         Mission(id: 4, kind: .delivery, code: "RELAY 03", title: "DEEP CONDUIT", contact: "VESS",
                 brief: "The relay is below the city. Conduit sections: fly the tube, thread the beams. The hull does not like walls.",
                 theme: .neonCity,
                 blocks: track(3000, [.straight(1), .bend, .conduit, .field, .landmark, .sBend, .conduit, .bend, .straight(1), .landmark],
                               theme: .neonCity, finish: "relay", seed: 105, density: d1),
-                distance: 3000, timeLimit: 76, basePay: 400, chapter: 1,
+                distance: 3000, timeLimit: 63, basePay: 400, chapter: 1,
                 debrief: "VESS: Kade has booked the Grid. It wants the packet. Settle it there or lose the route."),
         Mission(id: 5, kind: .duel, code: "DUEL 01", title: "KADE", contact: "VESS",
                 brief: "Kade wants the packet and will not ask twice. Settle it on the Grid. Light cycles, first to two derezzes. Kade hunts: expect a wheel on your tail.",
@@ -206,35 +247,35 @@ struct Mission: Identifiable {
                 theme: .sunsetCanyon,
                 blocks: track(4200, [.straight(1), .bend, .bend, .landmark, .undercity, .sBend, .field, .split, .landmark, .bend, .straight(2), .field],
                               theme: .sunsetCanyon, finish: "relay", seed: 106, density: d2),
-                distance: 4200, timeLimit: 100, basePay: 500, chapter: 2,
+                distance: 4200, timeLimit: 88, basePay: 500, chapter: 2,
                 debrief: "KADE: The relay out here is mine. Every packet Vess sends passes through it. Open one."),
         Mission(id: 7, kind: .search, code: "SWEEP 02", title: "CANYON", contact: "KADE",
                 brief: "Beacons in the canyon, high and low. Six of eight. The bends hide them until late.",
                 theme: .sunsetCanyon,
                 blocks: track(3400, [.straight(1), .bend, .sBend, .landmark, .skyway, .bend, .field, .undercity, .landmark, .bend, .straight(1)],
                               theme: .sunsetCanyon, finish: "sweep end", seed: 107, density: d2),
-                distance: 3400, timeLimit: 90, basePay: 350, chapter: 2,
+                distance: 3400, timeLimit: 72, basePay: 350, chapter: 2,
                 debrief: "KADE: Orin planted those. Orin runs the canyon relays for someone in the core.", beacons: 8, beaconsRequired: 6),
         Mission(id: 8, kind: .salvage, code: "SALVAGE 01", title: "CONVOY", contact: "KADE",
                 brief: "A convoy went down on the canyon road. Its drones and crates are still live. Destroy eight before the drop and the cargo is ours.",
                 theme: .sunsetCanyon,
                 blocks: track(3200, [.straight(1), .field, .bend, .field, .landmark, .sBend, .field, .bend, .field, .landmark],
                               theme: .sunsetCanyon, finish: "salvage drop", seed: 108, density: d2),
-                distance: 3200, timeLimit: 88, basePay: 450, chapter: 2,
+                distance: 3200, timeLimit: 67, basePay: 450, chapter: 2,
                 debrief: "KADE: Routes in every crate. A rider's route is its right to ride; Sable buys them and derezzes the rider. Vess is not delivering these. Vess is selling them.", killsRequired: 8),
         Mission(id: 9, kind: .escape, code: "RUN 02", title: "ORIN'S TAIL", contact: "KADE",
                 brief: "Orin is behind you and it is not a drone. Keep the gap through the tunnel. The skyway is faster than it looks.",
                 theme: .sunsetCanyon,
                 blocks: track(3200, [.straight(1), .bend, .undercity, .field, .skyway, .landmark, .sBend, .bend, .straight(1)],
                               theme: .sunsetCanyon, finish: "relay", seed: 109, density: d2),
-                distance: 3200, timeLimit: 84, basePay: 450, chapter: 2,
+                distance: 3200, timeLimit: 67, basePay: 450, chapter: 2,
                 debrief: "KADE: Orin does not lose tails. Orin will want the Grid. Fly the pipe first; you will need the precision.", startGap: 60),
         Mission(id: 10, kind: .dive, code: "DIVE 01", title: "ROCK PIPE", contact: "KADE",
                 brief: "The old pipe under the mesa. No weapons, a hull that bruises twice as hard, and a window that does not forgive. Thread it.",
                 theme: .sunsetCanyon,
                 blocks: track(2600, [.conduit, .straight(1), .conduit, .bend, .conduit, .straight(1)],
                               theme: .sunsetCanyon, finish: "pipe end", seed: 110, density: d2),
-                distance: 2600, timeLimit: 62, basePay: 500, chapter: 2,
+                distance: 2600, timeLimit: 50, basePay: 500, chapter: 2,
                 debrief: "KADE: Clean. Now Orin. Orin boxes: it will cut across your line and close the door."),
         Mission(id: 11, kind: .duel, code: "DUEL 02", title: "ORIN", contact: "KADE",
                 brief: "Orin runs the canyon relays and wants them back. Kade owes you one: the Grid is booked. Orin boxes: it will cut across your line and close the door.",
@@ -247,28 +288,28 @@ struct Mission: Identifiable {
                 theme: .neonCity,
                 blocks: track(3400, [.straight(1), .field, .bend, .landmark, .conduit, .field, .sBend, .skyway, .field, .landmark, .bend],
                               theme: .neonCity, finish: "core relay", seed: 112, density: d3),
-                distance: 3400, timeLimit: 86, basePay: 600, chapter: 3,
+                distance: 3400, timeLimit: 72, basePay: 600, chapter: 3,
                 debrief: "ORIN: Still alive. Sable's crates move through the core at night. Let us take them apart.", startGap: 50),
         Mission(id: 13, kind: .salvage, code: "SALVAGE 02", title: "SABLE'S CRATES", contact: "ORIN",
                 brief: "Sable's shipment runs the core grid tonight: crates and escort drones in every field. Twelve targets before the drop.",
                 theme: .neonCity,
                 blocks: track(3800, [.straight(1), .field, .bend, .field, .landmark, .field, .sBend, .field, .undercity, .field, .landmark, .field],
                               theme: .neonCity, finish: "core drop", seed: 113, density: d3),
-                distance: 3800, timeLimit: 96, basePay: 650, chapter: 3,
+                distance: 3800, timeLimit: 80, basePay: 650, chapter: 3,
                 debrief: "ORIN: That was a month of Sable's income. Sable will come to the Grid now. First we take the deep line.", killsRequired: 12),
         Mission(id: 14, kind: .dive, code: "DIVE 02", title: "DEEP LINE", contact: "ORIN",
                 brief: "The core's data conduit: three pipes back to back, no weapons, twice the bruise. The fastest riders in the system set their times here.",
                 theme: .neonCity,
                 blocks: track(3000, [.conduit, .conduit, .straight(1), .landmark, .conduit, .bend, .conduit],
                               theme: .neonCity, finish: "line end", seed: 114, density: d3),
-                distance: 3000, timeLimit: 68, basePay: 650, chapter: 3,
+                distance: 3000, timeLimit: 58, basePay: 650, chapter: 3,
                 debrief: "ORIN: A core time. Vess has hidden its ledger in beacons across the core. Sweep them and we have proof."),
         Mission(id: 15, kind: .search, code: "SWEEP 03", title: "THE LEDGER", contact: "ORIN",
                 brief: "Vess's ledger, split across ten beacons in the densest grid in the system. Eight of ten. Some sit high over the fields.",
                 theme: .neonCity,
                 blocks: track(4000, [.straight(1), .bend, .field, .landmark, .sBend, .skyway, .field, .bend, .undercity, .field, .landmark, .bend],
                               theme: .neonCity, finish: "sweep end", seed: 115, density: d3),
-                distance: 4000, timeLimit: 100, basePay: 700, chapter: 3,
+                distance: 4000, timeLimit: 84, basePay: 700, chapter: 3,
                 debrief: "ORIN: It is all there. Every route, every buyer. Yours is the last line. Sable has booked the Grid and named you.", beacons: 10, beaconsRequired: 8),
         Mission(id: 16, kind: .duel, code: "DUEL 03", title: "SABLE", contact: "ORIN",
                 brief: "Sable does not box and does not hunt. Sable runs: open ground, the pads, the deck, and it will out-speed you if you let it. First to three.",
@@ -282,4 +323,32 @@ struct Mission: Identifiable {
                 duelTarget: 3, rival: .vess),
         ]
     }()
+}
+
+/// A side offer: a cleared job ridden again under one rule for a sender from the other side of the
+/// story. Opened by a flag on the base job; the bonus pays once, the base pay follows the replay rule.
+struct SideOffer: Equatable {
+    enum Modifier: Equatable {
+        case tunnelBranch            // the split must be taken through the tunnel
+        case tightWindow(Float)      // seconds added to the window (negative)
+        case allBeacons              // every beacon of a sweep
+        var text: String {
+            switch self {
+            case .tunnelBranch: return "TUNNEL BRANCH ONLY"
+            case .tightWindow(let d): return String(format: "WINDOW %+.0f s", d)
+            case .allBeacons: return "EVERY BEACON"
+            }
+        }
+    }
+    let id: Int
+    let job: Int                 // the base job's index
+    let sender: String
+    let code: String
+    let title: String
+    let line: String             // the brief
+    let debrief: String
+    let requires: (job: Int, flag: Mission.Flags)
+    let modifier: Modifier
+    let bonus: Int
+    static func == (a: SideOffer, b: SideOffer) -> Bool { a.id == b.id }
 }

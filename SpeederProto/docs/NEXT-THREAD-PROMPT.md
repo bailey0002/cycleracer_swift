@@ -153,3 +153,35 @@ Next thread, in order:
    four seconds, video-in-HUD per report E. The script is now locked in `Mission.deliveries`,
    `Debrief.swift` and `MessageLog.swift`.
 5. B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.
+
+## Status 27 Sep 2026 (evening): headless tests, balance, agency
+
+Branch `claude/phone-pass` off master (PRs #3 and #4 merged). The phone was locked all thread: the
+Release build is installed on the iPhone 12 but was never launched, so nothing on the phone list
+below is verified. Built and verified on the Mac and the simulator (`docs/polish-log.md`, last
+section; `Captures/polish/p10/`): the headless 60 Hz test loop (`Tests/MissionLoopTests.swift`,
+fourteen tests, three seconds), the balance numbers from it (windows, purse, garage; the table is in
+the log), and assessment 5.5 (two jobs open at once, three side offers, the fork acknowledged).
+
+Step 0 for the next thread: branch off master once this PR is merged, `xcodegen generate`, the Mac
+build, then `xcodebuild test` (the README's "Headless tests" command) before touching anything.
+Install and launch the phone (README command; ask Mark to unlock it first).
+
+Next thread, in order:
+
+1. The phone pass with the Backbone, unchanged from the 27 Sep list (launch screen, menu and
+   callsign, haptics, MUSIC / EFFECTS by ear, GRAPHICS vs frame rate, touch buttons, hum and rumble,
+   the mix, the rival card, livery tint, the chapter card, Menu -> MESSAGES, the rival's line, the `??`
+   line), plus this pass on the phone: the new windows by feel (if the 30 % margin feels mean with real
+   steering, raise it in one place: the comment over `Mission.gateSpacing` gives the rule), the garage
+   prices against the purse after chapter 1, the amber offer chip and its briefing on a 390 pt screen,
+   the tunnel offer ridden both ways (the skyway must fail `TOOK THE SKYWAY`), the fork line on the card.
+2. Balance still unmeasurable from the Mac: the chapter-3 density (1.3) and the KEEN tier's 0.10 s
+   tick (`Rival.Skill`), by play.
+3. D4, the cast through CC5 / iClone 8 (Mark, Windows), unchanged: portraits first, then the three
+   talk moments. The script is locked in `Mission.deliveries`, `Mission.offers`, `Debrief.swift` and
+   `MessageLog.swift`.
+4. If there is time: extend the loop to the arena's pure parts (`LightCycle.step`, `TrailSystem`
+   collision) so a rival's own-trail death and the accel curve are asserted without captures; the
+   round clock and the zone spin-up on The Grid.
+5. B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.

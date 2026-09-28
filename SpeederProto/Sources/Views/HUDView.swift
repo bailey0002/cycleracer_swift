@@ -403,7 +403,9 @@ struct HUDView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("\(m.code)  //  \(m.title)").font(HUDStyle.display(HUDStyle.titleSize)).tracking(1).foregroundStyle(accent)
                         row("JOB", "\(m.index + 1)/\(m.count)", "PAY", "\(m.kind == .duel ? "DUEL" : "HULL PAYS")", "CREDITS", "\(m.credits)")
-                        if m.cleared { Text("CLEARED  //  REPLAY PAYS HALF").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.amber) }
+                        if m.offerBonus > 0 {
+                            Text("SIDE OFFER FROM \(m.contact)  //  \(m.offerDone ? "PAID" : "+\(m.offerBonus) CREDITS ON TOP")").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.amber)
+                        } else if m.cleared { Text("CLEARED  //  REPLAY PAYS HALF").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.amber) }
                         Text(m.brief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
                         Text(m.goalText).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(accent)
                         if m.kind != .duel {
@@ -636,14 +638,15 @@ struct HUDView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     ForEach(m.jobs, id: \.id) { j in
-                        let shown = j.id == m.index
+                        let shown = j.id == m.shownChip
                         HStack(spacing: 3) {
                             if j.cleared { Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)) }
                             Text(j.code).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.5)
+                            if j.offer && !j.cleared { Text("+\(j.bonus)").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(0.5).foregroundStyle(shown ? .black : HUDStyle.reward) }
                         }
                         .foregroundStyle(shown ? .black : (j.cleared ? .white.opacity(0.6) : .white))
                         .padding(.horizontal, 7).padding(.vertical, 3)
-                        .background(shown ? accent : .white.opacity(j.cleared ? 0.06 : 0.14))
+                        .background(shown ? (j.offer ? HUDStyle.amber : accent) : (j.offer ? HUDStyle.amber.opacity(j.cleared ? 0.1 : 0.28) : .white.opacity(j.cleared ? 0.06 : 0.14)))
                         .clipShape(CutCorner(cut: 4))
                         .contentShape(Rectangle())
                         .onTapGesture { controller.browseJob(to: j.id) }
@@ -658,8 +661,8 @@ struct HUDView: View {
                     }
                 }
             }
-            .onAppear { proxy.scrollTo(m.index, anchor: .center) }
-            .onChange(of: m.index) { _, i in withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(i, anchor: .center) } }
+            .onAppear { proxy.scrollTo(m.shownChip, anchor: .center) }
+            .onChange(of: m.shownChip) { _, i in withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(i, anchor: .center) } }
         }
     }
 
