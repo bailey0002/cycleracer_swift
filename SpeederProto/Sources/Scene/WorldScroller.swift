@@ -4,7 +4,7 @@ import simd
 
 // MARK: - Obstacles
 
-enum ObstacleKind { case block, gate, drone, beam, pillar, hatch }
+enum ObstacleKind { case block, gate, drone, beam, pillar, hatch, barricade }
 
 /// A pooled obstacle living inside a segment. Collision is a simple AABB test in
 /// world space performed by the controller.
@@ -51,6 +51,9 @@ final class RoadSegment {
     let gatewayGroup = Entity()       // landmark dressing: twin pylons with a lit crossbar
     let crossroadGroup = Entity()     // dressing: a cross street, barricades and red arrow signals
     private var arrowPanels: [ModelEntity] = []
+    /// The crossroads' barricade across the closed half of the road past the crossing: a real obstacle,
+    /// so the junction forces the turn the arrows point to.
+    private var crossBarricade: Obstacle? = nil
     private var crossroadHidden: [Entity] = []   // buildings, poles and signs in the cross street's path
     /// Dark asphalt aprons either side of the road (the street reads wider, the buildings stand on black).
     private var aprons: [ModelEntity] = []
@@ -151,6 +154,13 @@ final class RoadSegment {
         self.block = block
         var rng = SeededRNG(seed: UInt64(index * 31 + variant * 7 + 11))
         layoutObstacles(rows: block.obstacleRows, style: block.style, rng: &rng)
+        if let b = crossBarricade {
+            let on = (block.style == .city || block.style == .branch) && block.dressing == .crossroad && materials.theme == .neonCity
+            b.active = on
+            b.entity.isEnabled = on
+            let dir: Float = block.curvature >= 0 ? 1 : -1
+            b.entity.position = [-dir * 4.55, 0, mid - 10]   // the half the road bends away from is closed
+        }
         apply(settings)
     }
 
@@ -958,6 +968,26 @@ final class RoadSegment {
                 cityNeon.append((lamp, 6))
             }
         }
+        // the barricade across the road past the crossing (positioned per block: the half away from the bend)
+        let closed = Entity()
+        let wall = ModelEntity(mesh: .generateBox(width: 9.2, height: 1.1, depth: 0.35), materials: [materials.chevron])
+        wall.position = [0, 0.55, 0]
+        closed.addChild(wall)
+        let top = ModelEntity(mesh: .generateBox(size: [9.2, 0.08, 0.4]), materials: [materials.neon(Neon.red, intensity: 4)])
+        top.position = [0, 1.14, 0]
+        closed.addChild(top)
+        cityNeon.append((top, 4))
+        for dx in [-4.2, 0, 4.2] as [Float] {
+            let lamp = ModelEntity(mesh: .generateBox(size: [0.3, 0.3, 0.3]), materials: [materials.neon(Neon.red, intensity: 6)])
+            lamp.position = [dx, 1.4, 0]
+            closed.addChild(lamp)
+            cityNeon.append((lamp, 6))
+        }
+        closed.isEnabled = false
+        crossroadGroup.addChild(closed)
+        let ob = Obstacle(entity: closed, kind: .barricade, halfWidth: 4.6, halfLength: 0.4, halfHeight: 0.6, centerY: 0.6)
+        obstacles.append(ob)
+        crossBarricade = ob
         // the signal gantry before the crossing
         let gz = z + 9
         for side in [-1, 1] as [Float] {

@@ -440,3 +440,10 @@ Not changed: the driveable width (18 m; widening it means the barriers, studs, l
 fork's ±11.5 m rows all move together, a pass of its own), the Grid's default (cyan; the rival mapping
 is the way in). On the phone: pick the Grid accent by eye (the dev panel row rebuilds), judge the showers'
 timing and the heavy mode's visibility in chapter 3, and the crossroads at speed.
+
+Follow-up (same day): the crossroads now forces the turn. A chevron barricade with a red rail and three
+hazard lamps closes the half of the road the bend turns away from, 10 m past the crossing
+(`RoadSegment.crossBarricade`, an `Obstacle` of kind `.barricade`, active on crossroad blocks only). Hitting
+it costs a hit like any obstacle but the barricade stays up (`GameController`: only non-barricade obstacles
+are hidden on contact). The app icon is now Mark's GRDRNNR: QUANTIS art (`AppIcon.appiconset`, all sizes
+from the 1080 px source). `p12/junction/frame-5.6` shows the demo bike taking the hit on the closed half.

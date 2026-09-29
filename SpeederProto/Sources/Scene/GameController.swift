@@ -742,7 +742,7 @@ final class GameController: ObservableObject {
                 if abs(p.x - speeder.x) < o.halfWidth + 0.95 && abs(p.z) < o.halfLength + 1.6
                     && abs(p.y + o.centerY - speeder.altitude) < o.halfHeight + speeder.halfHeight {
                     o.active = false
-                    o.entity.isEnabled = false
+                    if o.kind != .barricade { o.entity.isEnabled = false }   // a barricade stays; the run just took the hit
                     hits += 1
                     invulnerable = 1.0
                     flash = 1.0
