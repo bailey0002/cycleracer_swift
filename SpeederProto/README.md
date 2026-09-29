@@ -590,6 +590,16 @@ takes the rival's), the rain falls (it climbed), rain comes in showers and close
 back, and bends open onto **crossroads**: a cross street through the towers, chevron barricades, and a red
 arrow gantry pointing the way (`docs/polish-log.md`, "Street polish").
 
+## The hoverboard (alternative vehicle, 29 Sep 2026, test build)
+
+SETTINGS > VEHICLE: SPEEDER / HOVERBOARD (or `SPEEDER_VEHICLE=board`) swaps the speeder for KERB's
+skateboard with a Character Creator rider standing on it (`Resources/Board.usdz`, `Resources/Rider.usdz`,
+copied from `../kerb_skate_game`). Same steering, altitude, conduit, collisions and effects; the wheels are
+hidden and the trucks glow as hover pods; the rider is posed procedurally every frame by
+`Scene/RiderRig.swift` (surf stance, deeper crouch with speed and boost, leans into turns and down the nose).
+The speeder path is unchanged. `SPEEDER_CAMERA=side` is the pose-check camera. Details and captures:
+`docs/polish-log.md` "The hoverboard", `Captures/polish/p13/`.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

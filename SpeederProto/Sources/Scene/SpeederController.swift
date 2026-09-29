@@ -3,11 +3,26 @@ import RealityKit
 import Metal
 import simd
 
+/// Which vehicle the player rides. `SPEEDER_VEHICLE=board` swaps the speeder for the hoverboard
+/// (KERB's board + a Character Creator rider, `RiderRig`); everything else in the game is unchanged.
+enum VehicleKind: String {
+    case speeder, board
+    static var current: VehicleKind {
+        if let k = VehicleKind(rawValue: ProcessInfo.processInfo.environment["SPEEDER_VEHICLE"] ?? "") { return k }
+        return UserDefaults.standard.integer(forKey: "prefs.vehicle") == 1 ? .board : .speeder
+    }
+}
+
 /// Gameplay root for the vehicle. The imported model sits in a holder that fixes
 /// orientation and scale; only `root` is animated (brief §3).
 @MainActor
 final class SpeederController {
     let root = Entity()
+    let kind: VehicleKind
+    /// The hoverboard's rider (nil for the speeder).
+    private(set) var rider: RiderRig?
+    /// Extra chase-camera height and distance for a tall vehicle.
+    var cameraLift: SIMD2<Float> = .zero
     let engineLight = PointLight()
     let underLight = PointLight()
     private let holder = Entity()
@@ -30,21 +45,29 @@ final class SpeederController {
     private(set) var altitude: Float = 1.05
     private var vy: Float = 0
     private(set) var bank: Float = 0
-    let halfHeight: Float = 0.55
+    private(set) var halfHeight: Float = 0.55
     /// When set, movement is constrained to a cylinder (centre height, radius).
     var tube: (centerY: Float, radius: Float)? = nil
     let restHeight: Float = 1.05
     let scale: Float = 2.0
 
-    static func load(materials: SceneMaterials) async throws -> SpeederController {
-        guard let url = Bundle.main.url(forResource: "Speeder", withExtension: "usdz") else {
-            throw NSError(domain: "Speeder", code: 1, userInfo: [NSLocalizedDescriptionKey: "Speeder.usdz missing from bundle"])
+    static func load(materials: SceneMaterials, kind: VehicleKind = .current) async throws -> SpeederController {
+        func entity(_ name: String) async throws -> Entity {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "usdz") else {
+                throw NSError(domain: "Speeder", code: 1, userInfo: [NSLocalizedDescriptionKey: "\(name).usdz missing from bundle"])
+            }
+            return try await Entity(contentsOf: url)
         }
-        let model = try await Entity(contentsOf: url)
-        return SpeederController(model: model, materials: materials)
+        switch kind {
+        case .speeder:
+            return SpeederController(model: try await entity("Speeder"), materials: materials)
+        case .board:
+            return SpeederController(board: try await entity("Board"), rider: try await entity("Rider"), materials: materials)
+        }
     }
 
     init(model: Entity, materials: SceneMaterials) {
+        kind = .speeder
         root.name = "SpeederRoot"
         model.name = "ImportedSpeeder"
         let bounds = model.visualBounds(relativeTo: nil)
@@ -113,6 +136,128 @@ final class SpeederController {
         let t = Entity()
         t.components.set(emitter)
         t.position = [0, 0.05, rearZ * 0.95]
+        root.addChild(t)
+        trail = t
+    }
+
+    /// The hoverboard: KERB's skateboard (nose toward -Z, deck top at the holder's y = 0) with the rider
+    /// standing on it, edge light strips, a tail thruster and a tight hover pool. The deck floats
+    /// `deckDrop` below the gameplay root so the rider's head stays inside the road's clearance.
+    init(board: Entity, rider riderModel: Entity, materials: SceneMaterials) {
+        kind = .board
+        root.name = "SpeederRoot"
+        board.name = "ImportedBoard"
+        let deckDrop: Float = 0.35
+        let boardLength: Float = 1.7
+        let bounds = board.visualBounds(relativeTo: nil)
+        let ext = bounds.extents
+        if ext.x > ext.z { board.orientation = simd_quatf(angle: .pi / 2, axis: [0, 1, 0]) }
+        let fit = boardLength / max(0.01, max(ext.x, ext.z))
+        board.scale = SIMD3<Float>(repeating: fit)
+        // KERB's board is one mesh with material subsets (steel, aluminium, bearing_shield, bushing, maple_ply,
+        // griptape, deck_graphic, riser, urethane): a hoverboard has no wheels, so the urethane and bearing
+        // parts go invisible and the aluminium trucks become the glowing hover pods.
+        func walk(_ e: Entity) {
+            if let m = e as? ModelEntity, var model = m.model, model.materials.count >= 9 {
+                var clear = UnlitMaterial(color: .black)
+                clear.blending = .transparent(opacity: .init(floatLiteral: 0))
+                var pod = PhysicallyBasedMaterial()
+                pod.baseColor = .init(tint: .init(red: 0.1, green: 0.2, blue: 0.25, alpha: 1))
+                pod.emissiveColor = .init(color: .init(red: 0.2, green: 1.0, blue: 1.0, alpha: 1))
+                pod.emissiveIntensity = 3
+                pod.roughness = 0.4
+                model.materials[2] = clear
+                model.materials[8] = clear
+                model.materials[1] = pod
+                m.model = model
+                print("Board: \(model.materials.count) material slots, wheels hidden")
+            }
+            for c in e.children { walk(c) }
+        }
+        walk(board)
+        let deck = Entity(); deck.name = "Deck"
+        deck.addChild(board)
+        let b2 = deck.visualBounds(relativeTo: deck)
+        board.position = [-b2.center.x, -b2.max.y, -b2.center.z]         // deck top at y = 0, centred
+        let deckWidth = b2.extents.x, deckThickness = b2.extents.y
+        holder.addChild(deck)
+        holder.position = [0, -deckDrop, 0]
+        root.addChild(holder)
+        root.position = [0, restHeight, 0]
+        halfHeight = 0.9
+        cameraLift = [0.7, 1.4]
+        rearZ = boardLength * 0.5
+
+        if let rig = RiderRig(entity: riderModel) {
+            let target: Float = 1.75
+            if rig.height > 0.5 { rig.root.scale = SIMD3<Float>(repeating: target / rig.height) }
+            deck.addChild(rig.root)
+            rider = rig
+            rig.pose(bank: 0, speedNorm: 0, boost: 0, climb: 0, time: 0, dt: 1)
+            rig.apply(dt: 1, rate: 1000)
+        } else {
+            print("Board: rider rig missing, riding empty")
+        }
+        print("Board: extents \(ext) fit \(fit) deck \(deckWidth) x \(deckThickness) rider \(rider?.height ?? 0)")
+
+        // edge light strips along both rails, a nose tip and the tail thruster
+        let strip: Float = 0.10
+        for sx: Float in [-1, 1] {
+            let q = ModelEntity(mesh: .generatePlane(width: strip, depth: boardLength * 0.9), materials: [materials.glow(Neon.cyan, opacity: 0.9)])
+            q.position = [sx * (deckWidth * 0.5 - 0.01), -deckDrop - deckThickness * 0.5, 0]
+            q.orientation = simd_quatf(angle: 0.02, axis: [0, 0, 1])
+            root.addChild(q); glows.append(q)
+        }
+        for (offset, color, size, alpha) in [
+            (SIMD3<Float>(0, -deckDrop - 0.05, rearZ * 1.02), Neon.cyan, Float(0.55), Float(0.95)),      // tail thruster core
+            (SIMD3<Float>(0, -deckDrop - 0.05, rearZ * 1.08), Neon.magenta, Float(1.3), Float(0.28)),    // halo
+            (SIMD3<Float>(0, -deckDrop - 0.16, -rearZ * 0.55), Neon.cyan, Float(0.35), Float(0.6)),     // front hover pod
+            (SIMD3<Float>(0, -deckDrop - 0.16, rearZ * 0.55), Neon.cyan, Float(0.35), Float(0.6)),      // rear hover pod
+        ] {
+            let q = ModelEntity(mesh: .generatePlane(width: size, height: size), materials: [materials.glow(color, opacity: alpha)])
+            q.position = offset
+            root.addChild(q)
+            glows.append(q)
+        }
+        let pool = ModelEntity(mesh: .generatePlane(width: 1.6, depth: 2.6), materials: [materials.glow(Neon.magenta, opacity: 0.26)])
+        pool.position = [0, -restHeight + 0.04, 0]
+        root.addChild(pool)
+        underGlow = pool
+        let blob = ModelEntity(mesh: .generatePlane(width: 1.3, depth: 2.4), materials: [materials.glow(SIMD3<Float>(0, 0, 0), opacity: 0.6)])
+        blob.position = [0, -restHeight + 0.03, 0]
+        root.addChild(blob)
+        shadow = blob
+
+        engineLight.light.color = .rgb(Neon.cyan)
+        engineLight.light.intensity = 12000
+        engineLight.light.attenuationRadius = 7
+        engineLight.position = [0, -deckDrop + 0.1, rearZ * 1.1]
+        root.addChild(engineLight)
+        underLight.light.color = .rgb(Neon.magenta)
+        underLight.light.intensity = 12000
+        underLight.light.attenuationRadius = 6
+        underLight.position = [0, -deckDrop - 0.3, 0]
+        root.addChild(underLight)
+
+        var emitter = ParticleEmitterComponent()
+        emitter.emitterShape = .box
+        emitter.emitterShapeSize = [0.5, 0.12, 0.15]
+        emitter.birthLocation = .volume
+        emitter.emissionDirection = [0, 0, 1]
+        emitter.speed = 18
+        emitter.speedVariation = 5
+        emitter.mainEmitter.birthRate = 120
+        emitter.mainEmitter.lifeSpan = 0.2
+        emitter.mainEmitter.lifeSpanVariation = 0.08
+        emitter.mainEmitter.size = 0.07
+        emitter.mainEmitter.sizeVariation = 0.04
+        emitter.mainEmitter.stretchFactor = 5
+        emitter.mainEmitter.blendMode = .additive
+        emitter.mainEmitter.opacityCurve = .quickFadeInOut
+        emitter.mainEmitter.color = .evolving(start: .single(.rgb(Neon.cyan, 0.9)), end: .single(.rgb(Neon.magenta, 0.0)))
+        let t = Entity()
+        t.components.set(emitter)
+        t.position = [0, -deckDrop - 0.04, rearZ * 0.98]
         root.addChild(t)
         trail = t
     }
@@ -221,6 +366,7 @@ final class SpeederController {
                          * simd_quatf(angle: bank, axis: [0, 0, 1])
 
         placeGround(height: altitude + hover + vibration, inverse: root.orientation.inverse, throttle: speedNorm + boost * 0.6, hidden: inTube)
+        rider?.pose(bank: bank, speedNorm: speedNorm, boost: boost, climb: vy, time: time, dt: dt)
         let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5 + boost * 0.55
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
         engineLight.light.intensity = 14000 + speedNorm * 18000 + boost * 14000
@@ -248,6 +394,7 @@ final class SpeederController {
                          * simd_quatf(angle: pitch, axis: [1, 0, 0])
                          * simd_quatf(angle: lean, axis: [0, 0, 1])
         placeGround(height: restHeight + hover + vibration + position.y, inverse: root.orientation.inverse, throttle: speedNorm, hidden: airborne)
+        rider?.pose(bank: lean, speedNorm: speedNorm, boost: 0, climb: 0, time: time, dt: 1 / 60)
         let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
         engineLight.light.intensity = 14000 + speedNorm * 18000

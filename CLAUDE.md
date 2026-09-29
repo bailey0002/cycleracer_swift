@@ -121,6 +121,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   `SPEEDER_RAIN=`; chapter 3 heavy + `post.rainFog`), asphalt aprons (`SPEEDER_APRON=0`), and the
   `.crossroad` dressing (`RoadSegment.buildCrossroad`, hidden set by bounds overlap, arrow materials swapped
   per block). The driveable road width is unchanged on purpose.
+- Hoverboard vehicle 29 Sep 2026 (test build, `docs/polish-log.md` "The hoverboard", `Captures/polish/p13/`):
+  SETTINGS > VEHICLE or `SPEEDER_VEHICLE=board` rides KERB's board (`Resources/Board.usdz`, wheels hidden by
+  material slot, trucks emissive) with a CC5 rider (`Resources/Rider.usdz`) posed by `Scene/RiderRig.swift`
+  (a port of KERB's `SkaterRig` joint deltas, no IK). `CameraRig.lift` raises the chase camera for it;
+  `SPEEDER_CAMERA=side|side-front` is the pose camera. The sibling `../kerb_skate_game` is readable from here
+  (its `Tools/convert_cc.py` turns CC5 FBX into riders). The speeder path is untouched.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

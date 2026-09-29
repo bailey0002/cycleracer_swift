@@ -186,6 +186,7 @@ final class GameController: ObservableObject {
     private let sideCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "side"
     /// SPEEDER_CAMERA=overview: a high camera behind the vehicle for corridor layout captures.
     private let corridorOverview = ProcessInfo.processInfo.environment["SPEEDER_CAMERA"] == "overview"
+    private let corridorSide = ["side", "side-front"].contains(ProcessInfo.processInfo.environment["SPEEDER_CAMERA"] ?? "")
     private var sweepSteps: [(Float, String, (inout FXSettings) -> Void)] = [
         (4.0, "all", { _ in }),
         (5.5, "source", { $0.postFX = false }),
@@ -354,6 +355,7 @@ final class GameController: ObservableObject {
             await stage(2, theme.displayName)
             worldAnchor.addChild(speeder.root)
             self.speeder = speeder
+            cameraRig?.lift = speeder.cameraLift
             player = missions.player
             if player.tintsBike { speeder.tint(player.liveryColor, materials: materials) }
             ArenaController.playerColor = player.liveryColor
@@ -805,6 +807,8 @@ final class GameController: ObservableObject {
         let camBank = speeder.smoothBank + (speeder.bank - speeder.smoothBank) * 0.4
         if corridorOverview {
             cameraRig.overviewCorridor(speederX: speeder.x)
+        } else if corridorSide {
+            cameraRig.sideCorridor(speederX: speeder.x, speederY: speeder.altitude, front: ProcessInfo.processInfo.environment["SPEEDER_CAMERA"] == "side-front")
         } else {
             cameraRig.update(dt: dt, time: time, speederX: speeder.x, speederY: speeder.altitude, bank: camBank, speedNorm: speedNorm,
                              shake: settings.cameraShake, curveAhead: curveAhead, extraShake: shakeBurst, inTube: world.tubeBlend,

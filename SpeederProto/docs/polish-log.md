@@ -447,3 +447,45 @@ hazard lamps closes the half of the road the bend turns away from, 10 m past the
 it costs a hit like any obstacle but the barricade stays up (`GameController`: only non-barricade obstacles
 are hidden on contact). The app icon is now Mark's GRDRNNR: QUANTIS art (`AppIcon.appiconset`, all sizes
 from the 1080 px source). `p12/junction/frame-5.6` shows the demo bike taking the hit on the closed half.
+
+## The hoverboard: an alternative vehicle (29 Sep 2026)
+
+Mark's question: could the skater and board from `kerb_skate_game` (the sibling project under GamenCtr) ride
+this game as a flying board, same movement as the speeder, a rider with limited animation, glow on the board?
+Assessment: low to medium, because the vehicle already sits behind one class (`SpeederController`) and KERB
+ships RealityKit-ready USDZs. Built the same day as a **test build that leaves the speeder untouched**.
+
+- **Assets** copied from KERB: `Resources/Board.usdz` (the skateboard, 8.7k tri) and `Resources/Rider.usdz`
+  (`skater_dude1`, a Character Creator 5 export through KERB's `Tools/convert_cc.py`: 44 joints, no clips,
+  rest pose = arms hanging). Both stay in KERB's frame: Y up, forward -Z, 1 unit = 1 m.
+- **`VehicleKind`** (`Scene/SpeederController.swift`): `SPEEDER_VEHICLE=board` or the new SETTINGS row
+  **VEHICLE: SPEEDER / HOVERBOARD** (`PlayerPrefs.vehicle`, `prefs.vehicle`; the change rebuilds the world).
+  The speeder path is the original initializer unchanged; the board has its own `init(board:rider:materials:)`
+  and shares every hook (`update`, `poseArena`, `tint`, `setVisible`, dissolve, lights, trail).
+- **The board**: longest axis to Z, fitted to 1.7 m, deck top at the holder's origin, floating 0.35 m below the
+  gameplay root (the deck rides 0.7 m over the road; `halfHeight` 0.9 for the taller box). KERB's board is one
+  mesh with nine material subsets in file order, so the urethane wheels and bearing shields get a fully
+  transparent material and the aluminium trucks an emissive cyan PBR: they read as hover pods. Edge light
+  strips along both rails, a tail thruster core + halo, front / rear pod glows, a tight hover pool and
+  contact shadow, the same particle exhaust at the tail.
+- **`Scene/RiderRig.swift`**: a compact port of KERB's `SkaterRig` without the foot IK. Joint deltas are
+  world-space rotations in the character's rest frame composed through the rest hierarchy into local joint
+  transforms (`apply`), slerped toward the authored pose. The character axes come from the mesh (wide axis =
+  left-right, toe direction = forward) and are converted into skeleton space, so KERB's calibrated signs hold
+  (`+F` raises the left arm, `-L` swings a limb forward, `+U` turns toward the nose, `+L` on the spine leans
+  the chest). `pose(bank:speedNorm:boost:climb:time:dt:)` is the surf stance: feet apart along the deck,
+  knees 16 to 46 degrees (deeper with speed and boost, the hips drop by `legLength (1 - cos knee)`), hips and
+  spine opened toward the nose, head turned down the board, arms out, a spine dive with speed that backs off
+  when climbing, hips sliding into the turn and the spine countering part of the roll, an idle sway.
+- **Camera**: `CameraRig.lift` (height, distance) from `SpeederController.cameraLift` (0.7, 1.4 for the
+  board). `SPEEDER_CAMERA=side|side-front` adds a side elevation for pose checks.
+
+Captures in `Captures/polish/p13/`: `side2/frame-6` (the stance from the right, the rider leaning down the
+nose, pods glowing where the wheels were), `chase2/frame-12` (the tunnel), `front/frame-6` (the earlier
+pass, wheels still on), `speeder/frame-6` (the default vehicle, unchanged). The rider rides goofy from the
+chase camera (back to the right barrier); a `regular` flag is a one-line yaw if wanted.
+
+Not built / owed: a rider choice (dude2, girl1 convert the same way), a riding clip from iClone (the rig
+would play it through `AvatarActor`'s path), foot planting (the feet float a little at deep knees without
+KERB's IK), the rider in the light-cycle arena (the board rides there through `poseArena`, unverified),
+the phone feel (the taller camera on the 6.1-inch screen).

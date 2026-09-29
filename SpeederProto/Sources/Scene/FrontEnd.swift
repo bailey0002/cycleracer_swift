@@ -22,6 +22,7 @@ struct PlayerPrefs: Equatable {
     var haptics = true
     var quality = 0          // 0 high, 1 balanced, 2 battery
     var gridSteering = 0     // 0 smooth (analog), 1 snap 90
+    var vehicle = 0          // 0 speeder, 1 hoverboard (test build; `SPEEDER_VEHICLE=` overrides)
     /// The developer panel: five taps on the version line in SETTINGS (always on for the Mac).
     var devUnlocked = PlayerPrefs.devDefault
 
@@ -33,6 +34,7 @@ struct PlayerPrefs: Equatable {
     static let qualityNames = ["HIGH", "BALANCED", "BATTERY"]
     static let qualityDetail = ["FULL POST PASS", "NO MOTION BLUR OR LENS FX", "ALSO NO RAIN, REFLECTIONS, STOREFRONTS"]
     static let steeringNames = ["SMOOTH", "SNAP 90"]
+    static let vehicleNames = ["SPEEDER", "HOVERBOARD"]
 
     static func load(_ d: UserDefaults) -> PlayerPrefs {
         var p = PlayerPrefs()
@@ -41,12 +43,14 @@ struct PlayerPrefs: Equatable {
         if d.object(forKey: "prefs.haptics") != nil { p.haptics = d.bool(forKey: "prefs.haptics") }
         p.quality = max(0, min(2, d.integer(forKey: "prefs.quality")))
         p.gridSteering = max(0, min(1, d.integer(forKey: "prefs.gridSteering")))
+        p.vehicle = max(0, min(1, d.integer(forKey: "prefs.vehicle")))
         p.devUnlocked = devDefault || d.bool(forKey: "prefs.devUnlocked")
         return p
     }
     func save(_ d: UserDefaults) {
         d.set(music, forKey: "prefs.music"); d.set(effects, forKey: "prefs.effects"); d.set(haptics, forKey: "prefs.haptics")
         d.set(quality, forKey: "prefs.quality"); d.set(gridSteering, forKey: "prefs.gridSteering"); d.set(devUnlocked, forKey: "prefs.devUnlocked")
+        d.set(vehicle, forKey: "prefs.vehicle")
     }
 
     /// Graphics quality and Grid steering over the world's look (call after `Theme.adjust`).
@@ -169,6 +173,7 @@ extension GameController {
                 MenuRow(id: "haptics", label: "HAPTICS", kind: .toggle(prefs.haptics)),
                 MenuRow(id: "quality", label: "GRAPHICS", detail: PlayerPrefs.qualityDetail[prefs.quality], kind: .choice(PlayerPrefs.qualityNames, prefs.quality)),
                 MenuRow(id: "steering", label: "GRID STEERING", kind: .choice(PlayerPrefs.steeringNames, prefs.gridSteering)),
+                MenuRow(id: "vehicle", label: "VEHICLE", detail: "TEST BUILD  //  REBUILDS THE WORLD", kind: .choice(PlayerPrefs.vehicleNames, prefs.vehicle)),
                 MenuRow(id: "rider", label: "RIDER", detail: "\(player.callsign)  //  \(player.liveryName)"),
             ]
             if onTitle {
@@ -261,6 +266,7 @@ extension GameController {
         case "haptics": setValue(id, prefs.haptics ? 0 : 1)
         case "quality": setValue(id, ((prefs.quality + d) % 3 + 3) % 3)
         case "steering": setValue(id, ((prefs.gridSteering + d) % 2 + 2) % 2)
+        case "vehicle": setValue(id, ((prefs.vehicle + d) % 2 + 2) % 2)
         case "livery": setLivery(player.livery + d)
         default: break
         }
@@ -274,6 +280,7 @@ extension GameController {
         case "haptics": p.haptics = v != 0
         case "quality": p.quality = max(0, min(2, v))
         case "steering": p.gridSteering = max(0, min(1, v))
+        case "vehicle": p.vehicle = max(0, min(1, v))
         case "livery": setLivery(v); return
         default: return
         }
@@ -281,6 +288,7 @@ extension GameController {
         prefs = p
         prefs.save(.standard)
         applyPrefs()
+        if id == "vehicle" { requestRebuild() }       // the vehicle is loaded with the world
         // a preview at the new level: the tick for effects, the pad swells for music
         sound.play(.tick, volume: id == "effects" ? 0.8 : 0.45, pitch: 1.25)
         if id == "haptics" && p.haptics { gamepad.rumble(intensity: 0.6, sharpness: 0.5) }

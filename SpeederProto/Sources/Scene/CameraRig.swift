@@ -54,6 +54,8 @@ final class CameraRig {
 
     private var y: Float = 0
     private var roll: Float = 0
+    /// Extra (height, distance) for a tall vehicle (the hoverboard rider), set from the vehicle.
+    var lift: SIMD2<Float> = .zero
 
     /// `frameShift` slides the whole framing sideways (metres): the briefing uses -2.2 so the bike
     /// and the contact sit in the right two thirds, clear of the card; it eases out on launch.
@@ -65,9 +67,9 @@ final class CameraRig {
         y = damp(y, (speederY - 1.05) * (0.85 + 0.10 * inTube), 4.0, dt)
         roll = damp(roll, bank * Self.rollGain, Self.rollDamp, dt)
         let offset = shakeOffset(time: time, speedNorm: speedNorm, shake: shake, extra: extraShake)
-        let back = baseDistance - speedNorm * 0.8 + kickEnv * 0.45
-        var from = SIMD3<Float>(x, baseHeight + y + speedNorm * 0.25, back) + offset
-        var target = SIMD3<Float>(speederX * 0.55 + curveAhead * 0.35 + (x - speederX * (0.5 + 0.25 * inTube)) * 0.9, 1.0 + y * 0.9, -7)
+        let back = baseDistance - speedNorm * 0.8 + kickEnv * 0.45 + lift.y
+        var from = SIMD3<Float>(x, baseHeight + lift.x + y + speedNorm * 0.25, back) + offset
+        var target = SIMD3<Float>(speederX * 0.55 + curveAhead * 0.35 + (x - speederX * (0.5 + 0.25 * inTube)) * 0.9, 1.0 + lift.x * 0.6 + y * 0.9, -7)
         var up = simd_quatf(angle: roll, axis: [0, 0, 1]).act([0, 1, 0])
         var lens = 52 + speedNorm * Self.speedFov + kickEnv * 9
         if title > 0.001 {
@@ -94,6 +96,13 @@ final class CameraRig {
     func overviewCorridor(speederX: Float) {
         root.look(at: [speederX * 0.3, 0, -40], from: [speederX * 0.3, 34, 30], upVector: [0, 1, 0], relativeTo: nil)
         camera.camera.fieldOfViewInDegrees = 60
+    }
+
+    /// Capture aid: side elevation of the vehicle (pose and board height checks).
+    func sideCorridor(speederX: Float, speederY: Float, front: Bool) {
+        let from = SIMD3<Float>(speederX + 4.5, speederY + 0.6, front ? -1.5 : 1.5)
+        root.look(at: [speederX, speederY + 0.3, 0], from: from, upVector: [0, 1, 0], relativeTo: nil)
+        camera.camera.fieldOfViewInDegrees = 45
     }
 
     // MARK: - Arena (spring follow)
