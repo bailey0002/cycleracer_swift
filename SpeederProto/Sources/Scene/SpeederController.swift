@@ -149,6 +149,7 @@ final class SpeederController {
         board.name = "ImportedBoard"
         let deckDrop: Float = 0.35
         let boardLength: Float = 1.7
+        let big: Float = 1.35                 // the board and rider are scaled up so they read on a phone
         let bounds = board.visualBounds(relativeTo: nil)
         let ext = bounds.extents
         if ext.x > ext.z { board.orientation = simd_quatf(angle: .pi / 2, axis: [0, 1, 0]) }
@@ -179,14 +180,15 @@ final class SpeederController {
         deck.addChild(board)
         let b2 = deck.visualBounds(relativeTo: deck)
         board.position = [-b2.center.x, -b2.max.y, -b2.center.z]         // deck top at y = 0, centred
-        let deckWidth = b2.extents.x, deckThickness = b2.extents.y
         holder.addChild(deck)
         holder.position = [0, -deckDrop, 0]
+        holder.scale = SIMD3<Float>(repeating: big)
         root.addChild(holder)
         root.position = [0, restHeight, 0]
-        halfHeight = 0.9
-        cameraLift = [0.7, 1.4]
-        rearZ = boardLength * 0.5
+        halfHeight = 1.1
+        cameraLift = [0.9, 1.9]
+        rearZ = boardLength * 0.5 * big
+        let deckWidth = b2.extents.x * big, deckThickness = b2.extents.y * big
 
         if let rig = RiderRig(entity: riderModel) {
             let target: Float = 1.75
@@ -203,7 +205,7 @@ final class SpeederController {
         // edge light strips along both rails, a nose tip and the tail thruster
         let strip: Float = 0.10
         for sx: Float in [-1, 1] {
-            let q = ModelEntity(mesh: .generatePlane(width: strip, depth: boardLength * 0.9), materials: [materials.glow(Neon.cyan, opacity: 0.9)])
+            let q = ModelEntity(mesh: .generatePlane(width: strip, depth: boardLength * big * 0.9), materials: [materials.glow(Neon.cyan, opacity: 0.9)])
             q.position = [sx * (deckWidth * 0.5 - 0.01), -deckDrop - deckThickness * 0.5, 0]
             q.orientation = simd_quatf(angle: 0.02, axis: [0, 0, 1])
             root.addChild(q); glows.append(q)
@@ -260,6 +262,35 @@ final class SpeederController {
         t.position = [0, -deckDrop - 0.04, rearZ * 0.98]
         root.addChild(t)
         trail = t
+    }
+
+    // MARK: - Tricks (hoverboard)
+
+    enum Trick { case spin, roll }
+    private var trick: Trick? = nil
+    private var trickTime: Float = 0
+    private let trickDuration: Float = 0.85
+    /// 0 ... 1 through the current trick (0 when none).
+    var trickProgress: Float { trick == nil ? 0 : min(1, trickTime / trickDuration) }
+
+    /// Start a 360 spin or a barrel roll; nil when one is already running or the vehicle is not a board.
+    func startTrick(_ t: Trick) -> String? {
+        guard kind == .board, trick == nil else { return nil }
+        trick = t; trickTime = 0
+        return t == .spin ? "360" : "BARREL ROLL"
+    }
+
+    /// Extra orientation and hop from the running trick; advances it by `dt`.
+    private func trickTransform(dt: Float) -> (rotation: simd_quatf, hop: Float, air: Float) {
+        guard let t = trick else { return (simd_quatf(angle: 0, axis: [0, 1, 0]), 0, 0) }
+        trickTime += dt
+        let p = min(1, trickTime / trickDuration)
+        let e = p * p * (3 - 2 * p)                      // smoothstep: launches and lands soft
+        let angle = e * 2 * .pi
+        let air = sin(p * .pi)
+        if p >= 1 { trick = nil }
+        let rot = t == .spin ? simd_quatf(angle: angle, axis: [0, 1, 0]) : simd_quatf(angle: angle, axis: [0, 0, 1])
+        return (rot, air * (t == .spin ? 0.9 : 1.2), air)
     }
 
     func setParticles(_ on: Bool) { trail?.isEnabled = on }
@@ -346,7 +377,8 @@ final class SpeederController {
         let idle = 1 - speedNorm
         let hover = sin(time * (2.2 + speedNorm * 1.6)) * (0.02 + 0.03 * idle) + sin(time * 4.5) * 0.015
         let vibration = sin(time * 23) * 0.012 * speedNorm
-        root.position = [x, altitude + hover + vibration, 0]
+        let trickFX = trickTransform(dt: dt)
+        root.position = [x, altitude + hover + vibration + trickFX.hop, 0]
 
         // the knock starts from zero and rolls the vehicle the way it is pushed, so it never fights the sideways motion
         let jolt = recoilTimer > 0 ? sin((0.45 - recoilTimer) * 40) * recoilTimer * 0.35 : 0
@@ -364,9 +396,10 @@ final class SpeederController {
         root.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0])
                          * simd_quatf(angle: pitch, axis: [1, 0, 0])
                          * simd_quatf(angle: bank, axis: [0, 0, 1])
+                         * trickFX.rotation
 
-        placeGround(height: altitude + hover + vibration, inverse: root.orientation.inverse, throttle: speedNorm + boost * 0.6, hidden: inTube)
-        rider?.pose(bank: bank, speedNorm: speedNorm, boost: boost, climb: vy, time: time, dt: dt)
+        placeGround(height: altitude + hover + vibration + trickFX.hop, inverse: root.orientation.inverse, throttle: speedNorm + boost * 0.6, hidden: inTube)
+        rider?.pose(bank: bank, speedNorm: speedNorm, boost: boost, climb: vy, time: time, dt: dt, tuck: trickFX.air)
         let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5 + boost * 0.55
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
         engineLight.light.intensity = 14000 + speedNorm * 18000 + boost * 14000

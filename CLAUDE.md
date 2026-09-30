@@ -125,7 +125,8 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   SETTINGS > VEHICLE or `SPEEDER_VEHICLE=board` rides KERB's board (`Resources/Board.usdz`, wheels hidden by
   material slot, trucks emissive) with a CC5 rider (`Resources/Rider.usdz`) posed by `Scene/RiderRig.swift`
   (a port of KERB's `SkaterRig` joint deltas, no IK). `CameraRig.lift` raises the chase camera for it;
-  `SPEEDER_CAMERA=side|side-front` is the pose camera. The sibling `../kerb_skate_game` is readable from here
+  `SPEEDER_CAMERA=side|side-front` is the pose camera. 30 Sep: 1.35x scale, tricks (pad X 360 / Y barrel roll,
+  `startTrick`, `SPEEDER_TRICK_AT=`), fire on L1 with `RiderRig.shoot()`; X no longer fires, Y cruise is off on the board. The sibling `../kerb_skate_game` is readable from here
   (its `Tools/convert_cc.py` turns CC5 FBX into riders). The speeder path is untouched.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).

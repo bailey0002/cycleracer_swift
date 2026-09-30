@@ -489,3 +489,17 @@ Not built / owed: a rider choice (dude2, girl1 convert the same way), a riding c
 would play it through `AvatarActor`'s path), foot planting (the feet float a little at deep knees without
 KERB's IK), the rider in the light-cycle arena (the board rides there through `poseArena`, unverified),
 the phone feel (the taller camera on the 6.1-inch screen).
+
+Follow-up (30 Sep 2026, Mark's two refinements after the first phone look): the board and rider are scaled
+1.35x (`big` in the board initializer: deck 2.3 m, rider 2.4 m tall; `halfHeight` 1.1, camera lift 0.9 /
+1.9) so they read on the phone. **Tricks**: pad X = 360 spin, pad Y = barrel roll (keyboard Z / C);
+`SpeederController.startTrick` runs one at a time over 0.85 s with a smoothstep angle (soft launch and
+landing), a hop of 0.9 / 1.2 m, the rider tucked (knees to full crouch, arms pulled in and down to the deck,
+`pose(... tuck:)`), a centre stamp "360" / "BARREL ROLL", the section chime and a rumble. The trick rotation
+is composed after the bank so the camera does not roll with it. Cruise speed on Y is disabled while the
+board rides (Y is the roll); buying on the briefing still uses Y (parked). **Fire on the left bumper** (L1
+joins A / L2 / X was moved off fire to the spin): `RiderRig.shoot()` snaps the nose-side arm straight down
+the board for 0.38 s and turns the head after it (`aim` in `pose`). `SPEEDER_TRICK_AT=4:spin,7:roll` forces
+tricks for captures. Frames: `p13/tricks/frame-4.4` (mid-360 from the side, the post pass's reprojection
+blur ghosting the spin), `p13/chase3/frame-6.4` (upside down mid-roll in the chase view), `p13/chase3/frame-9`
+(the 1.35x rider), `p13/fire/frame-3.3` and `frame-4.6` (the shot pose).

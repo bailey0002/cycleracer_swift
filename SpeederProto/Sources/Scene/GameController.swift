@@ -49,6 +49,7 @@ final class GameController: ObservableObject {
     @Published var ack = ActionAck()
     private var ackTimers = (fire: Float(0), jump: Float(0), pickup: Float(0), snap: Float(0), beacon: Float(0), hit: Float(0), stamp: Float(0), boost: Float(0))
     private var stampText = ""
+    private var trickPrev = (spin: false, roll: false)
     /// Comms: the contact's line in the ear, at most three per job (launch, one event, the last stretch).
     private var commsTimer: Float = 0
     private var commsSpeaker = "", commsText = ""
@@ -589,7 +590,7 @@ final class GameController: ObservableObject {
         // (locked while the job loop is on: the timers and the pursuer are tuned to the job's cruise,
         // and Y / ] is the garage's buy button on the briefing)
         let cruiseLocked = missionActive
-        if input.speedUp && !cruiseLocked { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
+        if input.speedUp && !cruiseLocked && speeder.kind == .speeder { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
         if input.speedDown && !cruiseLocked { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
         // missions: A / F / tap accepts a briefing or a result; the vehicle only moves during a live job
         if missionActive {
@@ -761,10 +762,26 @@ final class GameController: ObservableObject {
                 }
             }
         }
+        // hoverboard tricks (edge-triggered; one at a time)
+        if speeder.kind == .board && !parked {
+            if input.trickSpin && !trickPrev.spin, let name = speeder.startTrick(.spin) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6) }
+            if input.trickRoll && !trickPrev.roll, let name = speeder.startTrick(.roll) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6) }
+        }
+        trickPrev = (input.trickSpin, input.trickRoll)
+        // capture hook: SPEEDER_TRICK_AT=<seconds>:<spin|roll>[,<seconds>:<kind>...]
+        if speeder.kind == .board, let spec = ProcessInfo.processInfo.environment["SPEEDER_TRICK_AT"] {
+            for item in spec.split(separator: ",") {
+                let parts = item.split(separator: ":")
+                if parts.count == 2, let at = Float(parts[0]), time - simDt < at, time >= at {
+                    _ = speeder.startTrick(parts[1] == "roll" ? .roll : .spin)
+                }
+            }
+        }
         // weapons
         if let weapons {
             if input.firing && settings.obstacles && !parked && (!missionActive || missions.current.weaponsAllowed) {
                 if weapons.fire(from: speeder.root.position, orientation: speeder.root.orientation) {
+                    speeder.rider?.shoot()
                     shakeBurst = max(shakeBurst, 0.08)
                     ackTimers.fire = 0.15
                     gamepad.rumble(intensity: 0.25, sharpness: 1.0)

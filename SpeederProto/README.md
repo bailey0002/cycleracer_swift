@@ -597,7 +597,9 @@ skateboard with a Character Creator rider standing on it (`Resources/Board.usdz`
 copied from `../kerb_skate_game`). Same steering, altitude, conduit, collisions and effects; the wheels are
 hidden and the trucks glow as hover pods; the rider is posed procedurally every frame by
 `Scene/RiderRig.swift` (surf stance, deeper crouch with speed and boost, leans into turns and down the nose).
-The speeder path is unchanged. `SPEEDER_CAMERA=side` is the pose-check camera. Details and captures:
+Board and rider are 1.35x for the phone. Tricks: pad X = 360, pad Y = barrel roll (keyboard Z / C); the
+rider tucks and a stamp names the trick. Fire is also on L1 with a shooting arm. `SPEEDER_TRICK_AT=4:spin,7:roll`
+forces tricks for captures. The speeder path is unchanged. `SPEEDER_CAMERA=side` is the pose-check camera. Details and captures:
 `docs/polish-log.md` "The hoverboard", `Captures/polish/p13/`.
 
 ## Next steps (brief milestones 7–8)

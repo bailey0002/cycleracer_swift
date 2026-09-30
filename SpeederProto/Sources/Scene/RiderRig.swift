@@ -155,9 +155,15 @@ final class RiderRig {
     /// Surf stance on a fast board: feet apart along the deck, knees bent (deeper at speed and on boost),
     /// chest toward board-right with the head turned down the board, arms out for balance. `bank` is the
     /// board's roll (radians, positive = left side down), `climb` the vertical speed (m/s).
-    func pose(bank: Float, speedNorm: Float, boost: Float, climb: Float, time: Float, dt: Float) {
+    private var shootTimer: Float = 0
+    /// The phaser shot: the nose-side arm snaps out down the board for a third of a second.
+    func shoot() { shootTimer = 0.38 }
+
+    func pose(bank: Float, speedNorm: Float, boost: Float, climb: Float, time: Float, dt: Float, tuck: Float = 0) {
         beginPose()
-        let crouch = min(1, 0.25 + speedNorm * 0.35 + boost * 0.45)
+        shootTimer = max(0, shootTimer - dt)
+        let aim = shootTimer > 0 ? min(1, shootTimer / 0.1) * min(1, (0.38 - shootTimer) / 0.06 + 0.2) : 0
+        let crouch = min(1, 0.25 + speedNorm * 0.35 + boost * 0.45 + tuck * 0.8)
         let knee = 16 + 30 * crouch
         let sway = sin(time * 1.3) * 1.5 * (1 - speedNorm) + sin(time * 5.5) * 0.6 * speedNorm
         for side in ["Left", "Right"] {
@@ -183,13 +189,17 @@ final class RiderRig {
         rotate("Neck", axis: U, degrees: 24)
         rotate("Head", axis: U, degrees: 30)
         rotate("Head", axis: F, degrees: -dive * 0.5)                        // eyes level again
-        let out = 12 + 26 * crouch, fwd = 8 + 12 * crouch, elbow = 22 + 20 * crouch
-        rotate("LeftArm", axis: F, degrees: out + leanDeg * 0.4)
+        // arms: out for balance; pulled in and down to grab the deck in a trick; the nose-side (left) arm
+        // straight out down the board for the shot
+        var out = 12 + 26 * crouch, fwd = 8 + 12 * crouch, elbow = 22 + 20 * crouch
+        out -= 30 * tuck; fwd += 30 * tuck; elbow -= 10 * tuck
+        rotate("LeftArm", axis: F, degrees: (out + leanDeg * 0.4) * (1 - aim) + 88 * aim)
         rotate("RightArm", axis: F, degrees: -(out - leanDeg * 0.4))
-        rotate("LeftArm", axis: L, degrees: -fwd)
+        rotate("LeftArm", axis: L, degrees: -fwd * (1 - aim) - 6 * aim)
         rotate("RightArm", axis: L, degrees: -fwd)
-        rotate("LeftForeArm", axis: L, degrees: -elbow)
+        rotate("LeftForeArm", axis: L, degrees: -elbow * (1 - aim))
         rotate("RightForeArm", axis: L, degrees: -elbow)
-        apply(dt: dt)
+        if aim > 0 { rotate("Head", axis: U, degrees: 12 * aim); rotate("Spine1", axis: U, degrees: 10 * aim) }
+        apply(dt: dt, rate: aim > 0 || tuck > 0 ? 22 : 12)
     }
 }
