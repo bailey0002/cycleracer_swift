@@ -128,7 +128,7 @@ extension GameController {
         indexStack.append(menuIndex)
         screens.append(s)
         menuIndex = 0
-        callsignEdit = nil; resetArmed = false
+        callsignEdit = nil; resetArmed = false; saveArmed = false
         sound.play(.tick, volume: 0.5, pitch: 1.15)
     }
     func pop() {
@@ -162,6 +162,7 @@ extension GameController {
         case .title:
             return [
                 MenuRow(id: "continue", label: missions.hasProgress ? "CONTINUE" : "START", detail: "\(m.code)  //  \(m.title)"),
+            ] + (SaveSlot.exists(.standard) && !missions.hasProgress ? [MenuRow(id: "load", label: "CONTINUE SAVE", detail: "SAVED \(SaveSlot.savedText(.standard))")] : []) + [
                 MenuRow(id: "riders", label: "RIDERS", detail: "\(rider.name)  //  \(rider.tag)"),
                 MenuRow(id: "freeplay", label: "FREE PLAY", detail: "ANY WORLD, NO JOB"),
             ] + messagesRow + [
@@ -185,6 +186,7 @@ extension GameController {
                 MenuRow(id: "vehicle", label: "VEHICLE", detail: "TEST BUILD  //  REBUILDS THE WORLD", kind: .choice(PlayerPrefs.vehicleNames, prefs.vehicle)),
                 MenuRow(id: "rider", label: "CALLSIGN", detail: "\(player.callsign)  //  \(player.liveryName)"),
             ]
+            rows.append(MenuRow(id: "save", label: saveArmed ? "SAVED" : "SAVE GAME", detail: SaveSlot.exists(.standard) ? "LAST SAVE \(SaveSlot.savedText(.standard))" : "JOBS, CREDITS, GARAGE, RIDER"))
             if onTitle {
                 rows.append(MenuRow(id: "story", label: "STORY", detail: "GRIPTAP & CO  //  REPLAY THE OPENING"))
                 rows.append(MenuRow(id: "reset", label: resetArmed ? "PRESS AGAIN TO RESET" : "RESET PROGRESS", detail: "JOBS, CREDITS, GARAGE, RECORDS"))
@@ -212,6 +214,7 @@ extension GameController {
         case .paused:
             var rows = [
                 MenuRow(id: "resume", label: "RESUME"),
+                MenuRow(id: "save", label: saveArmed ? "SAVED" : "SAVE GAME", detail: SaveSlot.exists(.standard) ? "LAST SAVE \(SaveSlot.savedText(.standard))" : "JOBS, CREDITS, GARAGE, RIDER"),
             ] + (missionActive ? messagesRow : []) + [
                 MenuRow(id: "settings", label: "SETTINGS"),
                 MenuRow(id: "title", label: "QUIT TO TITLE", detail: missionActive && !missions.isParked ? "THE JOB STARTS OVER" : ""),
@@ -248,6 +251,19 @@ extension GameController {
             guard worldReady else { return }
             // first run: riders -> story -> callsign -> the first briefing (KERB's order: title, riders, story, world)
             if missions.isFirstRun || !storySeen { riderFirstRun = true; push(.riders); soundtrack.announce(["vo_choose_your_character"], priority: true) } else { startJobs() }
+        case "load":
+            guard worldReady, SaveSlot.load(.standard) else { return }
+            missions.reloadFromDefaults()
+            player = missions.player
+            mission = missions.snapshot()
+            sound.play(.accept)
+            if VehicleKind.current == .board { requestRebuild() }      // the saved rider rides
+            startJobs()
+        case "save":
+            SaveSlot.save(.standard)
+            saveArmed = true
+            sound.play(.accept, volume: 0.6)
+            gamepad.rumble(intensity: 0.3, sharpness: 0.6)
         case "riders": riderFirstRun = false; push(.riders); soundtrack.announce(["vo_choose_your_character"], priority: true)
         case "roster", "rideon":
             // A on the card or on NEXT / DONE confirms the rider (left / right choose)
@@ -469,6 +485,7 @@ extension GameController {
         settings = s
         requestRebuild()
         matchResult = nil
+        runCardUp = true                        // the run card explains the world before the road moves
         setRoot(.game)
         hintVisible = true; hintTimer = 0
         sound.play(.accept)

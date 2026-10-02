@@ -612,3 +612,32 @@ soundtrack; findings applied the same night, Mac build, 14 headless tests green,
   files too; outcome lines wait 0.5 s (1.2 s in the arena) so they do not talk over the synth cue, and
   `slam()` dips the track where the generative slam / cut used to; HURRY UP only when the distance is at risk;
   TIME OVER on a timeout; SOUNDTRACK off stops the decoders; VO / sfx carry the 0.8 master like the synth cues.
+
+## Rings, photons, fresh start, run cards, control legends (2 Oct 2026, evening)
+
+Mark's five items after the first full play. Captures in `Captures/polish/p16/`.
+- **Rings are red** (`BeaconLayer.ringColor`, the role colour; was the Grid's pale pickup violet, intensity 4):
+  intensity 7 core, a wider 6 m halo at 0.55, a breathing pulse on the live ring. A **missed ring goes
+  colourless**: grey low-emissive bands, the halo almost off, the floor pool gone, and it recedes with the road
+  (visible 90 m behind) instead of vanishing at the nose. A hit ring still disappears. `p16/rings-over/frame-8`
+  shows the first ring under the NEXUS gantry from the overview camera.
+- **The photon** (`WeaponSystem`): a hot white core in a cyan sheath, a 1.4 m head halo, a short additive trail and
+  a 60 ms muzzle flash light; same speed, interval and hit test. Kenney's CC0 Sci-Fi Sounds (fetched from
+  kenney.nl, licence in `Resources/Audio/LICENSE-kenney-scifi.txt`): `sfx_laser` (laserSmall_001) on each shot,
+  `sfx_blast` (explosionCrunch_000) on a kill, `sfx_ring` kept for a future ring chime. The synth fire cue is the
+  fallback when the clip is missing.
+- **Fresh start + manual save** (`Missions/SaveSlot.swift`): every launch clears the live progress keys (jobs,
+  credits, garage, ranks, flags, records, messages, callsign, livery, rider, story seen), so riders -> story ->
+  callsign play every time. **SAVE GAME** (pause menu and SETTINGS) snapshots the live progress into one slot;
+  **CONTINUE SAVE** on the title (shown when a save exists and nothing is in progress) loads it and goes to the
+  saved job's briefing. `SPEEDER_KEEP_PROGRESS=1` skips the clear; `SPEEDER_MISSION`, `SPEEDER_FLAGS` and the demo
+  skip it too (captures set progress themselves). The headless tests use their own suite and are unaffected.
+- **Run cards**: the briefing has an OBJECTIVES block (verbs per job kind: fly through the red rings, stay ahead of
+  the pursuer, derez the rival into a trail or a wall, destroy the targets, thread the obstacles, no weapons) and a
+  controls line for the vehicle. Free play gets its own card (`runCardUp`; world, the run, controls, RIDE) before
+  the road moves or the match starts; A / fire / tap dismisses it with READY, GO. `SPEEDER_RUNCARD=1` for captures.
+- **Control legends** checked against the bindings: pad A / L2 / L1 fire (X was fire before the tricks; it is the
+  360 now, Y the barrel roll), R2 / R1 boost, B cruise down (speeder only), Y cruise up (speeder only), Menu pause.
+  The in-game hint adds L1 FIRE and, on the board, X 360 and Y ROLL; the pips add a TRICK pip on the board
+  (`ActionAck.trick`); `ControllerGlyphs` carries the pad's own X and L1 art. The front-end legends (MOVE / SELECT /
+  BACK, the callsign editor's LETTER / MOVE / KEEP / CANCEL) matched already.

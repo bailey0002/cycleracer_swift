@@ -176,6 +176,7 @@ final class Soundtrack {
 
     /// A story / interface cue, right now.
     func cue(_ name: String, volume: Float = 1) { fire(name, volume: volume) }
+    func has(_ name: String) -> Bool { clips[name] != nil }
 
     private func fire(_ name: String, volume: Float = 1) {
         guard !muted, let p = clips[name] else { return }

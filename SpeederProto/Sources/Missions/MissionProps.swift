@@ -7,10 +7,15 @@ import simd
 @MainActor
 final class BeaconLayer {
     let root = Entity()
-    private struct Beacon { let entity: Entity; let distance: Float; let lane: Float; let y: Float; var passed = false }
+    private struct Beacon { let entity: Entity; let distance: Float; let lane: Float; let y: Float; var passed = false; var wasMissed = false }
     private var beacons: [Beacon] = []
     private(set) var hit = 0
     private(set) var missed = 0
+    /// Rings are red (the role colour: obstacles lime, rings red, road cyan); a missed ring goes colourless
+    /// and recedes with the road instead of piling up at the nose (2 Oct 2026).
+    static let ringColor = SIMD3<Float>(1.0, 0.22, 0.28)
+    private let missedMaterial: PhysicallyBasedMaterial
+    private let missedHalo: UnlitMaterial
 
     init(materials: SceneMaterials, count: Int, trackLength: Float, seed: UInt64) {
         root.name = "Beacons"
@@ -19,10 +24,14 @@ final class BeaconLayer {
         // culled by RealityKit and never draw; the ring is a short cylinder band and the flat quads
         // carry a tiny tilt so their bounds have volume.
         let bandMesh = try? Meshes.tube(radius: 1.7, length: 0.35, segments: 40, uRepeat: 1, vRepeat: 1)
-        var core = materials.neon(ArenaController.pickupColor, intensity: 4)
+        var core = materials.neon(Self.ringColor, intensity: 7)
         core.faceCulling = .none
-        var inner = materials.neon(SIMD3(1.0, 0.95, 1.0), intensity: 3)
+        var inner = materials.neon(SIMD3(1.0, 0.9, 0.9), intensity: 4)
         inner.faceCulling = .none
+        var grey = materials.neon(SIMD3(0.5, 0.5, 0.55), intensity: 0.6)
+        grey.faceCulling = .none
+        missedMaterial = grey
+        missedHalo = materials.glow(SIMD3(0.6, 0.6, 0.65), opacity: 0.08)
         let lanes: [Float] = [-5.7, -1.9, 1.9, 5.7]
         let first: Float = 350
         let spacing = max(200, (trackLength - 600 - first) / Float(max(1, count - 1)))
@@ -37,12 +46,12 @@ final class BeaconLayer {
                 band2.position.z = 0.09
                 e.addChild(band2)
             }
-            let halo = ModelEntity(mesh: .generatePlane(width: 5.0, height: 5.0), materials: [materials.glow(ArenaController.pickupColor, opacity: 0.4)])
+            let halo = ModelEntity(mesh: .generatePlane(width: 6.0, height: 6.0), materials: [materials.glow(Self.ringColor, opacity: 0.55)])
             halo.orientation = simd_quatf(angle: 0.03, axis: [1, 0, 0])
             e.addChild(halo)
             let y: Float = rng.chance(0.4) ? 3.7 : 1.05
             let lane = rng.pick(lanes)
-            let pool = ModelEntity(mesh: .generatePlane(width: 3.5, depth: 6), materials: [materials.reflection(ArenaController.pickupColor, opacity: 0.35)])
+            let pool = ModelEntity(mesh: .generatePlane(width: 3.5, depth: 6), materials: [materials.reflection(Self.ringColor, opacity: 0.4)])
             pool.position = [0, -y + 0.03, 1.5]
             pool.orientation = simd_quatf(angle: 0.01, axis: [1, 0, 0])
             e.addChild(pool)
@@ -65,20 +74,31 @@ final class BeaconLayer {
     /// Returns the number of rings flown through this frame.
     func update(distance: Float, roadX: (Float) -> Float, playerX: Float, playerY: Float, time: Float) -> Int {
         var hits = 0
-        for i in beacons.indices where !beacons[i].passed {
+        for i in beacons.indices {
             let z = -(beacons[i].distance - distance)
             let b = beacons[i]
-            if z > 6 || z < -700 { b.entity.isEnabled = false; continue }
+            if b.passed && !b.wasMissed { continue }                       // flown through: gone
+            if z > 90 || z < -700 { b.entity.isEnabled = false; continue }   // a missed ring recedes 90 m behind, then goes
             b.entity.isEnabled = true
             b.entity.position = [roadX(z) + b.lane, b.y, z]
             b.entity.children[0].orientation = simd_quatf(angle: time * 1.5, axis: [0, 0, 1])
-            if z >= 0 {
-                beacons[i].passed = true
-                if abs(b.entity.position.x - playerX) < 2.3 && abs(b.y - playerY) < 1.8 {
-                    hits += 1; hit += 1
-                    b.entity.isEnabled = false
-                } else {
-                    missed += 1
+            if !b.passed {
+                // a live ring breathes so it reads from far away
+                let pulse = 1 + 0.08 * sin(time * 5 + Float(i))
+                b.entity.children[2].scale = SIMD3<Float>(repeating: pulse)
+                if z >= 0 {
+                    beacons[i].passed = true
+                    if abs(b.entity.position.x - playerX) < 2.3 && abs(b.y - playerY) < 1.8 {
+                        hits += 1; hit += 1
+                        b.entity.isEnabled = false
+                    } else {
+                        missed += 1
+                        beacons[i].wasMissed = true
+                        // colourless: the ring drains to grey and the halo almost vanishes
+                        for c in b.entity.children.prefix(2) { if let m = c as? ModelEntity, var model = m.model { model.materials = [missedMaterial]; m.model = model } }
+                        if let h = b.entity.children[2] as? ModelEntity, var model = h.model { model.materials = [missedHalo]; h.model = model }
+                        if b.entity.children.count > 3, let pool = b.entity.children[3] as? ModelEntity { pool.isEnabled = false }
+                    }
                 }
             }
         }

@@ -78,6 +78,8 @@ final class GamepadInput {
             g.a = gp.buttonA.sfSymbolsName ?? g.a
             g.b = gp.buttonB.sfSymbolsName ?? g.b
             g.y = gp.buttonY.sfSymbolsName ?? g.y
+            g.x = gp.buttonX.sfSymbolsName ?? g.x
+            g.l1 = gp.leftShoulder.sfSymbolsName ?? g.l1
             g.boost = gp.rightTrigger.sfSymbolsName ?? g.boost
             g.stick = gp.leftThumbstick.sfSymbolsName ?? g.stick
             g.menu = gp.buttonMenu.sfSymbolsName ?? g.menu
