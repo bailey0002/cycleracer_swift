@@ -194,15 +194,77 @@ func icon(_ n: Int) -> CGImage {
     return ctx.makeImage()!
 }
 
-// `--logo-only` keeps the app icon (Mark's GRDRNNR art since 29 Sep 2026) and re-renders the wordmark alone.
+// MARK: - KERB: GALACTIC icon (1 Oct 2026): the hoverboard rider mid-360 (a game frame shot with
+// SPEEDER_ICON_SHOT=1 against black, Tools/brand/icon-rider.png) over a block KERB wordmark with a cyan
+// drop shadow and a GALACTIC line: the same composition as KERB's icon (rider over the red-shadowed
+// wordmark on cream), in this game's dark neon palette.
+
+let riderFrame: CGImage? = {
+    let url = root.appendingPathComponent("Tools/brand/icon-rider.png")
+    guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+    return CGImageSourceCreateImageAtIndex(src, 0, nil)
+}()
+
+func iconGalactic(_ n: Int) -> CGImage {
+    let W = CGFloat(n)
+    let ctx = context(n, n)
+    ctx.interpolationQuality = .high
+    func y(_ t: CGFloat) -> CGFloat { W * (1 - t) }
+    // ground: near black with a cool gradient and a magenta glow low behind the wordmark
+    let ground = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: [color((0.02, 0.02, 0.06)), color((0.05, 0.02, 0.10))] as CFArray, locations: [0, 1])!
+    ctx.drawLinearGradient(ground, start: CGPoint(x: 0, y: W), end: CGPoint(x: 0, y: 0), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+    let glow = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: [color(magenta, 0.45), color(magenta, 0.0)] as CFArray, locations: [0, 1])!
+    ctx.saveGState(); ctx.translateBy(x: W * 0.5, y: y(0.86)); ctx.scaleBy(x: 1.6, y: 0.5)
+    ctx.drawRadialGradient(glow, startCenter: .zero, startRadius: 0, endCenter: .zero, endRadius: W * 0.5, options: []); ctx.restoreGState()
+    // a cyan halo behind the rider
+    let halo = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: [color(cyan, 0.30), color(cyan, 0.0)] as CFArray, locations: [0, 1])!
+    ctx.drawRadialGradient(halo, startCenter: CGPoint(x: W * 0.5, y: y(0.40)), startRadius: 0, endCenter: CGPoint(x: W * 0.5, y: y(0.40)), endRadius: W * 0.42, options: [])
+
+    // KERB: block letters, solid cyan shadow offset down-right (KERB's icon uses red on cream)
+    let size = W * 0.30
+    let l = line("KERB", size: size, kern: W * 0.01, color: color((1, 1, 1)))
+    let ls = line("KERB", size: size, kern: W * 0.01, color: color(cyan))
+    var a: CGFloat = 0, d: CGFloat = 0, lead: CGFloat = 0
+    let w = CGFloat(CTLineGetTypographicBounds(l, &a, &d, &lead)) - W * 0.01
+    let base = CGPoint(x: (W - w) / 2, y: y(0.80))
+    ctx.setShadow(offset: .zero, blur: W * 0.03, color: color(cyan, 0.6))
+    ctx.textPosition = CGPoint(x: base.x + W * 0.014, y: base.y - W * 0.014); CTLineDraw(ls, ctx)
+    ctx.setShadow(offset: .zero, blur: 0, color: nil)
+    ctx.textPosition = base; CTLineDraw(l, ctx)
+    // GALACTIC under it in magenta
+    let g = line("GALACTIC", size: W * 0.095, kern: W * 0.022, color: color(magenta))
+    let gw = CGFloat(CTLineGetTypographicBounds(g, &a, &d, &lead)) - W * 0.022
+    ctx.setShadow(offset: .zero, blur: W * 0.025, color: color(magenta, 0.8))
+    ctx.textPosition = CGPoint(x: (W - gw) / 2, y: y(0.905)); CTLineDraw(g, ctx)
+    ctx.setShadow(offset: .zero, blur: 0, color: nil)
+
+    // the rider over the letters (the board crosses the top of the K-E-R-B like KERB's deck does)
+    if let frame = riderFrame {
+        // crop a square around the rider in the 1920 x 1144 frame
+        let fw = CGFloat(frame.width), scale = fw / 1920
+        let crop = CGRect(x: 540 * scale, y: 110 * scale, width: 840 * scale, height: 840 * scale)
+        if let cut = frame.cropping(to: crop) {
+            let side = W * 0.84
+            let rect = CGRect(x: (W - side) / 2, y: y(0.78), width: side, height: side)   // bottom of the crop at 78 %
+            // black ground of the frame blends into the dark icon: multiply-free screen blend keeps the neon
+            ctx.saveGState(); ctx.setBlendMode(.screen)
+            ctx.draw(cut, in: rect)
+            ctx.restoreGState()
+        }
+    }
+    return ctx.makeImage()!
+}
+
+// `--logo-only` re-renders the wordmark alone (the icon is Tools/brand + this script since 1 Oct 2026; Mark's
+// GRDRNNR: QUANTIS art of 29 Sep is kept at Captures/polish/p14/icon-grdrnnr-quantis-1024.png).
 if CommandLine.arguments.contains("--logo-only") { exit(0) }
 let iconSet = assets.appendingPathComponent("AppIcon.appiconset")
 var iconImages: [[String: String]] = [["idiom": "universal", "platform": "ios", "size": "1024x1024", "filename": "icon-1024.png"]]
-write(icon(1024), iconSet.appendingPathComponent("icon-1024.png"))
+write(iconGalactic(1024), iconSet.appendingPathComponent("icon-1024.png"))
 for pt in [16, 32, 128, 256, 512] {
     for s in 1...2 {
         let name = "mac-\(pt)@\(s)x.png"
-        write(icon(pt * s), iconSet.appendingPathComponent(name))
+        write(iconGalactic(pt * s), iconSet.appendingPathComponent(name))
         iconImages.append(["idiom": "mac", "size": "\(pt)x\(pt)", "scale": "\(s)x", "filename": name])
     }
 }

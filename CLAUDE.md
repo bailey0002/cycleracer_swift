@@ -134,6 +134,8 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   `Resources/story_1..4.jpg`, `SPEEDER_STORYBEAT=`), `Missions/Riders.swift` (`Screen.riders`, KERB's roster,
   `Resources/Rider_<id>.usdz`, handling live on the board, `SPEEDER_RIDER=`). First run: title -> riders -> story ->
   callsign -> briefing (KERB's order). The board is controller-only (pad X 360, Y roll, L1 fire), no touch.
+  App icon = the rider mid-360 over the KERB wordmark (`Tools/brand/icon-rider.png` shot with `SPEEDER_ICON_SHOT=1`,
+  rendered by `swift Tools/render-brand.swift`; `--logo-only` for the wordmark alone).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

@@ -100,8 +100,9 @@ final class CameraRig {
 
     /// Capture aid: side elevation of the vehicle (pose and board height checks).
     func sideCorridor(speederX: Float, speederY: Float, front: Bool) {
-        let from = SIMD3<Float>(speederX + 4.5, speederY + 0.6, front ? -1.5 : 1.5)
-        root.look(at: [speederX, speederY + 0.3, 0], from: from, upVector: [0, 1, 0], relativeTo: nil)
+        let up = Float(ProcessInfo.processInfo.environment["SPEEDER_SIDE_UP"] ?? "") ?? 0     // extra height (icon shots)
+        let from = SIMD3<Float>(speederX + 4.5 + up * 0.5, speederY + 0.6 + up, front ? -1.5 : 1.5)
+        root.look(at: [speederX, speederY + 0.3 + up * 0.6, 0], from: from, upVector: [0, 1, 0], relativeTo: nil)
         camera.camera.fieldOfViewInDegrees = 45
     }
 

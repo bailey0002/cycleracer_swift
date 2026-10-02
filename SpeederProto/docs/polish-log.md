@@ -542,5 +542,15 @@ all pose with the same axes). Follow-up the same night: the card grew (portrait 
 muted over the stills, `Resources/rider_<id>.mp4`, ~130 KB each; `LoopingClipView` is AVQueuePlayer +
 AVPlayerLooper on both platforms; Cal has no clip and shows the still), name and tag on one line, the
 bio wrapping, HOME and SIGNATURE lines, the four handling bars two by two with signed percentages, all
-inside the left gradient where they read (`p14/sim/riders3-23`). Not built: a shop / garage tie-in, the
-story's audio.
+inside the left gradient where they read (`p14/sim/riders3-23`).
+
+**App icon** (same night): KERB's icon is the rider grabbing the deck over a red-shadowed KERB wordmark on
+cream; ours is the hoverboard rider mid-360 over a block KERB with a cyan drop shadow and a magenta
+GALACTIC line, on the dark neon ground. The rider is a real game frame: `SPEEDER_ICON_SHOT=1` hides every
+world entity but the vehicle, turns the post pass off (`PostProcessor.bypass`, which still services the
+screenshot request) and shoots from `SPEEDER_CAMERA=side-front SPEEDER_SIDE_UP=1.2` at `SPEEDER_TRICK_AT=4:spin`,
+frame 4.6 (`p14/icon2/`; the key colour did not take, the frame is black-backed, which the screen blend in
+`render-brand.swift` uses). The frame lives in `Tools/brand/icon-rider.png`; `swift Tools/render-brand.swift`
+renders the icon set from it (`iconGalactic`), `--logo-only` renders just the wordmark. Mark's GRDRNNR: QUANTIS
+icon (29 Sep) is kept at `p14/icon-grdrnnr-quantis-1024.png`. iOS caches icons: reboot the phone if the old one
+shows. Not built: a shop / garage tie-in, the story's audio.

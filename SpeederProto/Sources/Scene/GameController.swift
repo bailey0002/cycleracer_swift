@@ -407,6 +407,13 @@ final class GameController: ObservableObject {
             worldAnchor.addChild(rig.root)
             self.cameraRig = rig
 
+            // icon shot: only the vehicle, over a flat key colour (matted into the app icon by Tools/render-brand.swift)
+            if ProcessInfo.processInfo.environment["SPEEDER_ICON_SHOT"] == "1" {
+                for child in worldAnchor.children where child !== speeder.root && child !== rig.root { child.isEnabled = false }
+                arView.environment.background = .color(.rgb(0, 1, 0))
+                speeder.setParticles(false)
+            }
+
             // key light per theme: cool moonlight for the city, low warm sun ahead for the canyon
             sun.light.color = .rgb(theme.sunColor)
             sun.light.intensity = theme.sunIntensity

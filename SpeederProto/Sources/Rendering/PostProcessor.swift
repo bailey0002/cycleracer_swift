@@ -115,7 +115,18 @@ final class PostProcessor {
         return tex
     }
 
+    /// `SPEEDER_ICON_SHOT=1`: no post pass at all (a flat key colour must survive for the icon matte).
+    private let bypass = ProcessInfo.processInfo.environment["SPEEDER_ICON_SHOT"] == "1"
+
     func process(_ ctx: ARView.PostProcessContext) {
+        if bypass {
+            blit(ctx)
+            if let capture = captureRequest {
+                captureRequest = nil
+                FrameCapture.schedule(ctx.targetColorTexture, on: ctx.commandBuffer, device: ctx.device, completion: capture)
+            }
+            return
+        }
         if device == nil { prepare(device: ctx.device) }
         let src = ctx.sourceColorTexture
         let dst = ctx.targetColorTexture
