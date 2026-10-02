@@ -157,6 +157,8 @@ struct MissionState: Equatable {
 /// the mission changes. The briefing is also the inbox (browse any unlocked job) and the garage
 /// (buy upgrades with the purse).
 final class MissionRunner {
+    /// The rider's hull handling (hoverboard; 1 for the speeder): hit damage is divided by it.
+    var hullScale: Float = 1
     private(set) var missions: [Mission]
     private(set) var index: Int
     /// The job the briefing card shows; differs from `index` while browsing the inbox.
@@ -561,7 +563,7 @@ final class MissionRunner {
         for _ in 0..<beaconsHitNow { scoreEvent(base: Mission.beaconValue) }
         for _ in 0..<newKills { scoreEvent(base: Mission.killValue, climbs: false) }
         // the one bar
-        if hits > 0 { energy -= Float(hits) * upgrades.hitDamage * m.hullFactor }
+        if hits > 0 { energy -= Float(hits) * upgrades.hitDamage * m.hullFactor / hullScale }
         if scraping { energy -= dt * Self.scrapeDrain * m.hullFactor }
         if boosting { energy -= dt * upgrades.boostDrain }
         else if !scraping { energy += dt * Self.recharge }

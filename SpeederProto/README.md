@@ -590,6 +590,15 @@ takes the rival's), the rain falls (it climbed), rain comes in showers and close
 back, and bends open onto **crossroads**: a cross street through the towers, chevron barricades, and a red
 arrow gantry pointing the way (`docs/polish-log.md`, "Street polish").
 
+## KERB: GALACTIC (1 Oct 2026)
+
+The game is titled **KERB: GALACTIC**, the companion to KERB (the skate game in `../kerb_skate_game`): the same
+Griptap & Co shop, the same four riders, the second trip through the cabinet. First run: title -> RIDERS
+(profile cards, live handling bars on the hoverboard) -> STORY (Mark's four shop panels as a motion comic;
+replay from SETTINGS) -> CALLSIGN -> the first briefing. `SPEEDER_SCREEN=story|riders`, `SPEEDER_STORYBEAT=<n>`,
+`SPEEDER_RIDER=cal|dude1|dude2|girl1`. Product name and bundle id stay `SpeederProto`. Details:
+`docs/polish-log.md` "KERB: GALACTIC".
+
 ## The hoverboard (alternative vehicle, 29 Sep 2026, test build)
 
 SETTINGS > VEHICLE: SPEEDER / HOVERBOARD (or `SPEEDER_VEHICLE=board`) swaps the speeder for KERB's

@@ -503,3 +503,40 @@ the board for 0.38 s and turns the head after it (`aim` in `pose`). `SPEEDER_TRI
 tricks for captures. Frames: `p13/tricks/frame-4.4` (mid-360 from the side, the post pass's reprojection
 blur ghosting the spin), `p13/chase3/frame-6.4` (upside down mid-roll in the chase view), `p13/chase3/frame-9`
 (the 1.35x rider), `p13/fire/frame-3.3` and `frame-4.6` (the shot pose).
+
+## KERB: GALACTIC, the companion frame (1 Oct 2026)
+
+With the hoverboard in, this game pairs with KERB (the skate game in the sibling folder): same shop, same
+four riders, the second trip through the cabinet. Mark's four shop renders are in
+`skateboard (hoverboard) shop scene/` at the repo root; the game carries them as `Resources/story_1..4.jpg`.
+
+- **Title.** "KERB: GALACTIC" everywhere the wordmark was SPEEDER: the title (`HUDStyle.wordmarkSize - 12`,
+  tracking 6), the launch logo (`Tools/render-brand.swift`, now `--logo-only` so Mark's app icon is kept),
+  the sub-screen over-heading, the window title and `CFBundleDisplayName` on both targets. The product
+  name, bundle id and scheme stay `SpeederProto` so the phone install and every script are unchanged.
+- **Opening** (`Views/StoryIntroView.swift`, `Screen.story`): KERB's motion-comic device in this game's
+  chrome (Chakra Petch, cyan bubbles on near-black, magenta shout, cyan caption bar, scanlines on the
+  cabinet beat). Four panels: the counter ("You kids back again? Ha! It's been a while."), the board
+  held up ("Well, if you're looking for the board to own, this one's it… the Kerbie Astro." + "No wheels.
+  Doesn't need 'em where it's going."), the point at the cabinet ("Oh, I see you eyeing that game again."
+  / "Didn't you learn your lesson the first time?"), the vortex (shout "DIDN'T WASTE ANY TIME, HUH?!?!",
+  flash + shake, caption "…and the cabinet takes another one. Only this time the machine is bigger."),
+  then the black card "You were at the cabinet. / Now you're in it. Again. / The routes are the currency
+  here. / Run them." with the wordmark. A hurries a beat, B / Menu skips; auto-advances. Plays once
+  (`story.seen`), replay from SETTINGS > STORY. `SPEEDER_SCREEN=story SPEEDER_STORYBEAT=<n>` freezes a beat.
+- **Riders** (`Missions/Riders.swift`, `Screen.riders`, `MenuRow.Kind.roster`): KERB's roster mirrored
+  (Cal Reyes, Jonah Vance, Dominic Rook, Mira Sable; stills copied from KERB, USDZs as
+  `Resources/Rider_<id>.usdz`, 4 to 32 MB each). The card: portrait, name, tag, two lines, four handling
+  bars (STEER, CLIMB, BOOST, HULL: 0.85 to 1.15 multipliers that are live on the hoverboard: steer and
+  climb speed in `SpeederController`, the boost gain in `GameController`, hit damage divided by hull in
+  `MissionRunner.hullScale`), signature and home spot. Left / right choose, persisted as `rider.id`
+  (`SPEEDER_RIDER=<id>` for captures). Changing the rider rebuilds the world when the board is the vehicle.
+  The speeder ignores the handling.
+- **Launch order** follows KERB: title -> RIDERS -> story -> callsign and livery -> the first briefing
+  (the briefing keeps the mission story: the routes, the ledger, the rival). After the first run RIDERS
+  is a title row and STORY a settings row.
+
+Shots: `Captures/polish/p14/sim/` (title, story beats 1 / 3 / 6 / 7 / 9, riders page with Mira on the board
+behind it, settings); `p14/cal|dude2|girl1/frame-5` (the three other rigs riding: 54 / 42 / 44 joints,
+all pose with the same axes). Not built: rider intro clips on the card (KERB loops a 5 s mp4; the stills
+are used here), a shop / garage tie-in, the story's audio.

@@ -54,8 +54,8 @@ func line(_ text: String, size: CGFloat, kern: CGFloat, color c: CGColor) -> CTL
 // MARK: - Launch wordmark: the title's SPEEDER (56 pt, 10 pt tracking, cyan glow), centred on its canvas
 
 func wordmark(scale: CGFloat) -> CGImage {
-    let size: CGFloat = 56, kern: CGFloat = 10, pad: CGFloat = 30
-    let l = line("SPEEDER", size: size * scale, kern: kern * scale, color: color((1, 1, 1)))
+    let size: CGFloat = 44, kern: CGFloat = 6, pad: CGFloat = 30
+    let l = line("KERB: GALACTIC", size: size * scale, kern: kern * scale, color: color((1, 1, 1)))
     var ascent: CGFloat = 0, descent: CGFloat = 0, leading: CGFloat = 0
     // the trailing kern is not part of the ink: centre the glyphs, not the advance
     let width = CGFloat(CTLineGetTypographicBounds(l, &ascent, &descent, &leading)) - kern * scale
@@ -194,6 +194,8 @@ func icon(_ n: Int) -> CGImage {
     return ctx.makeImage()!
 }
 
+// `--logo-only` keeps the app icon (Mark's GRDRNNR art since 29 Sep 2026) and re-renders the wordmark alone.
+if CommandLine.arguments.contains("--logo-only") { exit(0) }
 let iconSet = assets.appendingPathComponent("AppIcon.appiconset")
 var iconImages: [[String: String]] = [["idiom": "universal", "platform": "ios", "size": "1024x1024", "filename": "icon-1024.png"]]
 write(icon(1024), iconSet.appendingPathComponent("icon-1024.png"))

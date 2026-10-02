@@ -23,6 +23,8 @@ final class SpeederController {
     private(set) var rider: RiderRig?
     /// Extra chase-camera height and distance for a tall vehicle.
     var cameraLift: SIMD2<Float> = .zero
+    /// The rider's handling multipliers (steer, climb, boost, hull); neutral for the speeder.
+    private(set) var handling = RiderHandling.neutral
     let engineLight = PointLight()
     let underLight = PointLight()
     private let holder = Entity()
@@ -62,7 +64,11 @@ final class SpeederController {
         case .speeder:
             return SpeederController(model: try await entity("Speeder"), materials: materials)
         case .board:
-            return SpeederController(board: try await entity("Board"), rider: try await entity("Rider"), materials: materials)
+            let profile = Roster.current()
+            let c = SpeederController(board: try await entity("Board"), rider: try await entity(profile.asset), materials: materials)
+            c.handling = profile.handling
+            print("Board: rider \(profile.name) (\(profile.asset))")
+            return c
         }
     }
 
@@ -332,11 +338,11 @@ final class SpeederController {
     func update(dt: Float, time: Float, steerInput: Float, climbInput: Float, speedNorm: Float, roadShift: Float, boost: Float = 0) {
         steer = damp(steer, steerInput, 8.0, dt)
         // velocity-based steering; curves tug the vehicle toward the outside
-        let steerSpeed: Float = 7.5 + 7.0 * speedNorm
+        let steerSpeed: Float = (7.5 + 7.0 * speedNorm) * handling.steer
         var newX = x + steer * steerSpeed * dt - roadShift * 0.6
         if recoilTimer > 0 { newX += recoilDir * 6.0 * dt * (recoilTimer / 0.45) }
         // altitude: stick drives vertical speed, settles back toward hover height when released
-        let climbSpeed: Float = 6.5
+        let climbSpeed: Float = 6.5 * handling.climb
         let inTube = tubeBlend >= 0.5
         if abs(climbInput) > 0.05 {
             vy = damp(vy, climbInput * climbSpeed, 10, dt)

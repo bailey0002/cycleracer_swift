@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0075E6BB8E004E8FEADBA518 /* story_4.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4692E36D43C542266B26E80F /* story_4.jpg */; };
 		02D3D56823114D66FCF57FEF /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
 		03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		0572127472CC24B84BA3D7B9 /* ChakraPetch-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 824850DBC01AACD8E876F1F6 /* ChakraPetch-Medium.ttf */; };
@@ -15,6 +16,7 @@
 		088917E1D587A1942F8A4173 /* MissionLoopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D08AF1ABC5FDF097E48537 /* MissionLoopTests.swift */; };
 		08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
 		0D32B607D31D661EFC1677E8 /* FrontEnd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BC6E99698AE6DC5426F78B /* FrontEnd.swift */; };
+		0D924AA758EAAED67A3D2CF4 /* Riders.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1620C25D8A01ACD28D8EF9C /* Riders.swift */; };
 		0DA9524FD78109DD0B910430 /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
 		0F00F09349FBB1AB972711D1 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
 		10DDB34EF0EFCABF38CF9204 /* neon-sign-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 0EC0F619859693B3BE7F0320 /* neon-sign-02.png */; };
@@ -28,9 +30,9 @@
 		1DCDB9F975249B1F36C99403 /* Debrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3073385324BD69D6531D493B /* Debrief.swift */; };
 		1F5E5A0A979F8BC11125F84A /* RiderRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D96550312C15666E180F90E2 /* RiderRig.swift */; };
 		2041480EF5DFBBCE490E6797 /* ChakraPetch-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */; };
-		206CFB1649050568E8F38D5F /* Rider.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 3CE3CD2885E3CF105BBFD32A /* Rider.usdz */; };
 		2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
 		27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
+		287208EECD1696CB5CBDDFA6 /* rider_dude1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 00808F59DC25A18E38359447 /* rider_dude1.jpg */; };
 		2A8A93F04FE7BBA45595F345 /* TrackProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EC8E7CD387377F03E68669 /* TrackProgram.swift */; };
 		309CB1E16C9BF602D838CA2E /* FrontEndView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D6EAA6259FFC006598A922 /* FrontEndView.swift */; };
 		3574B9C8D199DAFDB93102ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 581F3F2FFB2CAAC00E963959 /* Assets.xcassets */; };
@@ -38,14 +40,19 @@
 		3818D15AD6E5273BD7AB5084 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4CEFC5EEF0192DCE155B6328 /* OFL.txt */; };
 		38F466D3DC77436528A13440 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
 		39B55898EFD94C6D219D2273 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58455DAE604D8289457A1546 /* GameMode.swift */; };
+		3A986515EB226197CD23580F /* Rider_dude1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */; };
 		3B54FAA079FB92CEB507CE1E /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
 		3EEA9A12F0D52EA687DE3BB7 /* MissionProps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A7B277A67AB843AA132612 /* MissionProps.swift */; };
+		409B956B01AA9276DE82FF9C /* rider_dude1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 00808F59DC25A18E38359447 /* rider_dude1.jpg */; };
 		43C5E4BCCC197D4225A1A726 /* neon-facade-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 92AB31F80D364C74D73A338B /* neon-facade-03.png */; };
 		44D867CA914D3443D0E4B4EB /* AvatarActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF5F98B937F71B03F109B71 /* AvatarActor.swift */; };
+		451774AC556FB15981FC8971 /* story_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 5B58731A4EF9758C2717FA4B /* story_1.jpg */; };
+		472C0735C4D70DF7B9F64EA7 /* story_2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE46DBA0D6DC93E154C375E2 /* story_2.jpg */; };
 		49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
 		4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
 		4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */; };
 		4C82EB5F2D71407DA09681A7 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
+		4C8F89058E4C29D76391BBCF /* story_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 5B58731A4EF9758C2717FA4B /* story_1.jpg */; };
 		4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */; };
 		4FF502840DA59438EA0F737B /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
 		581BC241B3E41E982571CD05 /* ChakraPetch-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */; };
@@ -56,6 +63,7 @@
 		5CB9948783443B875CFE0E4B /* Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B36422554C4AD2CC76BF3BBE /* Avatar.usdz */; };
 		5E2B35048AA4E66F36171C9A /* Rival.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CB4715E79FFE27B9C57F3 /* Rival.swift */; };
 		5E5C42DC2F14E6DFED1CC178 /* neon-facade-05.png in Resources */ = {isa = PBXBuildFile; fileRef = 9D6EF71876933BEFDD6D367D /* neon-facade-05.png */; };
+		5EE503A326A74DEC7B9BF27A /* story_4.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4692E36D43C542266B26E80F /* story_4.jpg */; };
 		5F20EC056DE38F2E4417C878 /* LightCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */; };
 		5F8EA8B586550D8112C81C83 /* grid-screen-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 72882052C02160C92D4332AF /* grid-screen-01.png */; };
 		60068708FF0A24190CD48367 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
@@ -66,11 +74,13 @@
 		673451B190DBEFCCA82C5ECD /* grid-screen-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 72882052C02160C92D4332AF /* grid-screen-01.png */; };
 		6759E74F0B7767A6EB880B97 /* ChakraPetch-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */; };
 		6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
+		697E347CE0476CDC77FE62FE /* Riders.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1620C25D8A01ACD28D8EF9C /* Riders.swift */; };
 		6A570909BE16A233C70F224D /* neon-shop-02.png in Resources */ = {isa = PBXBuildFile; fileRef = F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */; };
 		6A80F9F3360AD1340BF798D3 /* Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830774F78514CA1A5F4B7434 /* Input.swift */; };
 		6AF2A544D10486D2193FCC54 /* WorldScroller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196B1573C8FB9CC7F731E150 /* WorldScroller.swift */; };
 		6AFE4AE2948BF12FA8344AF9 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58455DAE604D8289457A1546 /* GameMode.swift */; };
 		6B3211969CF01549F30853BD /* neon-shop-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 2807BD977559C7CB8250C705 /* neon-shop-01.png */; };
+		6E6AF363F83824C9A80282B8 /* story_2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE46DBA0D6DC93E154C375E2 /* story_2.jpg */; };
 		6FDB27CF263BBDA3ACC63A9F /* RiderRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D96550312C15666E180F90E2 /* RiderRig.swift */; };
 		72A32373DFCD52235FAAC00E /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		768897D979BEE32AF216EC58 /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
@@ -79,8 +89,11 @@
 		7D2A0B4A31438909B85F40F2 /* Board.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 2932D1CC89919872F6E2EB71 /* Board.usdz */; };
 		8037292F5CC5D1D550286AE3 /* Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830774F78514CA1A5F4B7434 /* Input.swift */; };
 		843CCA4CA54FC1DDD43FABC9 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
+		85C91382980E550D91339EA6 /* rider_cal.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9053514CE8B1F571D4E90C4A /* rider_cal.jpg */; };
 		874F606EA09A1D02E81137AB /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
+		885303A15E3F89A5862F508F /* rider_girl1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */; };
 		8A156D2A07099DCA7F9BC9F2 /* LightCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */; };
+		8A6A51D6C9392E5BB5DBFEE4 /* story_3.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E86D56308A5079A2AB4ACC26 /* story_3.jpg */; };
 		8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
 		8EBD5014EC55D58F75E50817 /* FrontEndView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D6EAA6259FFC006598A922 /* FrontEndView.swift */; };
 		91E7D2FCD69A80425889BA8A /* neon-facade-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */; };
@@ -88,19 +101,22 @@
 		9590C5B7564F9939CCDE8AD6 /* ChakraPetch-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */; };
 		98C93C4146DB8E027C690A7A /* ArtLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E254A40E482744855A866AF5 /* ArtLibrary.swift */; };
 		9A4F9D347B1295FBCD282F7B /* neon-sign-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 6D1B4DBDA31434E0BA32AA40 /* neon-sign-01.png */; };
+		9ABE1C9549DF94F07F1FB124 /* Rider_dude1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */; };
 		9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
 		9D9093F4819EE9359D41FC2A /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE1291018C742677C899082 /* SoundEngine.swift */; };
 		9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
+		9ECDBAA937A725E9B2B5C005 /* Rider_girl1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 9DB0CC259A8A6C66CF178667 /* Rider_girl1.usdz */; };
 		A06C7847B0BA24E8EFC4E1F6 /* neon-facade-05.png in Resources */ = {isa = PBXBuildFile; fileRef = 9D6EF71876933BEFDD6D367D /* neon-facade-05.png */; };
 		A37EB33B22D9E43B7E1370F7 /* neon-facade-01.png in Resources */ = {isa = PBXBuildFile; fileRef = EE1999A537D2D7C94544538B /* neon-facade-01.png */; };
 		A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		A975139BC959AB5AC5F0212B /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
 		AB48F2AEB092D1CB4D3B1CEC /* neon-facade-04.png in Resources */ = {isa = PBXBuildFile; fileRef = 6BE6651996893CE31D1284E4 /* neon-facade-04.png */; };
-		AB5F11B0510708FF18525135 /* Rider.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 3CE3CD2885E3CF105BBFD32A /* Rider.usdz */; };
 		ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
 		AE6B361F8A64298F877C17FC /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A1F6907665CF7ECFD7DDF5 /* Player.swift */; };
 		AFB983264A7AB37663B129A4 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A1F6907665CF7ECFD7DDF5 /* Player.swift */; };
+		B03E44A86F4DEB1A338643D1 /* StoryIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE24CC7D71AAD9CB37666722 /* StoryIntroView.swift */; };
+		B29C27AEA5231468237F3607 /* story_3.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E86D56308A5079A2AB4ACC26 /* story_3.jpg */; };
 		B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */; };
 		B671EFFBFEDC2FCD6CE6E5B7 /* MaterialFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */; };
 		B7D4387CACEB2AFCD395964E /* FrontEnd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BC6E99698AE6DC5426F78B /* FrontEnd.swift */; };
@@ -110,30 +126,40 @@
 		BFE2CA340C16BD0C8218EFA0 /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
 		C11F618F8BE6082C9B18A65C /* Board.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 2932D1CC89919872F6E2EB71 /* Board.usdz */; };
 		C13FB08266CC67352F52BD43 /* MessageLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1B3D9DCB545B5257A55F15 /* MessageLog.swift */; };
+		C76A061DDDE52E69116C1696 /* Rider_dude2.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */; };
 		CEE259DD889694D01531BF49 /* neon-facade-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 92AB31F80D364C74D73A338B /* neon-facade-03.png */; };
 		D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
 		D3AB01995CE80B17AB1CEC03 /* neon-shop-02.png in Resources */ = {isa = PBXBuildFile; fileRef = F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */; };
 		D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
+		D934D60078CC456F3426F163 /* Rider_cal.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E873C21482E6F4167AF7B221 /* Rider_cal.usdz */; };
+		DA0CE63A53ECB09C8FF42300 /* Rider_cal.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E873C21482E6F4167AF7B221 /* Rider_cal.usdz */; };
 		DB49B1D8B243C8F5A4D3C3D9 /* Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B36422554C4AD2CC76BF3BBE /* Avatar.usdz */; };
 		DB9070E503B2652C1E01EA27 /* grid-bowl.png in Resources */ = {isa = PBXBuildFile; fileRef = 1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */; };
 		DC41CBFF327A56F45112A39A /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
+		DF340130C1C957D59ADE29B9 /* Rider_girl1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 9DB0CC259A8A6C66CF178667 /* Rider_girl1.usdz */; };
 		E132C8599DEE43F567931FC4 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE1291018C742677C899082 /* SoundEngine.swift */; };
 		E3623B03682A44940D8CF7FC /* ChakraPetch-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */; };
+		E4113F89B673D82A112EAC50 /* rider_cal.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9053514CE8B1F571D4E90C4A /* rider_cal.jpg */; };
+		E41BF9802C5F32D8AADD3E47 /* rider_dude2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = EAF66509AA5D17A0EA16E4BF /* rider_dude2.jpg */; };
 		E4BA5063FAA37F1CB0887EBE /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
 		E67A083239561F9561BDA045 /* ChakraPetch-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 824850DBC01AACD8E876F1F6 /* ChakraPetch-Medium.ttf */; };
 		EA4EA13681E94E0ADAF38079 /* neon-facade-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */; };
 		EA6E0C0F4AB2DC46D198DA28 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
+		ECE0F218FBED42D240E57DE8 /* Rider_dude2.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */; };
 		ECF0198CE9C264BCF5D513A3 /* MessageLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1B3D9DCB545B5257A55F15 /* MessageLog.swift */; };
 		ED7A03D5F51FEA26BECEA23A /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
 		EEB86B7D0B6B3989D2CCB2CC /* ArtLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E254A40E482744855A866AF5 /* ArtLibrary.swift */; };
 		EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
 		F05D16985B22898D5314BBF5 /* neon-skyline.png in Resources */ = {isa = PBXBuildFile; fileRef = 761E24274CEDB6E4B002900F /* neon-skyline.png */; };
 		F4CA0144019743170E987786 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
+		F545E25B23FCF29F17F892FF /* StoryIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE24CC7D71AAD9CB37666722 /* StoryIntroView.swift */; };
 		F58BE43E6D659082669B5D23 /* neon-skyline.png in Resources */ = {isa = PBXBuildFile; fileRef = 761E24274CEDB6E4B002900F /* neon-skyline.png */; };
 		F611F1A14B9E7E7897D1153C /* Debrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3073385324BD69D6531D493B /* Debrief.swift */; };
 		F7F866353C2595C4A553AFFA /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
 		F8D064177C2090AA84FD26C1 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4CEFC5EEF0192DCE155B6328 /* OFL.txt */; };
+		FC6957272CC122A996E98B49 /* rider_dude2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = EAF66509AA5D17A0EA16E4BF /* rider_dude2.jpg */; };
 		FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
+		FE6704324A71430E871D40F5 /* rider_girl1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -147,6 +173,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00808F59DC25A18E38359447 /* rider_dude1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_dude1.jpg; sourceTree = "<group>"; };
 		0EC0F619859693B3BE7F0320 /* neon-sign-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-sign-02.png"; sourceTree = "<group>"; };
 		0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialFactory.swift; sourceTree = "<group>"; };
 		1362513C3D8ABE25AC8315B7 /* Mission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mission.swift; sourceTree = "<group>"; };
@@ -159,8 +186,9 @@
 		29EC8E7CD387377F03E68669 /* TrackProgram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProgram.swift; sourceTree = "<group>"; };
 		3073385324BD69D6531D493B /* Debrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debrief.swift; sourceTree = "<group>"; };
 		37A7B277A67AB843AA132612 /* MissionProps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionProps.swift; sourceTree = "<group>"; };
-		3CE3CD2885E3CF105BBFD32A /* Rider.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider.usdz; sourceTree = "<group>"; };
+		37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider_dude2.usdz; sourceTree = "<group>"; };
 		44E74DD4583F19C94BE32E39 /* CameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRig.swift; sourceTree = "<group>"; };
+		4692E36D43C542266B26E80F /* story_4.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = story_4.jpg; sourceTree = "<group>"; };
 		4CEFC5EEF0192DCE155B6328 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		52D08AF1ABC5FDF097E48537 /* MissionLoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionLoopTests.swift; sourceTree = "<group>"; };
 		56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-02.png"; sourceTree = "<group>"; };
@@ -168,6 +196,7 @@
 		58455DAE604D8289457A1546 /* GameMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameMode.swift; sourceTree = "<group>"; };
 		59796A2FF75D69C574FE80A0 /* PostFX.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = PostFX.metal; sourceTree = "<group>"; };
 		5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailSystem.swift; sourceTree = "<group>"; };
+		5B58731A4EF9758C2717FA4B /* story_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = story_1.jpg; sourceTree = "<group>"; };
 		5E0762ACC75D4CC67B23E329 /* GameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameController.swift; sourceTree = "<group>"; };
 		6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-SemiBold.ttf"; sourceTree = "<group>"; };
 		65BC6E99698AE6DC5426F78B /* FrontEnd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontEnd.swift; sourceTree = "<group>"; };
@@ -182,13 +211,16 @@
 		84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaAI.swift; sourceTree = "<group>"; };
 		85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Speeder.usdz; sourceTree = "<group>"; };
 		868ACE88113A37309BDE3C7D /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
+		9053514CE8B1F571D4E90C4A /* rider_cal.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_cal.jpg; sourceTree = "<group>"; };
 		92AB31F80D364C74D73A338B /* neon-facade-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-03.png"; sourceTree = "<group>"; };
 		95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessor.swift; sourceTree = "<group>"; };
 		96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralTextures.swift; sourceTree = "<group>"; };
 		9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaTerrain.swift; sourceTree = "<group>"; };
 		9D1146D252113EB8417E5731 /* SpeederApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederApp.swift; sourceTree = "<group>"; };
 		9D6EF71876933BEFDD6D367D /* neon-facade-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-05.png"; sourceTree = "<group>"; };
+		9DB0CC259A8A6C66CF178667 /* Rider_girl1.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider_girl1.usdz; sourceTree = "<group>"; };
 		9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaWorld.swift; sourceTree = "<group>"; };
+		9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_girl1.jpg; sourceTree = "<group>"; };
 		AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		AF1B3D9DCB545B5257A55F15 /* MessageLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageLog.swift; sourceTree = "<group>"; };
 		B0A1F6907665CF7ECFD7DDF5 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
@@ -201,14 +233,21 @@
 		D53555799C92B0DC533C8214 /* SpeederProtoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpeederProtoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D96550312C15666E180F90E2 /* RiderRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiderRig.swift; sourceTree = "<group>"; };
 		DA03C8CBB3AECCC551185AD4 /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
+		DE46DBA0D6DC93E154C375E2 /* story_2.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = story_2.jpg; sourceTree = "<group>"; };
+		E1620C25D8A01ACD28D8EF9C /* Riders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Riders.swift; sourceTree = "<group>"; };
 		E254A40E482744855A866AF5 /* ArtLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtLibrary.swift; sourceTree = "<group>"; };
 		E41CB4715E79FFE27B9C57F3 /* Rival.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rival.swift; sourceTree = "<group>"; };
 		E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionRunner.swift; sourceTree = "<group>"; };
 		E59AAB31C250E0E039642DF5 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		E86D56308A5079A2AB4ACC26 /* story_3.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = story_3.jpg; sourceTree = "<group>"; };
+		E873C21482E6F4167AF7B221 /* Rider_cal.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider_cal.usdz; sourceTree = "<group>"; };
 		EA98E8EC40131A52017CCC61 /* ArenaController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaController.swift; sourceTree = "<group>"; };
+		EAF66509AA5D17A0EA16E4BF /* rider_dude2.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_dude2.jpg; sourceTree = "<group>"; };
 		EE1999A537D2D7C94544538B /* neon-facade-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-01.png"; sourceTree = "<group>"; };
+		EE24CC7D71AAD9CB37666722 /* StoryIntroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryIntroView.swift; sourceTree = "<group>"; };
 		F0A8E9FD5979355F95650D7D /* SpeederProto-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "SpeederProto-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-Regular.ttf"; sourceTree = "<group>"; };
+		F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider_dude1.usdz; sourceTree = "<group>"; };
 		F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-shop-02.png"; sourceTree = "<group>"; };
 		FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SpeederProto-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC6DBC66827CF202624BE7B3 /* Weapons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weapons.swift; sourceTree = "<group>"; };
@@ -239,6 +278,7 @@
 				AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */,
 				868ACE88113A37309BDE3C7D /* HUDView.swift */,
 				830774F78514CA1A5F4B7434 /* Input.swift */,
+				EE24CC7D71AAD9CB37666722 /* StoryIntroView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -296,6 +336,7 @@
 				37A7B277A67AB843AA132612 /* MissionProps.swift */,
 				E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */,
 				B0A1F6907665CF7ECFD7DDF5 /* Player.swift */,
+				E1620C25D8A01ACD28D8EF9C /* Riders.swift */,
 			);
 			path = Missions;
 			sourceTree = "<group>";
@@ -341,8 +382,19 @@
 				581F3F2FFB2CAAC00E963959 /* Assets.xcassets */,
 				B36422554C4AD2CC76BF3BBE /* Avatar.usdz */,
 				2932D1CC89919872F6E2EB71 /* Board.usdz */,
-				3CE3CD2885E3CF105BBFD32A /* Rider.usdz */,
+				9053514CE8B1F571D4E90C4A /* rider_cal.jpg */,
+				E873C21482E6F4167AF7B221 /* Rider_cal.usdz */,
+				00808F59DC25A18E38359447 /* rider_dude1.jpg */,
+				F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */,
+				EAF66509AA5D17A0EA16E4BF /* rider_dude2.jpg */,
+				37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */,
+				9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */,
+				9DB0CC259A8A6C66CF178667 /* Rider_girl1.usdz */,
 				85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */,
+				5B58731A4EF9758C2717FA4B /* story_1.jpg */,
+				DE46DBA0D6DC93E154C375E2 /* story_2.jpg */,
+				E86D56308A5079A2AB4ACC26 /* story_3.jpg */,
+				4692E36D43C542266B26E80F /* story_4.jpg */,
 				37F174391265459B72F8E01D /* Art */,
 				F2A95B3B28943106ACA53512 /* Fonts */,
 			);
@@ -514,7 +566,10 @@
 				9590C5B7564F9939CCDE8AD6 /* ChakraPetch-Regular.ttf in Resources */,
 				581BC241B3E41E982571CD05 /* ChakraPetch-SemiBold.ttf in Resources */,
 				F8D064177C2090AA84FD26C1 /* OFL.txt in Resources */,
-				206CFB1649050568E8F38D5F /* Rider.usdz in Resources */,
+				D934D60078CC456F3426F163 /* Rider_cal.usdz in Resources */,
+				3A986515EB226197CD23580F /* Rider_dude1.usdz in Resources */,
+				ECE0F218FBED42D240E57DE8 /* Rider_dude2.usdz in Resources */,
+				DF340130C1C957D59ADE29B9 /* Rider_girl1.usdz in Resources */,
 				4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */,
 				BA819C5B884C6C3A20236A47 /* grid-bowl.png in Resources */,
 				5F8EA8B586550D8112C81C83 /* grid-screen-01.png in Resources */,
@@ -528,6 +583,14 @@
 				5BBED984B884E3FC6B059FA0 /* neon-sign-01.png in Resources */,
 				198D9359506C3E63CAEDED0D /* neon-sign-02.png in Resources */,
 				F58BE43E6D659082669B5D23 /* neon-skyline.png in Resources */,
+				E4113F89B673D82A112EAC50 /* rider_cal.jpg in Resources */,
+				287208EECD1696CB5CBDDFA6 /* rider_dude1.jpg in Resources */,
+				FC6957272CC122A996E98B49 /* rider_dude2.jpg in Resources */,
+				885303A15E3F89A5862F508F /* rider_girl1.jpg in Resources */,
+				451774AC556FB15981FC8971 /* story_1.jpg in Resources */,
+				472C0735C4D70DF7B9F64EA7 /* story_2.jpg in Resources */,
+				8A6A51D6C9392E5BB5DBFEE4 /* story_3.jpg in Resources */,
+				0075E6BB8E004E8FEADBA518 /* story_4.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -543,7 +606,10 @@
 				6759E74F0B7767A6EB880B97 /* ChakraPetch-Regular.ttf in Resources */,
 				149D5634B3552BA7882E2561 /* ChakraPetch-SemiBold.ttf in Resources */,
 				3818D15AD6E5273BD7AB5084 /* OFL.txt in Resources */,
-				AB5F11B0510708FF18525135 /* Rider.usdz in Resources */,
+				DA0CE63A53ECB09C8FF42300 /* Rider_cal.usdz in Resources */,
+				9ABE1C9549DF94F07F1FB124 /* Rider_dude1.usdz in Resources */,
+				C76A061DDDE52E69116C1696 /* Rider_dude2.usdz in Resources */,
+				9ECDBAA937A725E9B2B5C005 /* Rider_girl1.usdz in Resources */,
 				7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */,
 				DB9070E503B2652C1E01EA27 /* grid-bowl.png in Resources */,
 				673451B190DBEFCCA82C5ECD /* grid-screen-01.png in Resources */,
@@ -557,6 +623,14 @@
 				9A4F9D347B1295FBCD282F7B /* neon-sign-01.png in Resources */,
 				10DDB34EF0EFCABF38CF9204 /* neon-sign-02.png in Resources */,
 				F05D16985B22898D5314BBF5 /* neon-skyline.png in Resources */,
+				85C91382980E550D91339EA6 /* rider_cal.jpg in Resources */,
+				409B956B01AA9276DE82FF9C /* rider_dude1.jpg in Resources */,
+				E41BF9802C5F32D8AADD3E47 /* rider_dude2.jpg in Resources */,
+				FE6704324A71430E871D40F5 /* rider_girl1.jpg in Resources */,
+				4C8F89058E4C29D76391BBCF /* story_1.jpg in Resources */,
+				6E6AF363F83824C9A80282B8 /* story_2.jpg in Resources */,
+				B29C27AEA5231468237F3607 /* story_3.jpg in Resources */,
+				5EE503A326A74DEC7B9BF27A /* story_4.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -605,11 +679,13 @@
 				4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */,
 				6972E42F174DA429F7C63590 /* ProceduralTextures.swift in Sources */,
 				6FDB27CF263BBDA3ACC63A9F /* RiderRig.swift in Sources */,
+				0D924AA758EAAED67A3D2CF4 /* Riders.swift in Sources */,
 				5E2B35048AA4E66F36171C9A /* Rival.swift in Sources */,
 				BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */,
 				9D9093F4819EE9359D41FC2A /* SoundEngine.swift in Sources */,
 				F4CA0144019743170E987786 /* SpeederApp.swift in Sources */,
 				621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */,
+				B03E44A86F4DEB1A338643D1 /* StoryIntroView.swift in Sources */,
 				4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */,
 				5B3A358007EC4F94020517ED /* TrackProgram.swift in Sources */,
 				E4BA5063FAA37F1CB0887EBE /* TrailRenderer.swift in Sources */,
@@ -653,11 +729,13 @@
 				5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */,
 				27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */,
 				1F5E5A0A979F8BC11125F84A /* RiderRig.swift in Sources */,
+				697E347CE0476CDC77FE62FE /* Riders.swift in Sources */,
 				070BB31D4D19848AA63BFC0C /* Rival.swift in Sources */,
 				38F466D3DC77436528A13440 /* Shaders.metal in Sources */,
 				E132C8599DEE43F567931FC4 /* SoundEngine.swift in Sources */,
 				92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */,
 				9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */,
+				F545E25B23FCF29F17F892FF /* StoryIntroView.swift in Sources */,
 				147812546190B4325B27A09E /* Theme.swift in Sources */,
 				2A8A93F04FE7BBA45595F345 /* TrackProgram.swift in Sources */,
 				768897D979BEE32AF216EC58 /* TrailRenderer.swift in Sources */,

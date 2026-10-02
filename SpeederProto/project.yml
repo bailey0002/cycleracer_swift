@@ -27,7 +27,8 @@ targets:
     info:
       path: Info-macOS.plist
       properties:
-        NSHumanReadableCopyright: "Speeder prototype (model: Cyberpunk Speeder by Piotr Pisiak, CC-BY-4.0)"
+        CFBundleDisplayName: "Kerb: Galactic"
+        NSHumanReadableCopyright: "Kerb: Galactic prototype (model: Cyberpunk Speeder by Piotr Pisiak, CC-BY-4.0)"
         LSApplicationCategoryType: public.app-category.games
         NSHighResolutionCapable: true
     settings:
@@ -47,6 +48,7 @@ targets:
     info:
       path: Info-iOS.plist
       properties:
+        CFBundleDisplayName: "Kerb: Galactic"
         UILaunchScreen:
           UIColorName: LaunchBackground
           UIImageName: LaunchLogo

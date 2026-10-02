@@ -128,6 +128,12 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   `SPEEDER_CAMERA=side|side-front` is the pose camera. 30 Sep: 1.35x scale, tricks (pad X 360 / Y barrel roll,
   `startTrick`, `SPEEDER_TRICK_AT=`), fire on L1 with `RiderRig.shoot()`; X no longer fires, Y cruise is off on the board. The sibling `../kerb_skate_game` is readable from here
   (its `Tools/convert_cc.py` turns CC5 FBX into riders). The speeder path is untouched.
+- KERB: GALACTIC 1 Oct 2026 (`docs/polish-log.md` "KERB: GALACTIC", `Captures/polish/p14/`): the game is retitled
+  (wordmark, launch logo via `render-brand.swift --logo-only`, display name; product / bundle id unchanged) as the
+  companion to `../kerb_skate_game`. `Views/StoryIntroView.swift` (`Screen.story`, Mark's four shop panels in
+  `Resources/story_1..4.jpg`, `SPEEDER_STORYBEAT=`), `Missions/Riders.swift` (`Screen.riders`, KERB's roster,
+  `Resources/Rider_<id>.usdz`, handling live on the board, `SPEEDER_RIDER=`). First run: title -> riders -> story ->
+  callsign -> briefing (KERB's order). The board is controller-only (pad X 360, Y roll, L1 fire), no touch.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

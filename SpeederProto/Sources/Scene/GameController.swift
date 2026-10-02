@@ -83,6 +83,8 @@ final class GameController: ObservableObject {
     @Published var resetArmed = false
     /// The rider screen was opened by the first START (RIDE goes on to the first briefing).
     @Published var riderFirstRun = false
+    /// A on the story screen: hurry the beat (the view watches the count).
+    @Published var storyNudge = 0
     var devTaps = 0
     var navHold: (dir: Int, t: Float) = (0, 0)
     var navPrev: (select: Bool, back: Bool) = (false, false)
@@ -357,6 +359,7 @@ final class GameController: ObservableObject {
             worldAnchor.addChild(speeder.root)
             self.speeder = speeder
             cameraRig?.lift = speeder.cameraLift
+            missions.hullScale = speeder.handling.hull
             player = missions.player
             if player.tintsBike { speeder.tint(player.liveryColor, materials: materials) }
             ArenaController.playerColor = player.liveryColor
@@ -674,7 +677,8 @@ final class GameController: ObservableObject {
         }
         boostPrev = boosting
         boostLevel = damp(boostLevel, boosting ? 1 : 0, boosting ? 13 : 5, dt)
-        let target = moving ? settings.cruiseSpeed * (boosting ? 1.8 : 1.0) : 0
+        let boostGain: Float = speeder.kind == .board ? 1 + 0.8 * speeder.handling.boost : 1.8
+        let target = moving ? settings.cruiseSpeed * (boosting ? boostGain : 1.0) : 0
         speed = damp(speed, target, target > speed ? 1.6 : 2.0, simDt)
         let speedNorm = clamp01(speed / maxSpeed)
         sound.set(.engine, volume: moving ? 0.3 + speedNorm * 0.5 : 0.12, pitch: 0.7 + speedNorm * 1.1)

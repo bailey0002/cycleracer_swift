@@ -12,7 +12,7 @@ struct SpeederApp: App {
     static let testHost = ProcessInfo.processInfo.environment["SPEEDER_TESTS"] == "1"
 
     var body: some Scene {
-        WindowGroup("Speeder") {
+        WindowGroup("Kerb: Galactic") {
             if Self.testHost {
                 Text("SpeederProto tests").frame(width: 320, height: 120)
             } else {
