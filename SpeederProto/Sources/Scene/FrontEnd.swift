@@ -244,8 +244,8 @@ extension GameController {
             // first run: riders -> story -> callsign -> the first briefing (KERB's order: title, riders, story, world)
             if missions.isFirstRun { riderFirstRun = true; push(.riders); soundtrack.announce(["vo_choose_your_character"], priority: true) } else { startJobs() }
         case "riders": riderFirstRun = false; push(.riders); soundtrack.announce(["vo_choose_your_character"], priority: true)
-        case "roster": adjust("roster", by: 1)
-        case "rideon":
+        case "roster", "rideon":
+            // A on the card or on NEXT / DONE confirms the rider (left / right choose)
             if riderFirstRun { pop(); push(storySeen ? .rider : .story) } else { pop() }
         case "story": push(.story)
         case "freeplay": push(.worlds)
