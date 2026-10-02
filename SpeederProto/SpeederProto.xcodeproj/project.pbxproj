@@ -26,6 +26,7 @@
 		149D5634B3552BA7882E2561 /* ChakraPetch-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */; };
 		18A4554AB853815327DB45F0 /* AvatarActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF5F98B937F71B03F109B71 /* AvatarActor.swift */; };
 		198D9359506C3E63CAEDED0D /* neon-sign-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 0EC0F619859693B3BE7F0320 /* neon-sign-02.png */; };
+		1A38F96A51FF864BE83B2A30 /* rider_dude2.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = BA87D0E674ED4B1DB97BB0BE /* rider_dude2.mp4 */; };
 		1B5F82B56A0874899A2867FA /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
 		1DCDB9F975249B1F36C99403 /* Debrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3073385324BD69D6531D493B /* Debrief.swift */; };
 		1F5E5A0A979F8BC11125F84A /* RiderRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D96550312C15666E180F90E2 /* RiderRig.swift */; };
@@ -43,6 +44,7 @@
 		3A986515EB226197CD23580F /* Rider_dude1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */; };
 		3B54FAA079FB92CEB507CE1E /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
 		3EEA9A12F0D52EA687DE3BB7 /* MissionProps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A7B277A67AB843AA132612 /* MissionProps.swift */; };
+		3F7B818E7B637A6E084541C0 /* rider_dude1.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 8EDF10696E742E8061B8AF01 /* rider_dude1.mp4 */; };
 		409B956B01AA9276DE82FF9C /* rider_dude1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 00808F59DC25A18E38359447 /* rider_dude1.jpg */; };
 		43C5E4BCCC197D4225A1A726 /* neon-facade-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 92AB31F80D364C74D73A338B /* neon-facade-03.png */; };
 		44D867CA914D3443D0E4B4EB /* AvatarActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF5F98B937F71B03F109B71 /* AvatarActor.swift */; };
@@ -69,6 +71,7 @@
 		60068708FF0A24190CD48367 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
 		6217B1DC87DB3D1206277B17 /* MissionProps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A7B277A67AB843AA132612 /* MissionProps.swift */; };
 		621940E42BA323EFC33F0F7E /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
+		6227ADF7F66A4AC3564284A1 /* rider_dude2.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = BA87D0E674ED4B1DB97BB0BE /* rider_dude2.mp4 */; };
 		6373BFD599684FB42ACE19A1 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
 		6477786B4FEC8FD6E79B7681 /* neon-facade-01.png in Resources */ = {isa = PBXBuildFile; fileRef = EE1999A537D2D7C94544538B /* neon-facade-01.png */; };
 		673451B190DBEFCCA82C5ECD /* grid-screen-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 72882052C02160C92D4332AF /* grid-screen-01.png */; };
@@ -92,6 +95,8 @@
 		85C91382980E550D91339EA6 /* rider_cal.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9053514CE8B1F571D4E90C4A /* rider_cal.jpg */; };
 		874F606EA09A1D02E81137AB /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
 		885303A15E3F89A5862F508F /* rider_girl1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */; };
+		891F1D0CCE717182D80AC2C5 /* rider_dude1.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 8EDF10696E742E8061B8AF01 /* rider_dude1.mp4 */; };
+		897136502D5DAA76E7123DF3 /* rider_girl1.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C5166421E2AA1C608CB65D5B /* rider_girl1.mp4 */; };
 		8A156D2A07099DCA7F9BC9F2 /* LightCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */; };
 		8A6A51D6C9392E5BB5DBFEE4 /* story_3.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E86D56308A5079A2AB4ACC26 /* story_3.jpg */; };
 		8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
@@ -157,6 +162,7 @@
 		F611F1A14B9E7E7897D1153C /* Debrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3073385324BD69D6531D493B /* Debrief.swift */; };
 		F7F866353C2595C4A553AFFA /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
 		F8D064177C2090AA84FD26C1 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4CEFC5EEF0192DCE155B6328 /* OFL.txt */; };
+		FB396F46FA9102E4E3803E26 /* rider_girl1.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C5166421E2AA1C608CB65D5B /* rider_girl1.mp4 */; };
 		FC6957272CC122A996E98B49 /* rider_dude2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = EAF66509AA5D17A0EA16E4BF /* rider_dude2.jpg */; };
 		FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
 		FE6704324A71430E871D40F5 /* rider_girl1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */; };
@@ -211,6 +217,7 @@
 		84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaAI.swift; sourceTree = "<group>"; };
 		85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Speeder.usdz; sourceTree = "<group>"; };
 		868ACE88113A37309BDE3C7D /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
+		8EDF10696E742E8061B8AF01 /* rider_dude1.mp4 */ = {isa = PBXFileReference; path = rider_dude1.mp4; sourceTree = "<group>"; };
 		9053514CE8B1F571D4E90C4A /* rider_cal.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_cal.jpg; sourceTree = "<group>"; };
 		92AB31F80D364C74D73A338B /* neon-facade-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-03.png"; sourceTree = "<group>"; };
 		95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessor.swift; sourceTree = "<group>"; };
@@ -227,7 +234,9 @@
 		B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameCapture.swift; sourceTree = "<group>"; };
 		B36422554C4AD2CC76BF3BBE /* Avatar.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Avatar.usdz; sourceTree = "<group>"; };
 		B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailRenderer.swift; sourceTree = "<group>"; };
+		BA87D0E674ED4B1DB97BB0BE /* rider_dude2.mp4 */ = {isa = PBXFileReference; path = rider_dude2.mp4; sourceTree = "<group>"; };
 		BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meshes.swift; sourceTree = "<group>"; };
+		C5166421E2AA1C608CB65D5B /* rider_girl1.mp4 */ = {isa = PBXFileReference; path = rider_girl1.mp4; sourceTree = "<group>"; };
 		C9878B4DE09B4382EE413D42 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederController.swift; sourceTree = "<group>"; };
 		D53555799C92B0DC533C8214 /* SpeederProtoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpeederProtoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -385,10 +394,13 @@
 				9053514CE8B1F571D4E90C4A /* rider_cal.jpg */,
 				E873C21482E6F4167AF7B221 /* Rider_cal.usdz */,
 				00808F59DC25A18E38359447 /* rider_dude1.jpg */,
+				8EDF10696E742E8061B8AF01 /* rider_dude1.mp4 */,
 				F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */,
 				EAF66509AA5D17A0EA16E4BF /* rider_dude2.jpg */,
+				BA87D0E674ED4B1DB97BB0BE /* rider_dude2.mp4 */,
 				37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */,
 				9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */,
+				C5166421E2AA1C608CB65D5B /* rider_girl1.mp4 */,
 				9DB0CC259A8A6C66CF178667 /* Rider_girl1.usdz */,
 				85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */,
 				5B58731A4EF9758C2717FA4B /* story_1.jpg */,
@@ -585,8 +597,11 @@
 				F58BE43E6D659082669B5D23 /* neon-skyline.png in Resources */,
 				E4113F89B673D82A112EAC50 /* rider_cal.jpg in Resources */,
 				287208EECD1696CB5CBDDFA6 /* rider_dude1.jpg in Resources */,
+				891F1D0CCE717182D80AC2C5 /* rider_dude1.mp4 in Resources */,
 				FC6957272CC122A996E98B49 /* rider_dude2.jpg in Resources */,
+				6227ADF7F66A4AC3564284A1 /* rider_dude2.mp4 in Resources */,
 				885303A15E3F89A5862F508F /* rider_girl1.jpg in Resources */,
+				897136502D5DAA76E7123DF3 /* rider_girl1.mp4 in Resources */,
 				451774AC556FB15981FC8971 /* story_1.jpg in Resources */,
 				472C0735C4D70DF7B9F64EA7 /* story_2.jpg in Resources */,
 				8A6A51D6C9392E5BB5DBFEE4 /* story_3.jpg in Resources */,
@@ -625,8 +640,11 @@
 				F05D16985B22898D5314BBF5 /* neon-skyline.png in Resources */,
 				85C91382980E550D91339EA6 /* rider_cal.jpg in Resources */,
 				409B956B01AA9276DE82FF9C /* rider_dude1.jpg in Resources */,
+				3F7B818E7B637A6E084541C0 /* rider_dude1.mp4 in Resources */,
 				E41BF9802C5F32D8AADD3E47 /* rider_dude2.jpg in Resources */,
+				1A38F96A51FF864BE83B2A30 /* rider_dude2.mp4 in Resources */,
 				FE6704324A71430E871D40F5 /* rider_girl1.jpg in Resources */,
+				FB396F46FA9102E4E3803E26 /* rider_girl1.mp4 in Resources */,
 				4C8F89058E4C29D76391BBCF /* story_1.jpg in Resources */,
 				6E6AF363F83824C9A80282B8 /* story_2.jpg in Resources */,
 				B29C27AEA5231468237F3607 /* story_3.jpg in Resources */,

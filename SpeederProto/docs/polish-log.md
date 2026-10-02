@@ -538,5 +538,9 @@ four riders, the second trip through the cabinet. Mark's four shop renders are i
 
 Shots: `Captures/polish/p14/sim/` (title, story beats 1 / 3 / 6 / 7 / 9, riders page with Mira on the board
 behind it, settings); `p14/cal|dude2|girl1/frame-5` (the three other rigs riding: 54 / 42 / 44 joints,
-all pose with the same axes). Not built: rider intro clips on the card (KERB loops a 5 s mp4; the stills
-are used here), a shop / garage tie-in, the story's audio.
+all pose with the same axes). Follow-up the same night: the card grew (portrait 140 x 172 with KERB's 5 s profile clips looping
+muted over the stills, `Resources/rider_<id>.mp4`, ~130 KB each; `LoopingClipView` is AVQueuePlayer +
+AVPlayerLooper on both platforms; Cal has no clip and shows the still), name and tag on one line, the
+bio wrapping, HOME and SIGNATURE lines, the four handling bars two by two with signed percentages, all
+inside the left gradient where they read (`p14/sim/riders3-23`). Not built: a shop / garage tie-in, the
+story's audio.

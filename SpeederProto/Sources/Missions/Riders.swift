@@ -25,6 +25,7 @@ struct RiderProfile: Identifiable, Equatable {
     let handling: RiderHandling
     let signature: String      // what they are known for on the board
     let still: String          // jpg resource
+    let clip: String?          // mp4 resource (KERB's 5 s profile clip), looped on the card
 }
 
 enum Roster {
@@ -33,22 +34,22 @@ enum Roster {
                      bio: ["KERB FM's courier since the station's first night.",
                            "First through the cabinet, first back for more."],
                      handling: RiderHandling(steer: 1.0, climb: 1.0, boost: 1.0, hull: 1.0),
-                     signature: "CLEAN LINES", still: "rider_cal"),
+                     signature: "CLEAN LINES", still: "rider_cal", clip: nil),
         RiderProfile(id: "dude1", asset: "Rider_dude1", name: "JONAH VANCE", tag: "BLEACH  //  BOWL LOCAL", home: "Cannery Bowl",
                      bio: ["Learned the Cannery Bowl before it had coping.",
                            "Says nothing in the Grid is taller than his airs."],
                      handling: RiderHandling(steer: 0.94, climb: 1.12, boost: 1.06, hull: 0.95),
-                     signature: "BIG AIR", still: "rider_dude1"),
+                     signature: "BIG AIR", still: "rider_dude1", clip: "rider_dude1"),
         RiderProfile(id: "dude2", asset: "Rider_dude2", name: "DOMINIC ROOK", tag: "ROOK  //  STREET", home: "Dex's Block",
                      bio: ["Rode for Dex's crew until Dex started charging for the ledges.",
                            "Rails, conduits, anything with an edge on it."],
                      handling: RiderHandling(steer: 1.12, climb: 0.92, boost: 0.96, hull: 1.08),
-                     signature: "TIGHT STEER", still: "rider_dude2"),
+                     signature: "TIGHT STEER", still: "rider_dude2", clip: "rider_dude2"),
         RiderProfile(id: "girl1", asset: "Rider_girl1", name: "MIRA SABLE", tag: "SABLE  //  PLAZA", home: "Cannery plaza",
                      bio: ["Cannery's little sister and the plaza's manual queen.",
                            "Filmed the last KERB FM show. Wants the next one."],
                      handling: RiderHandling(steer: 1.04, climb: 0.98, boost: 1.12, hull: 0.9),
-                     signature: "LONG BOOST", still: "rider_girl1"),
+                     signature: "LONG BOOST", still: "rider_girl1", clip: "rider_girl1"),
     ]
 
     static let key = "rider.id"

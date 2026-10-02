@@ -1,5 +1,6 @@
 import SwiftUI
 import QuartzCore
+import AVFoundation
 #if os(macOS)
 import AppKit
 #else
@@ -404,44 +405,66 @@ struct FrontEndView: View {
 
     private func rosterCard(_ sel: Int, hot: Bool) -> some View {
         let r = Roster.all[max(0, min(Roster.all.count - 1, sel))]
-        return HStack(alignment: .top, spacing: 14) {
-            stepper("chevron.left") { controller.adjust("roster", by: -1) }.frame(height: 110)
-            ZStack {
+        let h: CGFloat = 172
+        return HStack(alignment: .top, spacing: 16) {
+            stepper("chevron.left") { controller.adjust("roster", by: -1) }.frame(height: h)
+            // portrait: the profile clip looping silently when the rider has one, over the still
+            ZStack(alignment: .bottomLeading) {
                 Rectangle().fill(Color.white.opacity(0.06))
                 if let img = BundledImage.load(r.still, ext: "jpg") {
                     Image(decorative: img, scale: 1).resizable().aspectRatio(contentMode: .fill)
                 }
+                if let clip = r.clip, let url = Bundle.main.url(forResource: clip, withExtension: "mp4") {
+                    LoopingClipView(url: url)
+                }
+                Text("\(sel + 1) OF \(Roster.all.count)").font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1.5)
+                    .foregroundStyle(.white.opacity(0.85)).padding(.horizontal, 7).padding(.vertical, 3)
+                    .background(Color.black.opacity(0.55)).clipShape(CutCorner(cut: 3)).padding(8)
             }
-            .frame(width: 92, height: 110).clipShape(CutCorner(cut: 8))
-            .overlay(CutCorner(cut: 8).stroke(hot ? accent : Color.white.opacity(0.25), lineWidth: 1.5))
+            .frame(width: 140, height: h).clipShape(CutCorner(cut: 10))
+            .overlay(CutCorner(cut: 10).stroke(hot ? accent : Color.white.opacity(0.25), lineWidth: 1.5))
+            .shadow(color: hot ? accent.opacity(0.35) : .clear, radius: 12)
             .id(r.id)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(r.name).font(HUDStyle.display(HUDStyle.headingSize)).tracking(2).foregroundStyle(.white)
-                    Text(r.tag).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(accent)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(r.name).font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(3).foregroundStyle(.white)
+                    Text(r.tag).font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(accent)
                 }
                 ForEach(r.bio, id: \.self) { line in
-                    Text(line).font(HUDStyle.body(HUDStyle.bodySize - 1)).foregroundStyle(.white.opacity(0.7)).lineLimit(1)
+                    Text(line).font(HUDStyle.body(HUDStyle.bodySize)).foregroundStyle(.white.opacity(0.78))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                HStack(spacing: 14) {
-                    bar("STEER", r.handling.steer); bar("CLIMB", r.handling.climb); bar("BOOST", r.handling.boost); bar("HULL", r.handling.hull)
+                HStack(spacing: 8) {
+                    Text("HOME").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(.white.opacity(0.45))
+                    Text(r.home.uppercased()).font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.2).foregroundStyle(.white.opacity(0.8))
                 }
-                .padding(.top, 3)
-                Text("\(r.signature)  //  \(r.home.uppercased())  //  \(sel + 1) OF \(Roster.all.count)")
-                    .font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.2).foregroundStyle(.white.opacity(0.4))
+                .padding(.top, 2)
+                HStack(spacing: 8) {
+                    Text("SIGNATURE").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(accent)
+                    Text(r.signature).font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5).foregroundStyle(.white)
+                }
+                // handling, two by two, inside the dark gradient where it reads
+                HStack(alignment: .top, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 5) { bar("STEER", r.handling.steer); bar("CLIMB", r.handling.climb) }
+                    VStack(alignment: .leading, spacing: 5) { bar("BOOST", r.handling.boost); bar("HULL", r.handling.hull) }
+                }
+                .padding(.top, 4)
             }
-            stepper("chevron.right") { controller.adjust("roster", by: 1) }.frame(height: 110)
+            .frame(width: 420, alignment: .leading)
+            stepper("chevron.right") { controller.adjust("roster", by: 1) }.frame(height: h)
         }
     }
 
     private func bar(_ label: String, _ v: Float) -> some View {
         let f = RiderHandling.bar(v)
-        return VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).foregroundStyle(.white.opacity(0.5))
+        return HStack(spacing: 8) {
+            Text(label).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.2).foregroundStyle(.white.opacity(0.6)).frame(width: 46, alignment: .leading)
             ZStack(alignment: .leading) {
-                Rectangle().fill(Color.white.opacity(0.14)).frame(width: 54, height: 4)
-                Rectangle().fill(accent).frame(width: 54 * CGFloat(0.15 + 0.85 * f), height: 4)
+                Rectangle().fill(Color.white.opacity(0.14)).frame(width: 96, height: 5)
+                Rectangle().fill(accent).frame(width: 96 * CGFloat(0.12 + 0.88 * f), height: 5)
             }
+            Text(v >= 1 ? "+\(Int((v - 1) * 100))" : "\(Int((v - 1) * 100))").font(HUDStyle.display(HUDStyle.labelSize)).monospacedDigit()
+                .foregroundStyle(v > 1.001 ? accent : (v < 0.999 ? Color.white.opacity(0.45) : Color.white.opacity(0.7))).frame(width: 30, alignment: .trailing)
         }
     }
 
@@ -645,4 +668,48 @@ final class LoaderLineView: LoaderHostView {
         a.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.6, 0.35, 1)
         fill.add(a, forKey: "fill")
     }
+}
+
+
+// MARK: - Looping profile clip (AVQueuePlayer + AVPlayerLooper, muted, aspect-fill; Mac and iOS)
+
+#if os(macOS)
+final class PlayerHostView: NSView {
+    let playerLayer = AVPlayerLayer()
+    override init(frame: NSRect) { super.init(frame: frame); wantsLayer = true; layer?.addSublayer(playerLayer) }
+    required init?(coder: NSCoder) { fatalError() }
+    override func layout() { super.layout(); playerLayer.frame = bounds }
+}
+struct LoopingClipView: NSViewRepresentable {
+    let url: URL
+    func makeNSView(context: Context) -> PlayerHostView { let v = PlayerHostView(); context.coordinator.attach(v.playerLayer, url); return v }
+    func updateNSView(_ v: PlayerHostView, context: Context) {}
+    static func dismantleNSView(_ v: PlayerHostView, coordinator: Coordinator) { coordinator.detach(v.playerLayer) }
+    func makeCoordinator() -> ClipCoordinator { ClipCoordinator() }
+}
+#else
+final class PlayerHostView: UIView {
+    override class var layerClass: AnyClass { AVPlayerLayer.self }
+    var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+}
+struct LoopingClipView: UIViewRepresentable {
+    let url: URL
+    func makeUIView(context: Context) -> PlayerHostView { let v = PlayerHostView(); v.backgroundColor = .clear; context.coordinator.attach(v.playerLayer, url); return v }
+    func updateUIView(_ v: PlayerHostView, context: Context) {}
+    static func dismantleUIView(_ v: PlayerHostView, coordinator: Coordinator) { coordinator.detach(v.playerLayer) }
+    func makeCoordinator() -> ClipCoordinator { ClipCoordinator() }
+}
+#endif
+
+final class ClipCoordinator {
+    var looper: AVPlayerLooper?
+    func attach(_ layer: AVPlayerLayer, _ url: URL) {
+        let player = AVQueuePlayer()
+        player.isMuted = true
+        looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+        layer.player = player
+        layer.videoGravity = .resizeAspectFill
+        player.play()
+    }
+    func detach(_ layer: AVPlayerLayer) { layer.player?.pause(); layer.player = nil; looper = nil }
 }
