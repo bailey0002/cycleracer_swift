@@ -8,12 +8,19 @@ struct SpeederApp: App {
     @StateObject private var controller = GameController()
     init() { _ = Self.launchTime; setvbuf(stdout, nil, _IOLBF, 0); HUDStyle.registerFonts() }
 
+    /// The unit-test host: no scene, no world build (the tests drive the pure game logic directly).
+    static let testHost = ProcessInfo.processInfo.environment["SPEEDER_TESTS"] == "1"
+
     var body: some Scene {
-        WindowGroup("Speeder") {
-            ContentView(controller: controller)
-                #if os(macOS)
-                .frame(minWidth: 960, minHeight: 540)
-                #endif
+        WindowGroup("Kerb: Galactic") {
+            if Self.testHost {
+                Text("SpeederProto tests").frame(width: 320, height: 120)
+            } else {
+                ContentView(controller: controller)
+                    #if os(macOS)
+                    .frame(minWidth: 960, minHeight: 540)
+                    #endif
+            }
         }
     }
 }

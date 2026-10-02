@@ -610,13 +610,14 @@ enum ProceduralTextures {
 
     /// Arena floor tile: near-black base with a cyan grid in the emissive map. One tile covers
     /// 4 x 4 cells; the material repeats it, so the major line lands every tile edge.
-    static func gridFloor(size: Int = 512) -> (base: CGImage, emissive: CGImage) {
+    static func gridFloor(size: Int = 512, accent: SIMD3<Float> = SIMD3(0.28, 0.82, 1.0)) -> (base: CGImage, emissive: CGImage) {
         let cells = 4
+        let tint = SIMD3<Float>(0.7, 0.7, 0.7) + accent * 0.5
         let base = makeImage(width: size, height: size) { x, y in
             let u = Float(x) / Float(size), v = Float(y) / Float(size)
             let n = fbm(u * 6, v * 6, octaves: 3, seed: 71, wrap: 6)
             let c: Float = 0.012 + n * 0.014
-            return SIMD4<Float>(c * 0.8, c * 0.95, c * 1.25, 1)
+            return SIMD4<Float>(c * tint.x, c * tint.y, c * tint.z, 1)
         }
         let emissive = makeImage(width: size, height: size) { x, y in
             let fx = Float(x) + 0.5, fy = Float(y) + 0.5
@@ -630,18 +631,19 @@ enum ProceduralTextures {
             let dxEdge = min(fx, Float(size) - fx), dyEdge = min(fy, Float(size) - fy)
             let major = clamp01(1 - min(dxEdge, dyEdge) / 3.2)
             let l = max(minor * 0.55, major)
-            let col = SIMD3<Float>(0.18, 0.85, 1.0) * l
+            let col = accent * l
             return SIMD4<Float>(col.x, col.y, col.z, 1)
         }
         return (base, emissive)
     }
 
     /// Tall luminous wall panel: dark slab with a bright vertical panel and a top rail in the emissive map.
-    static func gridWall(width: Int = 256, height: Int = 512) -> (base: CGImage, emissive: CGImage) {
+    static func gridWall(width: Int = 256, height: Int = 512, accent: SIMD3<Float> = SIMD3(0.28, 0.82, 1.0)) -> (base: CGImage, emissive: CGImage) {
+        let tint = SIMD3<Float>(0.7, 0.7, 0.7) + accent * 0.5
         let base = makeImage(width: width, height: height) { x, y in
             let u = Float(x) / Float(width)
             let panel = abs(u - 0.5) < 0.36 ? Float(0.035) : Float(0.018)
-            return SIMD4<Float>(panel * 0.8, panel * 1.0, panel * 1.3, 1)
+            return SIMD4<Float>(panel * tint.x, panel * tint.y, panel * tint.z, 1)
         }
         let emissive = makeImage(width: width, height: height) { x, y in
             let u = Float(x) / Float(width), v = Float(y) / Float(height)
@@ -655,15 +657,46 @@ enum ProceduralTextures {
             }
             if frame { l = 1.0 }
             if v < 0.03 { l = 1.0 }       // top rail (v = 0 is the top of the image)
-            let col = SIMD3<Float>(0.22, 0.80, 1.0) * l
+            let col = accent * l
             return SIMD4<Float>(col.x, col.y, col.z, 1)
         }
         return (base, emissive)
     }
 
+    /// Red-and-white diagonal stripes (a road barricade); tiles horizontally.
+    static func chevronStripes(size: Int = 128) -> CGImage {
+        makeImage(width: size, height: size) { x, y in
+            let u = Float(x) / Float(size), v = Float(y) / Float(size)
+            let s = fmod(u + v * 0.7 + 2, 0.5) < 0.25
+            let c: SIMD3<Float> = s ? SIMD3(1.0, 0.10, 0.14) : SIMD3(0.92, 0.92, 0.95)
+            let edge: Float = v < 0.08 || v > 0.92 ? 0.35 : 1
+            return SIMD4<Float>(c.x * edge, c.y * edge, c.z * edge, 1)
+        }
+    }
+
+    /// A red arrow on a dark panel: `direction` -1 left, 0 ahead (up), 1 right.
+    static func arrowSign(direction: Int, width: Int = 192, height: Int = 128) -> CGImage {
+        makeImage(width: width, height: height) { x, y in
+            var u = (Float(x) + 0.5) / Float(width), v = 1 - (Float(y) + 0.5) / Float(height)   // v up
+            // map into "arrow points right" space
+            switch direction {
+            case -1: u = 1 - u
+            case 0: let t = u; u = v * 1.5 - 0.25; v = 1 - t; v = 0.5 + (v - 0.5) * 0.66
+            default: break
+            }
+            let cx = u - 0.5, cy = v - 0.5
+            let shaft = abs(cy) < 0.12 && cx > -0.34 && cx < 0.12
+            let head = cx >= 0.10 && cx < 0.38 && abs(cy) < (0.38 - cx) * 1.1
+            let inside = shaft || head
+            let border = abs(u - 0.5) > 0.47 || abs(v - 0.5) > 0.45
+            let c: SIMD3<Float> = inside ? SIMD3(1.0, 0.12, 0.16) : (border ? SIMD3(0.35, 0.05, 0.06) : SIMD3(0.05, 0.02, 0.03))
+            return SIMD4<Float>(c.x, c.y, c.z, 1)
+        }
+    }
+
     /// Environment for the arena: black zenith, a cold blue horizon band and a faint
     /// reflected grid glow below it, so the floor picks up a cyan reflection.
-    static func environmentGrid(width: Int = 1024, height: Int = 512) -> CGImage {
+    static func environmentGrid(width: Int = 1024, height: Int = 512, accent: SIMD3<Float> = SIMD3(0.28, 0.82, 1.0)) -> CGImage {
         makeImage(width: width, height: height) { x, y in
             let u = Float(x) / Float(width)
             let v = Float(y) / Float(height)
@@ -671,15 +704,15 @@ enum ProceduralTextures {
             var c = SIMD3<Float>(0.002, 0.003, 0.006)
             if elev >= 0 {
                 let t = pow(clamp01(1 - elev / (Float.pi / 2)), 4.0)
-                c += SIMD3<Float>(0.02, 0.05, 0.10) * t
+                c += accent * 0.1 * t
             } else {
                 c = SIMD3<Float>(0.004, 0.008, 0.014)
             }
             c += SIMD3<Float>(0.5, 0.8, 1.0) * stars(u: u, v: v, elev: elev, density: 0.07, seed: 19) * 0.5
             let band = exp(-pow((elev - 0.01) / 0.03, 2)) * 0.7 + exp(-pow((elev - 0.02) / 0.12, 2)) * 0.18
             let pulse = 0.85 + 0.15 * sin(u * Float.pi * 2 * 6)
-            c += SIMD3<Float>(0.15, 0.75, 1.0) * band * pulse
-            if elev < 0 { c += SIMD3<Float>(0.12, 0.6, 0.9) * exp(-pow((elev + 0.03) / 0.06, 2)) * 0.15 }
+            c += accent * band * pulse
+            if elev < 0 { c += accent * 0.85 * exp(-pow((elev + 0.03) / 0.06, 2)) * 0.15 }
             return SIMD4<Float>(c.x, c.y, c.z, 1)
         }
     }

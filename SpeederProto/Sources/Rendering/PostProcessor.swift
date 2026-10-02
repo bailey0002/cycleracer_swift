@@ -36,6 +36,8 @@ final class PostProcessor {
     var lightning: Float = 0
     /// Screen-space rain strength 0...1 (eased; off in enclosed sections).
     var rain: Float = 0
+    /// Heavy weather closing the streets: thickens the depth fog while it rains (chapter 3).
+    var rainFog: Float = 0
     var flash: Float = 0
     /// 0 in the open, 1 inside a tunnel or conduit: denser, darker fog and a tighter vignette.
     var enclosure: Float = 0
@@ -113,7 +115,18 @@ final class PostProcessor {
         return tex
     }
 
+    /// `SPEEDER_ICON_SHOT=1`: no post pass at all (a flat key colour must survive for the icon matte).
+    private let bypass = ProcessInfo.processInfo.environment["SPEEDER_ICON_SHOT"] == "1"
+
     func process(_ ctx: ARView.PostProcessContext) {
+        if bypass {
+            blit(ctx)
+            if let capture = captureRequest {
+                captureRequest = nil
+                FrameCapture.schedule(ctx.targetColorTexture, on: ctx.commandBuffer, device: ctx.device, completion: capture)
+            }
+            return
+        }
         if device == nil { prepare(device: ctx.device) }
         let src = ctx.sourceColorTexture
         let dst = ctx.targetColorTexture
@@ -144,7 +157,7 @@ final class PostProcessor {
         let bloomMul: Float = [0.5, 1.0, 2.0][lvl]
         let threshold: Float = [0.84, 0.74, 0.56][lvl]
         let enc = enclosure, kk = kick
-        let fogDensity: Float = [0.0020, 0.0060, 0.0140][max(0, min(2, s.fogLevel))] * th.fogDensityScale * (1 + 1.5 * enc)
+        let fogDensity: Float = [0.0020, 0.0060, 0.0140][max(0, min(2, s.fogLevel))] * th.fogDensityScale * (1 + 1.5 * enc) * (1 + 1.1 * rainFog)
         u.vanishingTexel = SIMD4<Float>(vanishing.x, vanishing.y, flash, threshold)
         u.bloom = SIMD4<Float>((isHDR ? 0.6 : 0.72) * bloomMul,
                                s.streaks ? (0.12 + sp * 0.5 + kk * 0.35 + boost * 0.18) * th.streakScale : 0,
@@ -155,7 +168,7 @@ final class PostProcessor {
         u.haze = SIMD4<Float>(thrusterUV.x, thrusterUV.y, (0.35 + sp * 0.4 + boost * 0.9) * (s.particles ? 1 : 0), 0.06 + boost * 0.05)
         u.extra = SIMD4<Float>(lightning, 1, s.lensFX ? th.lensScale : 0, s.motionBlur ? speed / 60 * (0.22 + boost * 0.4) : 0)
         u.vehicle = SIMD4<Float>(vehicleUV.x, vehicleUV.y, vehicleDistance, 0.42)
-        u.weather = SIMD4<Float>(rain, 14 + sp * 10, 0, 0)
+        u.weather = SIMD4<Float>(rain, 14 + sp * 10, th.fogMax, 0)
         u.proj.z = (isHDR ? 1.2 : 1.0) * th.exposure
         u.proj.w = th.vignette
         let fogMode: Float = s.fog ? (depthUsable == false ? 2 : 1) : 0

@@ -28,6 +28,9 @@ final class InputState {
     var padClimb: Float = 0
     var padBoost = false
     var padFire = false
+    /// Hoverboard tricks (pad X / Y, keyboard Z / C): 360 spin and barrel roll. Level, edge-detected by the controller.
+    var trickSpin = false
+    var trickRoll = false
     /// Pad B (the front end's back; cruise down in free play).
     var padBack = false
     var screenshotRequested = false
@@ -118,7 +121,9 @@ final class GamepadInput {
         input.padSteer = (steer == 0 && climb == 0) ? nil : steer
         input.padClimb = climb
         input.padBoost = gp.rightTrigger.value > 0.3 || gp.rightShoulder.isPressed
-        input.padFire = gp.buttonA.isPressed || gp.leftTrigger.value > 0.3 || gp.buttonX.isPressed
+        input.padFire = gp.buttonA.isPressed || gp.leftTrigger.value > 0.3 || gp.leftShoulder.isPressed
+        input.trickSpin = gp.buttonX.isPressed
+        input.trickRoll = gp.buttonY.isPressed
         input.speedUp = gp.buttonY.isPressed
         input.speedDown = gp.buttonB.isPressed
         input.padBack = gp.buttonB.isPressed
@@ -262,6 +267,8 @@ final class GameARView: ARView {
         case 125, 1:  input.down = down
         case 49:      input.boost = down
         case 3, 36:   input.fire = down          // F, return
+        case 6:       input.trickSpin = down     // Z: 360 (hoverboard)
+        case 8:       input.trickRoll = down     // C: barrel roll (hoverboard)
         case 30:      input.speedUp = down       // ]
         case 33:      input.speedDown = down     // [
         case 35:      if down { input.screenshotRequested = true }

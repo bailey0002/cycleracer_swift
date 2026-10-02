@@ -543,6 +543,74 @@ spine) against twenty-three narrative-driven vehicle games; this pass built its 
   from the round's outcome, the lead, match point and the record at match start; shown 2.4 s after the
   derez once the attribution has cleared. The intro taunt gains a third-meeting tier.
 
+## Headless tests, balance, agency (27 Sep 2026, evening)
+
+Branch `claude/phone-pass` (`docs/polish-log.md`, last section; `Captures/polish/p10/`).
+
+- **Tests** (`Tests/MissionLoopTests.swift`, target `SpeederProtoTests`, hosted by the Mac app with
+  `SPEEDER_TESTS=1` so no world is built): a 60 Hz headless loop over `MissionRunner` with the game's
+  speed model and a `Rider` profile (cruise, hits, boost, beacons, targets, the split). Fourteen tests
+  cover the boost hysteresis, the accept edge, gate time, replay pay, salvage and sweep failure, the
+  dive bruise, the helmet, the inbox and garage, the unlock order, the save migration, the side offers
+  and the balance table. Run:
+
+  ```bash
+  cd SpeederProto && export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer && xcodebuild test -project SpeederProto.xcodeproj -scheme SpeederProto-macOS -configuration Debug -derivedDataPath build-tests CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "error:|Test Case.*(passed|failed)|Executed|credits per"
+  ```
+- **Balance** from that loop: windows are the net cruise time (distance at 45 m/s less the gate refunds)
+  plus 30 % (RELAY 01 66 -> 50 s, DIVE 01 62 -> 50 s, every job in the log's table), so plain cruise
+  keeps a quarter of the window and FAST needs boost; the purse takes score / 20 (was / 5) and 3 per
+  second left (was 5); salvage targets count in the gold ceiling; the garage doubled (HULL 1,200 /
+  2,400, BOOST 1,000 / 2,000, SPARE CORE 1,800, HELMET 1,400) against a clean chapter of about 5,700
+  credits. A clean run is gold, a sloppy one bronze, a reckless dive fails.
+- **Agency** (assessment 5.5): cleared jobs are a bitmask, so the first job of a chapter opens the next
+  two, each further job needs one more cleared, the duel waits for all, and the runner moves to the next
+  open job. Three **side offers** (`SideOffer`, `Mission.offers`) sit after the jobs as amber chips once
+  their flag is earned: KADE's tunnel line (CLEAN on RELAY 02: the split through the tunnel, +150),
+  ORIN's dark pipe (FAST on RUN 02: DIVE 01 with ten seconds less, +300), SABLE's whole ledger (GOLD on
+  SALVAGE 02: every beacon of SWEEP 03, +500); the sender briefs it, the bonus pays once, the rule can
+  fail the run (`TOOK THE SKYWAY`). The contact acknowledges the **fork** on the result card
+  ("The tunnel. Kade saw that."). `SPEEDER_FLAGS=2:1` puts an offer on the table for a capture.
+
+## Generated art (28 Sep 2026)
+
+`docs/art-brief.md` is the brief for AI-generated environment images (palettes per world with hex
+values, one paste-ready prompt per asset). The first batch is prepared into `Resources/Art/` and
+loaded by `Rendering/ArtLibrary.swift`: generated facade tiles join the facade pool (albedo + emissive),
+billboards join the sign pool, storefront quads sit at street level, a skyline strip stands 620 m out
+behind the rings, and The Grid gets a stadium bowl and a hanging screen. `SPEEDER_ART=0` keeps every
+image out (the A/B baseline); a missing file keeps the procedural look. `Theme.fogMax` caps the depth
+fog per world so a backdrop survives it (`docs/polish-log.md`, "Generated art").
+
+## Street polish (28 Sep 2026)
+
+From the reference render: The Grid's accent is a palette (`gridPalette`: cyan, red, amber, violet; a duel
+takes the rival's), the rain falls (it climbed), rain comes in showers and closes the streets in chapter 3
+(`SPEEDER_RAIN=always|showers|heavy|0`), the street has black asphalt aprons with the buildings set further
+back, and bends open onto **crossroads**: a cross street through the towers, chevron barricades, and a red
+arrow gantry pointing the way (`docs/polish-log.md`, "Street polish").
+
+## KERB: GALACTIC (1 Oct 2026)
+
+The game is titled **KERB: GALACTIC**, the companion to KERB (the skate game in `../kerb_skate_game`): the same
+Griptap & Co shop, the same four riders, the second trip through the cabinet. First run: title -> RIDERS
+(profile cards, live handling bars on the hoverboard) -> STORY (Mark's four shop panels as a motion comic;
+replay from SETTINGS) -> CALLSIGN -> the first briefing. `SPEEDER_SCREEN=story|riders`, `SPEEDER_STORYBEAT=<n>`,
+`SPEEDER_RIDER=cal|dude1|dude2|girl1`. Product name and bundle id stay `SpeederProto`. Details:
+`docs/polish-log.md` "KERB: GALACTIC".
+
+## The hoverboard (alternative vehicle, 29 Sep 2026, test build)
+
+SETTINGS > VEHICLE: SPEEDER / HOVERBOARD (or `SPEEDER_VEHICLE=board`) swaps the speeder for KERB's
+skateboard with a Character Creator rider standing on it (`Resources/Board.usdz`, `Resources/Rider.usdz`,
+copied from `../kerb_skate_game`). Same steering, altitude, conduit, collisions and effects; the wheels are
+hidden and the trucks glow as hover pods; the rider is posed procedurally every frame by
+`Scene/RiderRig.swift` (surf stance, deeper crouch with speed and boost, leans into turns and down the nose).
+Board and rider are 1.35x for the phone. Tricks: pad X = 360, pad Y = barrel roll (keyboard Z / C); the
+rider tucks and a stamp names the trick. Fire is also on L1 with a shooting arm. `SPEEDER_TRICK_AT=4:spin,7:roll`
+forces tricks for captures. The speeder path is unchanged. `SPEEDER_CAMERA=side` is the pose-check camera. Details and captures:
+`docs/polish-log.md` "The hoverboard", `Captures/polish/p13/`.
+
 ## Next steps (brief milestones 7–8)
 
 1. Measure fps and thermals on the phone over a longer run (the HUD shows fps).

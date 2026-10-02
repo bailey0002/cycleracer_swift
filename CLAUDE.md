@@ -101,6 +101,41 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   (`Missions/MessageLog.swift`, `Screen.messages`, chip on the briefing, `SPEEDER_SCREEN=messages`), chapter
   cards (`Phase.chapter`, `SPEEDER_CHAPTER_CARDS=0` to skip), the rival's in-duel comms (`Debrief.rivalLine`,
   logged as `comms:` in demo mode). Owed: 5.5 agency (after the phone pass), D4 the cast (Mark, CC5 / iClone).
+- Evening 27 Sep 2026 (branch `claude/phone-pass`, off master after PR #4): the phone stayed locked, so
+  the Backbone pass is still owed. Built instead: `Tests/MissionLoopTests.swift` (a hosted macOS test
+  target, `xcodebuild test -scheme SpeederProto-macOS`, `SPEEDER_TESTS=1` makes the app a bare host; a
+  60 Hz headless loop over `MissionRunner` with rider profiles), the balance from it (windows = net
+  cruise time + 30 %, score / 20 into the purse, garage doubled; `docs/polish-log.md` has the table),
+  and assessment 5.5 (cleared jobs as a bitmask with two jobs open at once, `SideOffer`s from KADE /
+  ORIN / SABLE as amber inbox chips, the fork acknowledged on the card). `MissionRunner` takes its
+  `UserDefaults` in `init`; `SPEEDER_FLAGS=<job>:<mask>` sets flags for captures.
+- Generated art 28 Sep 2026 (same branch): `docs/art-brief.md` (palettes + prompts), Mark's first batch in
+  `Resources/Art/`, loaded by `Rendering/ArtLibrary.swift` (`Art`; `SPEEDER_ART=0` for the baseline):
+  facades + billboards join the procedural pools, storefront quads, a skyline strip 620 m out, the Grid
+  bowl + screen. `Theme.fogMax` caps the depth fog per world (`weather.z`). Gotchas: never
+  `CGContext(data: &swiftArray)`; far backdrops must be thin boxes, not planes; a backdrop at sky depth
+  gets the fog cap, so tune `fogMax` and `Art.keyedBlack(lift:)` together.
+- Street polish 28 Sep 2026 (same branch, `docs/polish-log.md` "Street polish", `Captures/polish/p12/`):
+  `FXSettings.gridPalette` / `Theme.gridAccent` (duels take the rival's colour), the rain direction fix
+  (texture y runs down: the streak phase is `- t * speed`), showers (`GameController.rainMode`,
+  `SPEEDER_RAIN=`; chapter 3 heavy + `post.rainFog`), asphalt aprons (`SPEEDER_APRON=0`), and the
+  `.crossroad` dressing (`RoadSegment.buildCrossroad`, hidden set by bounds overlap, arrow materials swapped
+  per block). The driveable road width is unchanged on purpose.
+- Hoverboard vehicle 29 Sep 2026 (test build, `docs/polish-log.md` "The hoverboard", `Captures/polish/p13/`):
+  SETTINGS > VEHICLE or `SPEEDER_VEHICLE=board` rides KERB's board (`Resources/Board.usdz`, wheels hidden by
+  material slot, trucks emissive) with a CC5 rider (`Resources/Rider.usdz`) posed by `Scene/RiderRig.swift`
+  (a port of KERB's `SkaterRig` joint deltas, no IK). `CameraRig.lift` raises the chase camera for it;
+  `SPEEDER_CAMERA=side|side-front` is the pose camera. 30 Sep: 1.35x scale, tricks (pad X 360 / Y barrel roll,
+  `startTrick`, `SPEEDER_TRICK_AT=`), fire on L1 with `RiderRig.shoot()`; X no longer fires, Y cruise is off on the board. The sibling `../kerb_skate_game` is readable from here
+  (its `Tools/convert_cc.py` turns CC5 FBX into riders). The speeder path is untouched.
+- KERB: GALACTIC 1 Oct 2026 (`docs/polish-log.md` "KERB: GALACTIC", `Captures/polish/p14/`): the game is retitled
+  (wordmark, launch logo via `render-brand.swift --logo-only`, display name; product / bundle id unchanged) as the
+  companion to `../kerb_skate_game`. `Views/StoryIntroView.swift` (`Screen.story`, Mark's four shop panels in
+  `Resources/story_1..4.jpg`, `SPEEDER_STORYBEAT=`), `Missions/Riders.swift` (`Screen.riders`, KERB's roster,
+  `Resources/Rider_<id>.usdz`, handling live on the board, `SPEEDER_RIDER=`). First run: title -> riders -> story ->
+  callsign -> briefing (KERB's order). The board is controller-only (pad X 360, Y roll, L1 fire), no touch.
+  App icon = the rider mid-360 over the KERB wordmark (`Tools/brand/icon-rider.png` shot with `SPEEDER_ICON_SHOT=1`,
+  rendered by `swift Tools/render-brand.swift`; `--logo-only` for the wordmark alone).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

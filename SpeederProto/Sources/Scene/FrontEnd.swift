@@ -9,6 +9,8 @@ enum Screen: Equatable {
     case worlds       // free play: pick a world
     case settings     // the player's settings
     case rider        // callsign and livery (the first run asks here before the first briefing)
+    case riders       // the rider roster: who's on the board (profile cards)
+    case story        // the Griptap & Co opening (first run, and replay from SETTINGS)
     case paused       // over a run: RESUME / SETTINGS / QUIT TO TITLE
     case messages     // the message log (from the title, the pause menu and the briefing)
     case game         // the HUD and the job cards
@@ -22,6 +24,7 @@ struct PlayerPrefs: Equatable {
     var haptics = true
     var quality = 0          // 0 high, 1 balanced, 2 battery
     var gridSteering = 0     // 0 smooth (analog), 1 snap 90
+    var vehicle = 0          // 0 speeder, 1 hoverboard (test build; `SPEEDER_VEHICLE=` overrides)
     /// The developer panel: five taps on the version line in SETTINGS (always on for the Mac).
     var devUnlocked = PlayerPrefs.devDefault
 
@@ -33,6 +36,7 @@ struct PlayerPrefs: Equatable {
     static let qualityNames = ["HIGH", "BALANCED", "BATTERY"]
     static let qualityDetail = ["FULL POST PASS", "NO MOTION BLUR OR LENS FX", "ALSO NO RAIN, REFLECTIONS, STOREFRONTS"]
     static let steeringNames = ["SMOOTH", "SNAP 90"]
+    static let vehicleNames = ["SPEEDER", "HOVERBOARD"]
 
     static func load(_ d: UserDefaults) -> PlayerPrefs {
         var p = PlayerPrefs()
@@ -41,12 +45,14 @@ struct PlayerPrefs: Equatable {
         if d.object(forKey: "prefs.haptics") != nil { p.haptics = d.bool(forKey: "prefs.haptics") }
         p.quality = max(0, min(2, d.integer(forKey: "prefs.quality")))
         p.gridSteering = max(0, min(1, d.integer(forKey: "prefs.gridSteering")))
+        p.vehicle = max(0, min(1, d.integer(forKey: "prefs.vehicle")))
         p.devUnlocked = devDefault || d.bool(forKey: "prefs.devUnlocked")
         return p
     }
     func save(_ d: UserDefaults) {
         d.set(music, forKey: "prefs.music"); d.set(effects, forKey: "prefs.effects"); d.set(haptics, forKey: "prefs.haptics")
         d.set(quality, forKey: "prefs.quality"); d.set(gridSteering, forKey: "prefs.gridSteering"); d.set(devUnlocked, forKey: "prefs.devUnlocked")
+        d.set(vehicle, forKey: "prefs.vehicle")
     }
 
     /// Graphics quality and Grid steering over the world's look (call after `Theme.adjust`).
@@ -70,6 +76,7 @@ struct MenuRow: Identifiable, Equatable {
         case toggle(Bool)
         case callsign(String)
         case livery(Int)
+        case roster(Int)           // the rider roster card, left / right to choose
     }
     let id: String
     var label: String
@@ -151,9 +158,10 @@ extension GameController {
         case .title:
             return [
                 MenuRow(id: "continue", label: missions.hasProgress ? "CONTINUE" : "START", detail: "\(m.code)  //  \(m.title)"),
+                MenuRow(id: "riders", label: "RIDERS", detail: "\(rider.name)  //  \(rider.tag)"),
                 MenuRow(id: "freeplay", label: "FREE PLAY", detail: "ANY WORLD, NO JOB"),
             ] + messagesRow + [
-                MenuRow(id: "settings", label: "SETTINGS", detail: "SOUND, GRAPHICS, RIDER"),
+                MenuRow(id: "settings", label: "SETTINGS", detail: "SOUND, GRAPHICS, CALLSIGN, STORY"),
             ]
         case .worlds:
             return [
@@ -169,9 +177,11 @@ extension GameController {
                 MenuRow(id: "haptics", label: "HAPTICS", kind: .toggle(prefs.haptics)),
                 MenuRow(id: "quality", label: "GRAPHICS", detail: PlayerPrefs.qualityDetail[prefs.quality], kind: .choice(PlayerPrefs.qualityNames, prefs.quality)),
                 MenuRow(id: "steering", label: "GRID STEERING", kind: .choice(PlayerPrefs.steeringNames, prefs.gridSteering)),
-                MenuRow(id: "rider", label: "RIDER", detail: "\(player.callsign)  //  \(player.liveryName)"),
+                MenuRow(id: "vehicle", label: "VEHICLE", detail: "TEST BUILD  //  REBUILDS THE WORLD", kind: .choice(PlayerPrefs.vehicleNames, prefs.vehicle)),
+                MenuRow(id: "rider", label: "CALLSIGN", detail: "\(player.callsign)  //  \(player.liveryName)"),
             ]
             if onTitle {
+                rows.append(MenuRow(id: "story", label: "STORY", detail: "GRIPTAP & CO  //  REPLAY THE OPENING"))
                 rows.append(MenuRow(id: "reset", label: resetArmed ? "PRESS AGAIN TO RESET" : "RESET PROGRESS", detail: "JOBS, CREDITS, GARAGE, RECORDS"))
             }
             if prefs.devUnlocked { rows.append(MenuRow(id: "dev", label: "DEVELOPER PANEL", kind: .toggle(panelVisible))) }
@@ -184,6 +194,14 @@ extension GameController {
                 MenuRow(id: "confirm", label: riderFirstRun ? "RIDE" : "DONE", detail: riderFirstRun ? "\(m.code)  //  \(m.title)" : ""),
                 MenuRow(id: "back", label: "BACK"),
             ]
+        case .riders:
+            return [
+                MenuRow(id: "roster", label: "RIDER", kind: .roster(Roster.index(of: rider))),
+                MenuRow(id: "rideon", label: riderFirstRun ? "NEXT" : "DONE", detail: riderFirstRun ? (storySeen ? "CALLSIGN AND LIVERY" : "GRIPTAP & CO") : ""),
+                MenuRow(id: "back", label: "BACK"),
+            ]
+        case .story:
+            return []
         case .messages:
             return [MenuRow(id: "back", label: "BACK")]
         case .paused:
@@ -223,7 +241,13 @@ extension GameController {
         switch id {
         case "continue":
             guard worldReady else { return }
-            if missions.isFirstRun { riderFirstRun = true; push(.rider) } else { startJobs() }
+            // first run: riders -> story -> callsign -> the first briefing (KERB's order: title, riders, story, world)
+            if missions.isFirstRun { riderFirstRun = true; push(.riders) } else { startJobs() }
+        case "riders": riderFirstRun = false; push(.riders)
+        case "roster": adjust("roster", by: 1)
+        case "rideon":
+            if riderFirstRun { pop(); push(storySeen ? .rider : .story) } else { pop() }
+        case "story": push(.story)
         case "freeplay": push(.worlds)
         case "messages": openMessages()
         case "settings": push(.settings)
@@ -261,9 +285,39 @@ extension GameController {
         case "haptics": setValue(id, prefs.haptics ? 0 : 1)
         case "quality": setValue(id, ((prefs.quality + d) % 3 + 3) % 3)
         case "steering": setValue(id, ((prefs.gridSteering + d) % 2 + 2) % 2)
+        case "vehicle": setValue(id, ((prefs.vehicle + d) % 2 + 2) % 2)
         case "livery": setLivery(player.livery + d)
+        case "roster": selectRider(Roster.index(of: rider) + d)
         default: break
         }
+    }
+
+    // MARK: Riders and the story
+
+    /// The chosen rider (Riders.swift); the hoverboard loads this rider's USDZ.
+    var rider: RiderProfile { Roster.current() }
+
+    /// Left / right on the roster card: wraps, persists, and the board reloads the rider on the next build.
+    func selectRider(_ i: Int) {
+        let n = Roster.all.count
+        let r = Roster.all[((i % n) + n) % n]
+        guard r.id != rider.id else { return }
+        Roster.select(r)
+        objectWillChange.send()
+        sound.play(.tick, volume: 0.45, pitch: 1.25)
+        if VehicleKind.current == .board { requestRebuild() }
+    }
+
+    static let storySeenKey = "story.seen"
+    var storySeen: Bool { UserDefaults.standard.bool(forKey: Self.storySeenKey) }
+
+    /// The opening ended or was skipped: mark it seen and carry on (the first run goes to the riders).
+    func finishStory() {
+        guard screen == .story else { return }
+        UserDefaults.standard.set(true, forKey: Self.storySeenKey)
+        pop()
+        if riderFirstRun { push(.rider) }
+        sound.play(.accept, volume: 0.5)
     }
 
     func setValue(_ id: String, _ v: Int) {
@@ -274,6 +328,7 @@ extension GameController {
         case "haptics": p.haptics = v != 0
         case "quality": p.quality = max(0, min(2, v))
         case "steering": p.gridSteering = max(0, min(1, v))
+        case "vehicle": p.vehicle = max(0, min(1, v))
         case "livery": setLivery(v); return
         default: return
         }
@@ -281,6 +336,7 @@ extension GameController {
         prefs = p
         prefs.save(.standard)
         applyPrefs()
+        if id == "vehicle" { requestRebuild() }       // the vehicle is loaded with the world
         // a preview at the new level: the tick for effects, the pad swells for music
         sound.play(.tick, volume: id == "effects" ? 0.8 : 0.45, pitch: 1.25)
         if id == "haptics" && p.haptics { gamepad.rumble(intensity: 0.6, sharpness: 0.5) }
@@ -328,6 +384,11 @@ extension GameController {
         input.menuRequested = false
         navPrev = (input.firing, input.padBack)
 
+        if screen == .story {
+            if select { storyNudge += 1 }
+            if back { finishStory() }
+            return
+        }
         let rows = menuRows
         if var e = callsignEdit {
             // letters: up / down change, left / right move, A keeps, B drops the edit
@@ -450,6 +511,8 @@ extension GameController {
         case "rider": riderFirstRun = true; return [.title, .rider]
         case "paused": return [.game, .paused]
         case "messages": return [.title, .messages]
+        case "riders": riderFirstRun = true; return [.title, .riders]
+        case "story": return [.title, .story]
         case "game": return [.game]
         default: return [.title]
         }

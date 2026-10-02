@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Kerb: Galactic</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -23,6 +25,6 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Speeder prototype (model: Cyberpunk Speeder by Piotr Pisiak, CC-BY-4.0)</string>
+	<string>Kerb: Galactic prototype (model: Cyberpunk Speeder by Piotr Pisiak, CC-BY-4.0)</string>
 </dict>
 </plist>

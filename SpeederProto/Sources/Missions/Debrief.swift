@@ -16,6 +16,21 @@ enum Debrief {
         var timeLeftFraction: Float = 0
         var derezCause = ""          // duels: the last cause of the player's derez ("BOXED YOURSELF", "CUT OFF BY KADE")
         var duelScore = (wins: 0, losses: 0)
+        var branch = 0               // the split, when the track had one: -1 tunnel, +1 skyway
+    }
+
+    /// The fork acknowledged (assessment 5.5): the contact saw which branch you took.
+    private static func branchLine(_ contact: String, tunnel: Bool) -> String {
+        switch (contact, tunnel) {
+        case ("VESS", true): return "The tunnel. Kade saw that."
+        case ("VESS", false): return "The skyway. Half the city saw that."
+        case ("KADE", true): return "You took the tunnel. Good instinct."
+        case ("KADE", false): return "The skyway. Orin watches the skyway."
+        case ("ORIN", true): return "The tunnel. Quieter."
+        case ("ORIN", false): return "The skyway. Showy."
+        case (_, true): return "The tunnel. As agreed."
+        case (_, false): return "The skyway. Not what I paid for."
+        }
     }
 
     private enum Key: String, CaseIterable {
@@ -92,6 +107,7 @@ enum Debrief {
         let pick = unsaid[Int(defaults.integer(forKey: "cleared") + outcome.hits) % max(1, unsaid.count)]
         said.insert(String(pick.offset))
         defaults.set(Array(said), forKey: saidKey)
+        if outcome.branch != 0 { return branchLine(contact, tunnel: outcome.branch < 0) + " " + pick.element }
         return pick.element
     }
 
@@ -99,6 +115,7 @@ enum Debrief {
     static func failure(contact: String, reason: String) -> String {
         let cause = reason.split(separator: " ").first.map(String.init) ?? reason
         switch (contact, cause) {
+        case (_, "TOOK"): return "That was the skyway. The deal was the tunnel. Again."
         case ("VESS", "CAUGHT"): return "Caught. The packet is gone. So is the fee."
         case ("VESS", "HULL"): return "Hull breached. The packet is scrap. Try again."
         case ("VESS", "TIME"): return "Late. The relay closed. Ride the window next time."

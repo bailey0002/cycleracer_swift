@@ -49,10 +49,27 @@ enum Theme: Int, CaseIterable {
         switch self {
         case .neonCity: return SIMD4(0.075, 0.045, 0.150, 0.8)
         case .sunsetCanyon: return SIMD4(0.78, 0.50, 0.32, 0.25)
-        case .theGrid: return SIMD4(0.010, 0.028, 0.060, 0.7)
+        case .theGrid: let a = Theme.gridAccent * 0.06; return SIMD4(a.x + 0.004, a.y + 0.004, a.z + 0.006, 0.7)
+        }
+    }
+
+    /// The Grid's accent (`FXSettings.gridPalette`, `SPEEDER_GRID_PALETTE=cyan|red|amber|violet`): every
+    /// floor line, wall panel, rail, pylon, the fog and the horizon band derive from it. Set before the
+    /// arena's materials are built.
+    nonisolated(unsafe) static var gridPalette = 0
+    static let gridPaletteNames = ["cyan", "red", "amber", "violet"]
+    static var gridAccent: SIMD3<Float> {
+        switch gridPalette {
+        case 1: return SIMD3(1.0, 0.22, 0.26)
+        case 2: return SIMD3(1.0, 0.64, 0.16)
+        case 3: return SIMD3(0.66, 0.36, 1.0)
+        default: return SIMD3(0.28, 0.82, 1.0)
         }
     }
     var fogDensityScale: Float { self == .sunsetCanyon ? 0.5 : 1.0 }
+    /// The most the depth fog may take: what is left is the far backdrop (the generated skyline and the
+    /// arena bowl, `Art`). The corridors keep their frozen 0.92; the Grid's bowl needs the room.
+    var fogMax: Float { switch self { case .neonCity: return 0.88; case .sunsetCanyon: return 0.92; case .theGrid: return 0.35 } }
     /// Cool lift in the shadows (neon) vs. none (daylight).
     var gradeStrength: Float { self == .sunsetCanyon ? 0.15 : 1.0 }
     var exposure: Float { self == .sunsetCanyon ? 0.82 : 1.0 }

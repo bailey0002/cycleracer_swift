@@ -13,6 +13,7 @@ final class GameController: ObservableObject {
 
     @Published var settings = FXSettings() {
         didSet {
+            if settings.gridPalette != oldValue.gridPalette, arena != nil { requestRebuild() }
             if settings.environment != oldValue.environment, world != nil || arena != nil {
                 var s = settings
                 (Theme(rawValue: s.environment) ?? .neonCity).adjust(&s)
@@ -48,6 +49,7 @@ final class GameController: ObservableObject {
     @Published var ack = ActionAck()
     private var ackTimers = (fire: Float(0), jump: Float(0), pickup: Float(0), snap: Float(0), beacon: Float(0), hit: Float(0), stamp: Float(0), boost: Float(0))
     private var stampText = ""
+    private var trickPrev = (spin: false, roll: false)
     /// Comms: the contact's line in the ear, at most three per job (launch, one event, the last stretch).
     private var commsTimer: Float = 0
     private var commsSpeaker = "", commsText = ""
@@ -81,6 +83,8 @@ final class GameController: ObservableObject {
     @Published var resetArmed = false
     /// The rider screen was opened by the first START (RIDE goes on to the first briefing).
     @Published var riderFirstRun = false
+    /// A on the story screen: hurry the beat (the view watches the count).
+    @Published var storyNudge = 0
     var devTaps = 0
     var navHold: (dir: Int, t: Float) = (0, 0)
     var navPrev: (select: Bool, back: Bool) = (false, false)
@@ -134,6 +138,23 @@ final class GameController: ObservableObject {
     private let speedParticles = Entity()
     /// Rain (screen-space, in the post pass) and the lightning clock.
     private var rainLevel: Float = 0
+    /// Showers: the rain comes and goes. `SPEEDER_RAIN=always|showers|heavy|0`; the demo keeps `always` so
+    /// captures align. Otherwise chapter 3 gets heavy showers that also thicken the fog (the streets
+    /// close in), everything else light showers.
+    private enum RainMode { case off, always, showers, heavy }
+    private var showerOn = true
+    private var showerTimer: Float = 12
+    private var rainMode: RainMode {
+        switch ProcessInfo.processInfo.environment["SPEEDER_RAIN"] {
+        case "0": return .off
+        case "always": return .always
+        case "showers": return .showers
+        case "heavy": return .heavy
+        default: break
+        }
+        if demoMode { return .always }
+        return missionActive && missions.current.chapter >= 3 ? .heavy : .showers
+    }
     /// SPEEDER_LIGHTNING_AT=<s> forces the first flash at that scene time (captures).
     private var lightningTimer: Float = Float(ProcessInfo.processInfo.environment["SPEEDER_LIGHTNING_AT"] ?? "") ?? 7
     private var lightning: Float = 0
@@ -168,6 +189,7 @@ final class GameController: ObservableObject {
     private let sideCamera = ProcessInfo.processInfo.environment["SPEEDER_ARENA_CAMERA"] == "side"
     /// SPEEDER_CAMERA=overview: a high camera behind the vehicle for corridor layout captures.
     private let corridorOverview = ProcessInfo.processInfo.environment["SPEEDER_CAMERA"] == "overview"
+    private let corridorSide = ["side", "side-front"].contains(ProcessInfo.processInfo.environment["SPEEDER_CAMERA"] ?? "")
     private var sweepSteps: [(Float, String, (inout FXSettings) -> Void)] = [
         (4.0, "all", { _ in }),
         (5.5, "source", { $0.postFX = false }),
@@ -203,6 +225,7 @@ final class GameController: ObservableObject {
 
     /// SPEEDER_VARIANT=<name> applies a look preset at launch (used by the comparison sweep).
     private func applyVariantPreset() {
+        if let g = ProcessInfo.processInfo.environment["SPEEDER_GRID_PALETTE"], let i = Theme.gridPaletteNames.firstIndex(of: g) { settings.gridPalette = i }
         guard let name = ProcessInfo.processInfo.environment["SPEEDER_VARIANT"] else { return }
         var s = settings
         switch name {
@@ -315,6 +338,12 @@ final class GameController: ObservableObject {
             sound.setMusic(world: theme.rawValue)
             let device = MTLCreateSystemDefaultDevice()
             mark("start")
+            // the arena's accent: the rival's colour family in a duel (KADE cyan, ORIN violet, SABLE amber, VESS
+            // red), the developer setting otherwise; SPEEDER_GRID_PALETTE forces one
+            Theme.gridPalette = settings.gridPalette
+            if theme == .theGrid, missionActive, let r = missions.current.rival, ProcessInfo.processInfo.environment["SPEEDER_GRID_PALETTE"] == nil {
+                Theme.gridPalette = ["KADE": 0, "ORIN": 3, "SABLE": 2, "VESS": 1][r.name] ?? settings.gridPalette
+            }
             let materials = try SceneMaterials(device: device, theme: theme)
             self.materials = materials
             mark("materials")
@@ -329,6 +358,8 @@ final class GameController: ObservableObject {
             await stage(2, theme.displayName)
             worldAnchor.addChild(speeder.root)
             self.speeder = speeder
+            cameraRig?.lift = speeder.cameraLift
+            missions.hullScale = speeder.handling.hull
             player = missions.player
             if player.tintsBike { speeder.tint(player.liveryColor, materials: materials) }
             ArenaController.playerColor = player.liveryColor
@@ -375,6 +406,13 @@ final class GameController: ObservableObject {
             let rig = CameraRig()
             worldAnchor.addChild(rig.root)
             self.cameraRig = rig
+
+            // icon shot: only the vehicle, over a flat key colour (matted into the app icon by Tools/render-brand.swift)
+            if ProcessInfo.processInfo.environment["SPEEDER_ICON_SHOT"] == "1" {
+                for child in worldAnchor.children where child !== speeder.root && child !== rig.root { child.isEnabled = false }
+                arView.environment.background = .color(.rgb(0, 1, 0))
+                speeder.setParticles(false)
+            }
 
             // key light per theme: cool moonlight for the city, low warm sun ahead for the canyon
             sun.light.color = .rgb(theme.sunColor)
@@ -562,7 +600,7 @@ final class GameController: ObservableObject {
         // (locked while the job loop is on: the timers and the pursuer are tuned to the job's cruise,
         // and Y / ] is the garage's buy button on the briefing)
         let cruiseLocked = missionActive
-        if input.speedUp && !cruiseLocked { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
+        if input.speedUp && !cruiseLocked && speeder.kind == .speeder { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
         if input.speedDown && !cruiseLocked { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
         // missions: A / F / tap accepts a briefing or a result; the vehicle only moves during a live job
         if missionActive {
@@ -579,7 +617,8 @@ final class GameController: ObservableObject {
                 if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9); sound.play(.beacon) }
             }
             missions.update(dt: simDt, travel: speed * simDt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed,
-                            scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits)
+                            scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits,
+                            branch: world.lastDecision == "tunnel" ? -1 : (world.lastDecision == "skyway" ? 1 : 0))
             missionHitsSeen = hits
             missionKillsSeen = kills
             if missions.isRunning, let s = missions.scoredNow {
@@ -645,7 +684,8 @@ final class GameController: ObservableObject {
         }
         boostPrev = boosting
         boostLevel = damp(boostLevel, boosting ? 1 : 0, boosting ? 13 : 5, dt)
-        let target = moving ? settings.cruiseSpeed * (boosting ? 1.8 : 1.0) : 0
+        let boostGain: Float = speeder.kind == .board ? 1 + 0.8 * speeder.handling.boost : 1.8
+        let target = moving ? settings.cruiseSpeed * (boosting ? boostGain : 1.0) : 0
         speed = damp(speed, target, target > speed ? 1.6 : 2.0, simDt)
         let speedNorm = clamp01(speed / maxSpeed)
         sound.set(.engine, volume: moving ? 0.3 + speedNorm * 0.5 : 0.12, pitch: 0.7 + speedNorm * 1.1)
@@ -661,10 +701,21 @@ final class GameController: ObservableObject {
         post.enclosure = world.enclosure
         // weather: rain off in enclosed sections; lightning every 9 to 17 s with a rumble
         if theme.rain {
-            let wet: Float = settings.weather ? 1 - world.enclosure : 0
-            rainLevel = damp(rainLevel, wet, 3, dt)
+            let mode = rainMode
+            var target: Float = 0
+            switch mode {
+            case .off: target = 0
+            case .always: target = 1
+            case .showers, .heavy:
+                showerTimer -= dt
+                if showerTimer <= 0 { showerOn.toggle(); showerTimer = showerOn ? weatherRNG.float(18, 34) : weatherRNG.float(22, 48) }
+                target = showerOn ? (mode == .heavy ? 1.7 : 1.0) : 0
+            }
+            let wet: Float = settings.weather ? target * (1 - world.enclosure) : 0
+            rainLevel = damp(rainLevel, wet, mode == .always ? 3 : 0.35, dt)   // showers swell in over a few seconds
             post.rain = rainLevel
-            if settings.weather {
+            post.rainFog = mode == .heavy ? rainLevel / 1.7 : 0
+            if settings.weather && rainLevel > 0.3 {
                 lightningTimer -= dt
                 if lightningTimer <= 0 { lightning = 1; lightningTimer = weatherRNG.float(9, 17); gamepad.rumble(intensity: 0.2, sharpness: 0.2) }
             }
@@ -705,7 +756,7 @@ final class GameController: ObservableObject {
                 if abs(p.x - speeder.x) < o.halfWidth + 0.95 && abs(p.z) < o.halfLength + 1.6
                     && abs(p.y + o.centerY - speeder.altitude) < o.halfHeight + speeder.halfHeight {
                     o.active = false
-                    o.entity.isEnabled = false
+                    if o.kind != .barricade { o.entity.isEnabled = false }   // a barricade stays; the run just took the hit
                     hits += 1
                     invulnerable = 1.0
                     flash = 1.0
@@ -722,10 +773,26 @@ final class GameController: ObservableObject {
                 }
             }
         }
+        // hoverboard tricks (edge-triggered; one at a time)
+        if speeder.kind == .board && !parked {
+            if input.trickSpin && !trickPrev.spin, let name = speeder.startTrick(.spin) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6) }
+            if input.trickRoll && !trickPrev.roll, let name = speeder.startTrick(.roll) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6) }
+        }
+        trickPrev = (input.trickSpin, input.trickRoll)
+        // capture hook: SPEEDER_TRICK_AT=<seconds>:<spin|roll>[,<seconds>:<kind>...]
+        if speeder.kind == .board, let spec = ProcessInfo.processInfo.environment["SPEEDER_TRICK_AT"] {
+            for item in spec.split(separator: ",") {
+                let parts = item.split(separator: ":")
+                if parts.count == 2, let at = Float(parts[0]), time - simDt < at, time >= at {
+                    _ = speeder.startTrick(parts[1] == "roll" ? .roll : .spin)
+                }
+            }
+        }
         // weapons
         if let weapons {
             if input.firing && settings.obstacles && !parked && (!missionActive || missions.current.weaponsAllowed) {
                 if weapons.fire(from: speeder.root.position, orientation: speeder.root.orientation) {
+                    speeder.rider?.shoot()
                     shakeBurst = max(shakeBurst, 0.08)
                     ackTimers.fire = 0.15
                     gamepad.rumble(intensity: 0.25, sharpness: 1.0)
@@ -768,6 +835,8 @@ final class GameController: ObservableObject {
         let camBank = speeder.smoothBank + (speeder.bank - speeder.smoothBank) * 0.4
         if corridorOverview {
             cameraRig.overviewCorridor(speederX: speeder.x)
+        } else if corridorSide {
+            cameraRig.sideCorridor(speederX: speeder.x, speederY: speeder.altitude, front: ProcessInfo.processInfo.environment["SPEEDER_CAMERA"] == "side-front")
         } else {
             cameraRig.update(dt: dt, time: time, speederX: speeder.x, speederY: speeder.altitude, bank: camBank, speedNorm: speedNorm,
                              shake: settings.cameraShake, curveAhead: curveAhead, extraShake: shakeBurst, inTube: world.tubeBlend,

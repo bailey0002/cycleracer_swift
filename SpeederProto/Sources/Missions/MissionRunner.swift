@@ -11,6 +11,8 @@ struct JobEntry: Equatable {
     let chapter: Int
     let cleared: Bool
     let rank: Mission.Rank
+    var offer = false             // a side offer chip (id = MissionRunner.offerChipBase + offer id)
+    var bonus = 0
 }
 
 /// Bike upgrades bought with credits in the garage (Alto's workshop): small, visible, repeatable.
@@ -26,10 +28,12 @@ struct Upgrades: Equatable {
         var text: String { owned ? "\(title)  OWNED" : "\(title) \(level + 1 > 1 ? "II" : "I")  \(price)  \(detail)" }
     }
     var items: [Item] {
-        [Item(key: "hull", title: "HULL PLATING", detail: "hits cost less", price: hull == 0 ? 600 : 1200, level: hull, max: 2),
-         Item(key: "boost", title: "BOOST COIL", detail: "boost burns less", price: boost == 0 ? 500 : 1000, level: boost, max: 2),
-         Item(key: "respawn", title: "SPARE CORE", detail: "+1 respawn per job", price: 900, level: respawn, max: 1),
-         Item(key: "helmet", title: "HELMET", detail: "first hit free", price: 700, level: helmet, max: 1)]
+        // Prices (27 Sep 2026, headless loop): a clean chapter 1 pays about 5,700 credits, a sloppy one
+        // 4,300; the set costs 9,800, so chapter 1 buys two pieces and the set is complete late in chapter 3.
+        [Item(key: "hull", title: "HULL PLATING", detail: "hits cost less", price: hull == 0 ? 1200 : 2400, level: hull, max: 2),
+         Item(key: "boost", title: "BOOST COIL", detail: "boost burns less", price: boost == 0 ? 1000 : 2000, level: boost, max: 2),
+         Item(key: "respawn", title: "SPARE CORE", detail: "+1 respawn per job", price: 1800, level: respawn, max: 1),
+         Item(key: "helmet", title: "HELMET", detail: "first hit free", price: 1400, level: helmet, max: 1)]
     }
     var hitDamage: Float { [0.25, 0.20, 0.16][min(2, hull)] }
     var boostDrain: Float { [0.12, 0.09, 0.07][min(2, boost)] }
@@ -100,7 +104,10 @@ struct MissionState: Equatable {
     // inbox and garage (briefing only)
     var cleared = false            // this job was cleared before: a replay pays half
     var browsing = false           // the card shows a job other than the loaded one
-    var jobs: [JobEntry] = []      // every unlocked job
+    var jobs: [JobEntry] = []      // every unlocked job, then the side offers on the table
+    var shownChip = 0              // the inbox chip the card shows (a job index or an offer chip id)
+    var offerBonus = 0             // the shown job is a side offer: its bonus
+    var offerDone = false          // ... already paid
     var upgrades = Upgrades()
     var shopSelection = 0
     var shopNote = ""
@@ -139,6 +146,7 @@ struct MissionState: Equatable {
         && a.playerTitle == b.playerTitle && a.liveryName == b.liveryName && a.reactiveLine == b.reactiveLine
         && a.rivalWins == b.rivalWins && a.rivalLosses == b.rivalLosses && a.rivalTaunt == b.rivalTaunt && a.introLeft == b.introLeft
         && a.messageCount == b.messageCount && a.unreadMessages == b.unreadMessages && a.chapter == b.chapter && a.finished == b.finished
+        && a.shownChip == b.shownChip && a.offerBonus == b.offerBonus && a.offerDone == b.offerDone
     }
 }
 
@@ -149,10 +157,18 @@ struct MissionState: Equatable {
 /// the mission changes. The briefing is also the inbox (browse any unlocked job) and the garage
 /// (buy upgrades with the purse).
 final class MissionRunner {
+    /// The rider's hull handling (hoverboard; 1 for the speeder): hit damage is divided by it.
+    var hullScale: Float = 1
     private(set) var missions: [Mission]
     private(set) var index: Int
     /// The job the briefing card shows; differs from `index` while browsing the inbox.
     private(set) var previewIndex: Int
+    /// The side offer loaded on the job (`current` is the job under its rule), and the one the inbox shows.
+    private(set) var activeOffer: Int? = nil
+    private(set) var previewOffer: Int? = nil
+    /// The split taken on this run (-1 tunnel, +1 skyway, 0 none yet), from the world.
+    private(set) var branchTaken = 0
+    static let offerChipBase = 100
     private(set) var phase: MissionState.Phase = .briefing
     private(set) var credits: Int
     private(set) var upgrades: Upgrades
@@ -195,7 +211,7 @@ final class MissionRunner {
     private var boostArmed = true
     /// Set on the frame a gate or beacon scores (HUD stamp), cleared next update.
     private(set) var scoredNow: (value: Int, streak: Int, time: Float)? = nil
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
     static let scrapeDrain: Float = 0.08      // per second against a barrier
     static let recharge: Float = 0.035        // per second when not boosting or scraping
     static let beaconCharge: Float = 0.2
@@ -203,8 +219,10 @@ final class MissionRunner {
     /// Escape: the pursuer cruises a little faster than the player; boost outruns it but burns hull.
     static let pursuerSpeed: Float = 47
 
-    init(missions: [Mission] = Mission.deliveries) {
+    /// `defaults` is where progress lives; the headless tests pass their own suite.
+    init(missions: [Mission] = Mission.deliveries, defaults: UserDefaults = .standard) {
         self.missions = missions
+        self.defaults = defaults
         let env = ProcessInfo.processInfo.environment
         if env["SPEEDER_RESET_PROGRESS"] == "1" { Self.clearStoredProgress(defaults, missions: missions) }
         credits = defaults.integer(forKey: "credits")
@@ -212,22 +230,28 @@ final class MissionRunner {
         player = Player.load(defaults)
         log = MessageLog(defaults)
         index = abs(defaults.integer(forKey: "missionIndex")) % max(1, missions.count)
-        if let m = env["SPEEDER_MISSION"], let i = Int(m) {
-            index = abs(i) % max(1, missions.count)
-            // a forced job counts as reached: the inbox lists it and the loop carries on from it
-            if index > defaults.integer(forKey: "cleared") { defaults.set(index, forKey: "cleared") }
-        }
+        var forced: Int? = nil
+        if let m = env["SPEEDER_MISSION"], let i = Int(m) { index = abs(i) % max(1, missions.count); forced = index }
         previewIndex = index
+        // a forced job counts as reached: everything before it is cleared, the inbox lists the chain
+        if let f = forced, !isUnlocked(f) { clearedMask |= (1 << f) - 1 }
         if env["SPEEDER_CHAPTER_CARDS"] == "0" { for c in 1...3 { defaults.set(true, forKey: "chapter.seen.\(c)") } }
+        // captures: SPEEDER_FLAGS=2:1,9:2 sets a job's flags (1 clean, 2 fast, 4 gold), which puts its side offer on the table
+        if let f = env["SPEEDER_FLAGS"] {
+            for pair in f.split(separator: ",") {
+                let kv = pair.split(separator: ":")
+                if kv.count == 2, let j = Int(kv[0]), let v = Int(kv[1]), missions.indices.contains(j) { defaults.set(v, forKey: "flags.\(j)") }
+            }
+        }
         if needsChapterCard(index) { phase = .chapter }
     }
 
     /// Jobs, credits, the garage, ranks, flags, head-to-head records and the said-line sets. The callsign
     /// and livery are identity, not progress: they stay.
     private static func clearStoredProgress(_ defaults: UserDefaults, missions: [Mission]) {
-        for k in ["credits", "missionIndex", "cleared", Upgrades.key] { defaults.removeObject(forKey: k) }
+        for k in ["credits", "missionIndex", "cleared", clearedMaskKey, Upgrades.key] { defaults.removeObject(forKey: k) }
         for m in missions { defaults.removeObject(forKey: "rank.\(m.id)"); defaults.removeObject(forKey: "flags.\(m.id)") }
-        for k in defaults.dictionaryRepresentation().keys where k.hasPrefix("record.") || k.hasPrefix("said.") || k.hasPrefix("chapter.seen.") { defaults.removeObject(forKey: k) }
+        for k in defaults.dictionaryRepresentation().keys where k.hasPrefix("record.") || k.hasPrefix("said.") || k.hasPrefix("chapter.seen.") || k.hasPrefix("offer.") { defaults.removeObject(forKey: k) }
         defaults.removeObject(forKey: MessageLog.key); defaults.removeObject(forKey: MessageLog.readKey)
     }
 
@@ -237,7 +261,7 @@ final class MissionRunner {
         credits = 0
         upgrades = Upgrades.load(defaults)
         log.clear()
-        index = 0; previewIndex = 0
+        index = 0; previewIndex = 0; activeOffer = nil; previewOffer = nil
         phase = needsChapterCard(0) ? .chapter : .briefing
         shopSelection = 0; shopNote = ""; autoStart = false
     }
@@ -251,7 +275,7 @@ final class MissionRunner {
         default: break
         }
         if phase == .briefing && needsChapterCard(index) { phase = .chapter }
-        previewIndex = index
+        previewIndex = index; previewOffer = activeOffer
         autoStart = false
         shopNote = ""
     }
@@ -261,8 +285,9 @@ final class MissionRunner {
     /// Anything to continue from (a cleared job, credits, or a later job chosen).
     var hasProgress: Bool { clearedCount > 0 || credits > 0 || index > 0 }
 
-    var current: Mission { missions[index] }
-    var preview: Mission { missions[previewIndex] }
+    /// The loaded job, under its side offer's rule when one is loaded.
+    var current: Mission { activeOffer.flatMap { Mission.offer($0) }.map { missions[index].applying($0) } ?? missions[index] }
+    var preview: Mission { previewOffer.flatMap { Mission.offer($0) }.map { missions[previewIndex].applying($0) } ?? missions[previewIndex] }
     var isRunning: Bool { phase == .running }
     /// The arc is done: every job cleared at least once.
     var finished: Bool { clearedCount >= missions.count }
@@ -293,24 +318,80 @@ final class MissionRunner {
 
     // MARK: - Progress
 
-    /// Jobs are cleared in order; `clearedCount` is one past the highest cleared index.
-    private var clearedCount: Int { defaults.integer(forKey: "cleared") }
-    func isCleared(_ i: Int) -> Bool { i < clearedCount }
-    /// A job is unlocked once the one before it is cleared (the first always is).
-    func isUnlocked(_ i: Int) -> Bool { i <= clearedCount }
-    private var lastUnlocked: Int { min(missions.count - 1, clearedCount) }
+    /// Cleared jobs are a bitmask (`cleared.mask`); `cleared` keeps the count for the readers that only
+    /// need one (the free-play roster, the titles, the debrief picker). Two jobs can be open at once
+    /// (assessment 5.5), so a count alone no longer says which. A pre-5.5 save (count only) migrates.
+    static let clearedMaskKey = "cleared.mask"
+    private var clearedMask: Int {
+        get {
+            let m = defaults.integer(forKey: Self.clearedMaskKey)
+            let count = defaults.integer(forKey: "cleared")
+            return m == 0 && count > 0 ? (1 << count) - 1 : m
+        }
+        set {
+            defaults.set(newValue, forKey: Self.clearedMaskKey)
+            defaults.set(newValue.nonzeroBitCount, forKey: "cleared")
+        }
+    }
+    private var clearedCount: Int { clearedMask.nonzeroBitCount }
+    func isCleared(_ i: Int) -> Bool { clearedMask & (1 << i) != 0 }
+    private func markCleared(_ i: Int) { clearedMask |= 1 << i }
+    /// A chapter opens when the one before it is fully cleared. Inside a chapter the first job opens the
+    /// next two at once, each job after that needs one more cleared, and a duel waits for every job
+    /// before it (the inbox has a choice in it; the duel stays the chapter's gate).
+    func isUnlocked(_ i: Int) -> Bool {
+        guard missions.indices.contains(i) else { return false }
+        let m = missions[i]
+        guard missions.allSatisfy({ $0.chapter >= m.chapter || isCleared($0.id) }) else { return false }
+        let before = missions.filter { $0.chapter == m.chapter && $0.id < m.id }
+        if m.kind == .duel { return before.allSatisfy { isCleared($0.id) } }
+        let position = before.count
+        if position == 0 { return true }
+        let clearedBefore = before.filter { $0.kind != .duel && isCleared($0.id) }.count
+        return clearedBefore >= max(1, position - 1)
+    }
+    var unlockedJobs: [Int] { missions.indices.filter { isUnlocked($0) } }
+    /// After a success: the next open, uncleared job in order, else the first such job, else the first
+    /// job (the arc is done: ride it again).
+    private func nextJob(after i: Int) -> Int {
+        let open = missions.indices.filter { isUnlocked($0) && !isCleared($0) }
+        return open.first { $0 > i } ?? open.first ?? 0
+    }
 
-    /// Inbox: move the briefing to the previous / next unlocked job (wraps).
-    func browse(_ delta: Int) {
-        guard phase == .briefing else { return }
-        let n = lastUnlocked + 1
-        previewIndex = ((previewIndex + delta) % n + n) % n
+    // MARK: - Side offers
+
+    /// An offer is on the table once its flag is earned on the base job; it stays listed when paid.
+    func isOfferShown(_ o: SideOffer) -> Bool { flags(for: missions[o.requires.job]).contains(o.requires.flag) }
+    func isOfferDone(_ id: Int) -> Bool { defaults.bool(forKey: "offer.\(id).done") }
+    var offersShown: [SideOffer] { Mission.offers.filter { isOfferShown($0) } }
+
+    /// What the inbox lists, in order: every unlocked job, then the side offers on the table.
+    enum Chip: Equatable { case job(Int), offer(Int) }
+    var chips: [Chip] { unlockedJobs.map { .job($0) } + offersShown.map { .offer($0.id) } }
+    private var shownChip: Chip { previewOffer.map { .offer($0) } ?? .job(previewIndex) }
+    private func show(_ c: Chip) {
+        switch c {
+        case .job(let i): previewIndex = i; previewOffer = nil
+        case .offer(let o): previewOffer = o; previewIndex = Mission.offer(o)?.job ?? previewIndex
+        }
         shopNote = ""
     }
-    func browse(to i: Int) {
-        guard phase == .briefing, isUnlocked(i) else { return }
-        previewIndex = i
-        shopNote = ""
+
+    /// Inbox: move the briefing to the previous / next chip (wraps).
+    func browse(_ delta: Int) {
+        guard phase == .briefing else { return }
+        let list = chips
+        guard !list.isEmpty else { return }
+        let i = list.firstIndex(of: shownChip) ?? 0
+        let n = list.count
+        show(list[((i + delta) % n + n) % n])
+    }
+    /// Inbox: a tap on a chip (a job index, or `offerChipBase` + the offer id).
+    func browse(to id: Int) {
+        guard phase == .briefing else { return }
+        if id >= Self.offerChipBase {
+            if let o = Mission.offer(id - Self.offerChipBase), isOfferShown(o) { show(.offer(o.id)) }
+        } else if isUnlocked(id) { show(.job(id)) }
     }
 
     /// Garage: move the highlight, buy the highlighted upgrade.
@@ -348,9 +429,10 @@ final class MissionRunner {
             phase = .briefing
             return false
         case .briefing:
-            if previewIndex != index {
-                // the inbox chose another job: load it (the world rebuilds), then brief it
+            if previewIndex != index || previewOffer != activeOffer {
+                // the inbox chose another job (or an offer on it): load it (the world rebuilds), then brief it
                 index = previewIndex
+                activeOffer = previewOffer
                 defaults.set(index, forKey: "missionIndex")
                 shopNote = ""
                 return true
@@ -363,15 +445,15 @@ final class MissionRunner {
             startRun()
             return false
         case .success:
-            index = min(missions.count - 1, max(index + 1, lastUnlocked))
-            if index == missions.count - 1 && isCleared(index) { index = 0 }   // the arc is done: ride it again
-            previewIndex = index
+            activeOffer = nil
+            index = nextJob(after: index)
+            previewIndex = index; previewOffer = nil
             defaults.set(index, forKey: "missionIndex")
             phase = needsChapterCard(index) ? .chapter : .briefing
             return true
         case .failed:
             phase = .briefing
-            previewIndex = index
+            previewIndex = index; previewOffer = activeOffer
             autoStart = true
             return true
         case .running, .freePlay:
@@ -404,7 +486,7 @@ final class MissionRunner {
         respawnsLeft = upgrades.respawns; respawnedNow = false
         hitsTaken = 0; newFlags = []; boostArmed = true
         helmetArmed = upgrades.helmet > 0; helmetUsedNow = false
-        reactiveLine = ""; lastDerezCause = ""; introLeft = 0
+        reactiveLine = ""; lastDerezCause = ""; introLeft = 0; failReason = ""; branchTaken = 0
         if !isCleared(index) { log.post(current.contact, .brief, code: current.code, chapter: current.chapter, current.brief) }
     }
 
@@ -428,6 +510,8 @@ final class MissionRunner {
     /// Flags earned per job, remembered across launches.
     func flags(for m: Mission) -> Mission.Flags { Mission.Flags(rawValue: defaults.integer(forKey: "flags.\(m.id)")) }
 
+    /// Tests and captures: give a job its flags (which can put a side offer on the table).
+    func testSetFlags(_ f: Mission.Flags, for job: Int) { defaults.set(f.rawValue, forKey: "flags.\(job)") }
     /// Best rank per job, remembered across launches.
     func bestRank(for m: Mission) -> Mission.Rank { Mission.Rank(rawValue: defaults.integer(forKey: "rank.\(m.id)")) ?? .none }
     private func remember(_ r: Mission.Rank, for m: Mission) {
@@ -454,9 +538,10 @@ final class MissionRunner {
     /// Advance a live corridor job. `travel` is metres moved this frame, `speed` the vehicle speed,
     /// `newHits` collisions and `newKills` obstacle kills since last frame, `beaconsHitNow` rings
     /// flown through this frame.
-    func update(dt: Float, travel: Float, speed: Float, newHits: Int, boosting: Bool, scraping: Bool = false, newKills: Int = 0, beaconsHitNow: Int = 0) {
+    func update(dt: Float, travel: Float, speed: Float, newHits: Int, boosting: Bool, scraping: Bool = false, newKills: Int = 0, beaconsHitNow: Int = 0, branch: Int = 0) {
         guard phase == .running else { return }
         let m = current
+        if branch != 0 { branchTaken = branch }
         elapsed += dt
         travelled += travel
         beaconsHit += beaconsHitNow
@@ -478,7 +563,7 @@ final class MissionRunner {
         for _ in 0..<beaconsHitNow { scoreEvent(base: Mission.beaconValue) }
         for _ in 0..<newKills { scoreEvent(base: Mission.killValue, climbs: false) }
         // the one bar
-        if hits > 0 { energy -= Float(hits) * upgrades.hitDamage * m.hullFactor }
+        if hits > 0 { energy -= Float(hits) * upgrades.hitDamage * m.hullFactor / hullScale }
         if scraping { energy -= dt * Self.scrapeDrain * m.hullFactor }
         if boosting { energy -= dt * upgrades.boostDrain }
         else if !scraping { energy += dt * Self.recharge }
@@ -509,7 +594,10 @@ final class MissionRunner {
         if travelled >= m.distance {
             if m.kind == .search && beaconsHit < m.beaconsRequired { fail("SWEEP INCOMPLETE \(beaconsHit)/\(m.beaconsRequired)"); return }
             if m.kind == .salvage && killsTaken < m.killsRequired { fail("TARGETS MISSED \(killsTaken)/\(m.killsRequired)"); return }
-            let timeBonus = Int(max(0, m.timeLimit - elapsed)) * 5
+            if m.offer?.modifier == .tunnelBranch && branchTaken >= 0 { fail("TOOK THE SKYWAY"); return }
+            // the purse (27 Sep 2026, headless loop): base pay carries it; the bonuses are a third of it at
+            // best, and the streak score pays a twentieth (a fifth made the garage free by chapter 1)
+            let timeBonus = Int(max(0, m.timeLimit - elapsed)) * 3
             let hullBonus = Int(energy * 100) * 2
             var bonus = 0
             switch m.kind {
@@ -519,7 +607,7 @@ final class MissionRunner {
             case .dive: bonus = hullBonus          // precision pays twice
             default: break
             }
-            succeed(m.basePay + timeBonus + hullBonus + bonus + score / 5)
+            succeed(m.basePay + timeBonus + hullBonus + bonus + score / 20)
             return
         }
         if elapsed >= m.timeLimit { fail("TIME OUT") }
@@ -536,7 +624,9 @@ final class MissionRunner {
 
     private func succeed(_ pay: Int) {
         let replay = isCleared(index)
-        payout = replay ? pay / 2 : pay
+        let offer = current.offer
+        let bonus = offer.map { isOfferDone($0.id) ? 0 : $0.bonus } ?? 0
+        payout = (replay ? pay / 2 : pay) + bonus
         credits += payout
         defaults.set(credits, forKey: "credits")
         rank = current.rank(for: score, success: true)
@@ -550,25 +640,31 @@ final class MissionRunner {
             newFlags = earned.subtracting(before)
             defaults.set(before.union(earned).rawValue, forKey: "flags.\(current.id)")
         }
-        if !replay { defaults.set(index + 1, forKey: "cleared") }
+        let openBefore = Set(unlockedJobs), wasFinished = finished
+        if !replay { markCleared(index) }
+        if let offer { defaults.set(true, forKey: "offer.\(offer.id).done") }
         // the payout is banked with the job, so a relaunch on the result card cannot replay it
-        defaults.set(min(missions.count - 1, index + 1), forKey: "missionIndex")
+        defaults.set(nextJob(after: index), forKey: "missionIndex")
         if current.kind == .duel, let r = current.rival { recordMatch(rival: r.name, won: true) }
         reactiveLine = Debrief.reactive(contact: current.contact, outcome: outcome(), defaults: defaults)
         phase = .success
-        // the story channel: the debrief (once), the reaction, the unlock, the ending
-        if !replay {
+        // the story channel: the debrief (once), the reaction, the unlocks, the offers, the ending
+        if !replay || bonus > 0 {
             let d = current.debrief
             let sender = d.split(separator: ":").first.map(String.init) ?? current.contact
             let body = d.contains(":") ? String(d.drop { $0 != ":" }.dropFirst()).trimmingCharacters(in: .whitespaces) : d
             log.post(sender, .debrief, code: current.code, chapter: current.chapter, body)
-            if index + 1 < missions.count {
-                let n = missions[index + 1]
-                log.post("INBOX", .notice, code: n.code, chapter: n.chapter, "New job from \(n.contact): \(n.code) // \(n.title) (\(n.kindText.lowercased())).")
-            } else {
-                log.post(Message.routeSender, .static, chapter: current.chapter, Mission.staticLine(4))
-                log.post("KADE", .debrief, code: current.code, chapter: current.chapter, String(Mission.endingLine.dropFirst(6)))
-            }
+        }
+        for i in unlockedJobs where !openBefore.contains(i) {
+            let n = missions[i]
+            log.post("INBOX", .notice, code: n.code, chapter: n.chapter, "New job from \(n.contact): \(n.code) // \(n.title) (\(n.kindText.lowercased())).")
+        }
+        for o in Mission.offers where o.requires.job == current.id && newFlags.contains(o.requires.flag) {
+            log.post(o.sender, .brief, code: o.code, chapter: current.chapter, "\(o.line) (+\(o.bonus) credits.)")
+        }
+        if finished && !wasFinished {
+            log.post(Message.routeSender, .static, chapter: current.chapter, Mission.staticLine(4))
+            log.post("KADE", .debrief, code: current.code, chapter: current.chapter, String(Mission.endingLine.dropFirst(6)))
         }
         log.post(current.contact, .notice, code: current.code, chapter: current.chapter, "\(current.code): \(reactiveLine)")
     }
@@ -584,6 +680,7 @@ final class MissionRunner {
         o.timeLeftFraction = current.timeLimit > 0 ? (current.timeLimit - elapsed) / current.timeLimit : 0
         o.derezCause = lastDerezCause
         o.duelScore = (duelWins, duelLosses)
+        o.branch = branchTaken
         return o
     }
 
@@ -597,17 +694,24 @@ final class MissionRunner {
     func snapshot() -> MissionState {
         let shown = phase == .briefing ? preview : current
         let m = shown
-        let jobs: [JobEntry] = phase == .briefing ? (0...lastUnlocked).map { i in
-            let j = missions[i]
-            return JobEntry(id: j.id, code: j.code, title: j.title, kindText: j.kindText, contact: j.contact, chapter: j.chapter,
-                            cleared: isCleared(i), rank: bestRank(for: j))
+        let jobs: [JobEntry] = phase == .briefing ? chips.map { c in
+            switch c {
+            case .job(let i):
+                let j = missions[i]
+                return JobEntry(id: j.id, code: j.code, title: j.title, kindText: j.kindText, contact: j.contact, chapter: j.chapter,
+                                cleared: isCleared(i), rank: bestRank(for: j))
+            case .offer(let id):
+                let o = Mission.offer(id)!
+                return JobEntry(id: Self.offerChipBase + o.id, code: o.code, title: o.title, kindText: "SIDE OFFER", contact: o.sender,
+                                chapter: missions[o.job].chapter, cleared: isOfferDone(o.id), rank: .none, offer: true, bonus: o.bonus)
+            }
         } : []
         return MissionState(phase: phase, code: m.code, title: m.title, contact: m.contact, brief: m.brief, debrief: m.debrief,
                             chapter: m.chapter, chapterTitle: Mission.chapterTitle(m.chapter),
                             distanceText: m.distanceText, timeText: m.timeText,
                             timeLeft: max(0, m.timeLimit - elapsed), distanceLeft: max(0, m.distance - travelled),
                             energy: energy, payout: payout, credits: credits, failReason: failReason,
-                            index: previewIndex, count: missions.count, kind: m.kind, goalText: m.goalText, successTitle: m.successTitle,
+                            index: previewIndex, count: missions.count, kind: m.kind, goalText: m.goalLine, successTitle: m.successTitle,
                             beaconsHit: beaconsHit, beaconsTotal: m.beacons, beaconsRequired: m.beaconsRequired,
                             gap: gap, startGap: m.startGap, duelWins: duelWins, duelLosses: duelLosses, duelTarget: m.duelTarget,
                             rivalName: m.rival?.name ?? "", rivalTemper: m.rival?.temper.rawValue ?? "", rivalLine: m.rival?.temper.line ?? "",
@@ -615,7 +719,9 @@ final class MissionRunner {
                             kills: killsTaken, killsRequired: m.killsRequired,
                             score: score, streak: streak, rank: rank, bestRank: bestRank(for: m), silverScore: m.silverScore, goldScore: m.goldScore,
                             respawnsLeft: respawnsLeft, helmetArmed: helmetArmed, flags: flags(for: m), newFlags: newFlags,
-                            cleared: isCleared(previewIndex), browsing: previewIndex != index, jobs: jobs,
+                            cleared: isCleared(previewIndex), browsing: previewIndex != index || previewOffer != activeOffer, jobs: jobs,
+                            shownChip: previewOffer.map { Self.offerChipBase + $0 } ?? previewIndex,
+                            offerBonus: m.offer?.bonus ?? 0, offerDone: m.offer.map { isOfferDone($0.id) } ?? false,
                             upgrades: upgrades, shopSelection: shopSelection, shopNote: shopNote,
                             callsign: player.callsign, playerTitle: playerTitle, liveryName: player.liveryName, liveryColor: player.liveryColor,
                             distanceTotal: m.distance,

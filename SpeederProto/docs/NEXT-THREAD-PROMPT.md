@@ -153,3 +153,53 @@ Next thread, in order:
    four seconds, video-in-HUD per report E. The script is now locked in `Mission.deliveries`,
    `Debrief.swift` and `MessageLog.swift`.
 5. B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.
+
+## Status 27 Sep 2026 (evening): headless tests, balance, agency
+
+Branch `claude/phone-pass` off master (PRs #3 and #4 merged). The phone was locked all thread: the
+Release build is installed on the iPhone 12 but was never launched, so nothing on the phone list
+below is verified. Built and verified on the Mac and the simulator (`docs/polish-log.md`, last
+section; `Captures/polish/p10/`): the headless 60 Hz test loop (`Tests/MissionLoopTests.swift`,
+fourteen tests, three seconds), the balance numbers from it (windows, purse, garage; the table is in
+the log), and assessment 5.5 (two jobs open at once, three side offers, the fork acknowledged).
+
+Step 0 for the next thread: branch off master once this PR is merged, `xcodegen generate`, the Mac
+build, then `xcodebuild test` (the README's "Headless tests" command) before touching anything.
+Install and launch the phone (README command; ask Mark to unlock it first).
+
+Next thread, in order:
+
+1. The phone pass with the Backbone, unchanged from the 27 Sep list (launch screen, menu and
+   callsign, haptics, MUSIC / EFFECTS by ear, GRAPHICS vs frame rate, touch buttons, hum and rumble,
+   the mix, the rival card, livery tint, the chapter card, Menu -> MESSAGES, the rival's line, the `??`
+   line), plus this pass on the phone: the new windows by feel (if the 30 % margin feels mean with real
+   steering, raise it in one place: the comment over `Mission.gateSpacing` gives the rule), the garage
+   prices against the purse after chapter 1, the amber offer chip and its briefing on a 390 pt screen,
+   the tunnel offer ridden both ways (the skyway must fail `TOOK THE SKYWAY`), the fork line on the card.
+2. Balance still unmeasurable from the Mac: the chapter-3 density (1.3) and the KEEN tier's 0.10 s
+   tick (`Rival.Skill`), by play.
+3. D4, the cast through CC5 / iClone 8 (Mark, Windows), unchanged: portraits first, then the three
+   talk moments. The script is locked in `Mission.deliveries`, `Mission.offers`, `Debrief.swift` and
+   `MessageLog.swift`.
+4. If there is time: extend the loop to the arena's pure parts (`LightCycle.step`, `TrailSystem`
+   collision) so a rival's own-trail death and the accel curve are asserted without captures; the
+   round clock and the zone spin-up on The Grid.
+5. B4 on its own branch with the capture sweep as the gate, A6 behind an iOS 26 check, D9.
+
+## Status 28 Sep 2026: generated art, first pass
+
+Mark's first image batch (see `docs/art-brief.md`) is wired in on `claude/phone-pass` (`docs/polish-log.md`,
+"Generated art"; `Captures/polish/p11/`) and on the phone. On the phone, check: the facades up close at
+speed (tile scale, the emissive level 1.25), the storefronts at street level, the skyline strip in the haze,
+the Grid bowl (dim by design at `fogMax` 0.35 and `lift` 4; raise or lower both) and the hanging screen,
+and the frame rate with the extra textures (about 14 MB). Then the next batch from the brief: the canyon set,
+the crowd strip, far / mid skyline variants with a black sky, more billboards with faces.
+
+## Status 28 Sep 2026 (later): street polish
+
+Built and on the phone: Grid palettes (rival-mapped in duels), the rain direction, showers and the heavy
+chapter-3 weather, asphalt aprons, crossroads. On the phone: pick the Grid accent (dev panel "grid"), judge
+the shower timing and chapter 3's visibility, and drive the crossroads at speed (the gantry at 9 m before the
+crossing, the barricades). If the wider street is wanted for real, the driveable width is a pass of its own:
+`RoadSegment.surface` 18 m, barriers ±9, studs ±8.35, lights ±10.2, `SpeederController.laneLimit` 6.9, the
+fork's ±11.5 m rows and `wedgeLimit` all move together.

@@ -311,3 +311,246 @@ Not verified (the phone): the log on the Backbone (Menu -> MESSAGES), the chapte
 390 pt screen (it scrolls like every card), the rival's line by eye mid-duel.
 Not built from the assessment: 5.5 (agency: two jobs unlocked at once, side offers, the fork
 acknowledged) is owed after the phone pass, and D4 (the cast) is Mark's.
+
+## Headless loop, balance, agency (27 Sep 2026, evening)
+
+Branch `claude/phone-pass` off master (PRs #3 and #4 merged). The phone was locked for the whole
+thread: the Release build was installed on the iPhone 12 but never launched (`devicectl` refuses a
+launch on a locked phone), so the phone pass with the Backbone is still Mark's. What could be done
+from the Mac was done: the headless test loop the kickoff's item 3 asked for, the balance numbers
+from it (item 2), and assessment 5.5 (agency). Captures in `Captures/polish/p10/`.
+
+### The headless loop (`Tests/MissionLoopTests.swift`, target `SpeederProtoTests`)
+
+A macOS unit-test bundle hosted by the Mac app (`SPEEDER_TESTS=1` makes the app a bare window with
+no world build, so the suite runs in about three seconds after the build):
+
+```bash
+cd SpeederProto && export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer && xcodebuild test -project SpeederProto.xcodeproj -scheme SpeederProto-macOS -configuration Debug -derivedDataPath build-tests CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "error:|Test Case.*(passed|failed)|Executed|credits per"
+```
+
+`HeadlessLoop.play` steps `MissionRunner.update` at 60 Hz with the game's own speed model (damp to
+the target at 1.6 / 2.0, a hit takes 40 % of the speed and 70 ms of hit-stop, boost at 1.8x) for a
+`Rider` (cruise, hits every n metres, boost share, beacon and target shares, the split taken).
+`MissionRunner` takes its `UserDefaults` suite in `init` now, so every test has a fresh slate.
+Fourteen tests: the boost hysteresis at an empty hull (the flicker class), one accept on the success
+card advances once, a gate refunds 1.5 s, a replay pays half, salvage fails on missed targets, a
+sweep fails short of the quota, the dive's double bruise, the helmet takes the first hit, inbox wrap
+and garage refusal, the unlock order, the cleared-count migration, the tunnel offer end to end, the
+offer rules, and the balance table (asserting the rank shape below).
+
+### Balance (item 2) from the loop, not the phone
+
+The table (`Captures/polish/p10/balance-table.txt`) plays the whole arc with six riders. Before:
+
+| Finding (before) | Number |
+|---|---|
+| Every window left 30 to 50 s at plain cruise (the gates refund 1.5 s each, 12 to 20 per job) | RELAY 01: 30 s of 66 left; DIVE 01: 30 s of 62 |
+| The FAST flag (a third of the window left) came free at cruise | every corridor job |
+| A fifth of the streak score went into the purse | SWEEP 03 paid 5,085 credits, 3,540 of it score |
+| Income per chapter for a rider with one or two hits per job | 11,011 / 13,681 / 15,652 |
+| The garage (4,900) was bought outright in chapter 1 | – |
+| Salvage kills were not in the gold ceiling | a sloppy SALVAGE run ranked silver |
+
+Changed (`Mission.deliveries`, `Mission.maxScore`, `MissionRunner.update`, `Upgrades.items`):
+
+| Knob | Was | Now | Rule |
+|---|---|---|---|
+| Windows (s), RELAY 01 / SWEEP 01 / RELAY 02 / RUN 01 / RELAY 03 | 66 / 80 / 90 / 76 / 76 | 50 / 63 / 76 / 59 / 63 | net cruise time (distance at 45 m/s minus the gate refunds) with a 30 % margin |
+| RELAY 04 / SWEEP 02 / SALVAGE 01 / RUN 02 / DIVE 01 | 100 / 90 / 88 / 84 / 62 | 88 / 72 / 67 / 67 / 50 | same |
+| RUN 03 / SALVAGE 02 / DIVE 02 / SWEEP 03 | 86 / 96 / 68 / 100 | 72 / 80 / 58 / 84 | same |
+| Purse: time bonus per second left | 5 | 3 | |
+| Purse: streak score share | score / 5 | score / 20 | |
+| Gold ceiling | gates + beacons | + salvage targets at the capped streak | |
+| Garage: HULL I / II, BOOST I / II, SPARE CORE, HELMET | 600 / 1200, 500 / 1000, 900, 700 | 1200 / 2400, 1000 / 2000, 1800, 1400 | the set (9,800) is about 1.7 chapters of a clean rider's income |
+
+After (the same riders; "clean" boosts 15 % of the time, "sloppy" hits every 600 m, "reckless"
+every 300 m with half the run boosted):
+
+| Rider | Corridor ranks | Credits per chapter | Notes |
+|---|---|---|---|
+| cruise (never boosts) | gold | 4,441 / 5,998 / 7,965 | 11 to 25 s left, never FAST; caught on every escape (by design: boost opens the gap) |
+| clean | gold everywhere | 5,729 / 7,452 / 9,603 | 16 to 39 s left |
+| 1-2 hits | silver (gold on the sweeps) | 5,237 / 6,745 / 8,845 | |
+| sloppy | bronze everywhere | 4,285 / 5,564 / 7,874 | 11 to 35 s left, one respawn on DIVE 02 |
+| reckless | bronze; both dives fail (HULL BREACHED) | 3,489 / 4,095 / 6,262 | |
+
+So a clean run is gold, a sloppy one bronze, the FAST flag takes boost, a dive punishes recklessness,
+and the garage is two pieces in chapter 1 and complete late in chapter 3. Not measurable here and
+still owed on the phone: the chapter-3 density (1.3), the KEEN tier's 0.10 s tick, and whether the
+30 % margin feels tight or mean with real steering (the loop has no lateral cost; if the phone says
+mean, raise the margin in one place, the comment over `Mission.gateSpacing`).
+
+### Agency (assessment 5.5)
+
+| Item | What changed | Proof |
+|---|---|---|
+| Order inside a chapter | Cleared jobs are a bitmask (`cleared.mask`; the `cleared` count stays for the roster, the titles and the debrief picker, and a count-only save migrates). The first job of a chapter opens the next two, each job after that needs one more cleared, a duel waits for every job before it, a chapter waits for the duel. After a success the runner moves to the next open job in order. Unlock notices per newly opened job | `testUnlockOrderInsideAChapter`, `testClearedCountMigrates` |
+| Side offers | `SideOffer` in `Mission.swift`: a cleared job ridden again under one rule for a sender from the other side, opened by a flag on the base job, listed after the jobs as an amber chip with its bonus, posted to the log by the sender when the flag is earned. SIDE 01 THE TUNNEL LINE (KADE, CLEAN on RELAY 02: the split through the tunnel, +150; the skyway fails `TOOK THE SKYWAY`), SIDE 02 THE PIPE, DARK (ORIN, FAST on RUN 02: DIVE 01 with ten seconds less, +300), SIDE 03 THE WHOLE LEDGER (SABLE, GOLD on SALVAGE 02: SWEEP 03 with all ten beacons, +500). The bonus pays once on top of the replay rule; the offer's debrief goes to the log; a retry keeps the offer; the arc resumes after | `testSideOfferTunnelLine`, `testSideOfferRules`; simulator shot `p10/sim/offer-*` |
+| The fork acknowledged | `WorldScroller.lastDecision` reaches `MissionRunner.update(branch:)`; `Debrief.Outcome.branch` prefixes the reactive line per contact ("The tunnel. Kade saw that." / "The skyway. Half the city saw that." for VESS; KADE, ORIN and a default for the offers) | `testSideOfferTunnelLine` |
+
+Hooks: `SPEEDER_FLAGS=2:1,9:2` gives jobs their flags at launch (1 clean, 2 fast, 4 gold), which puts
+the offers on the table for a capture; `MissionRunner.testSetFlags` does the same in a test.
+
+## Generated art, first pass (28 Sep 2026)
+
+Mark generated the first samples against `docs/art-brief.md` (five Neon City facade tiles, two
+billboards, one skyline strip, two storefronts, two arena bowls, one jumbotron; source files in
+`../new_images_per_Art_Brief_20260927/`). They are prepared into `Resources/Art/` (sips crop and
+resize: facades 1024², billboards and storefronts centre-cropped to 1024 x 512 to lose the generated
+bezels and street, the skyline cropped to its building band at 2048 x 614, the bowl with the crowd at
+2048 x 683, the screen at 1024 x 512) and wired in by `Sources/Rendering/ArtLibrary.swift` (`Art`):
+a missing file keeps the procedural look, `SPEEDER_ART=0` keeps every image out. Captures in
+`Captures/polish/p11/` (`cruise` is the A/B against `p10/cruise`).
+
+| Where | How | Result |
+|---|---|---|
+| Facades | each tile is both the albedo (tinted 0.5) and the emissive (1.25) of a `PhysicallyBasedMaterial`, appended to `materials.facades`, so five of eight buildings pick a generated tile with the existing UV scales (18 m and 24 x 36 m per tile) | the near towers read as balconies, pipes, air units and lit rooms (`p11/cruise/frame-4`); the frozen look otherwise holds |
+| Billboards | unlit, appended to `materials.signs`, so the mega-signs and the building billboards pick them | KERB on a tower face at t = 9 |
+| Storefronts | new 2:1 quads under the shop strip on the road-facing face (55 % of buildings), `materials.artShops` | a shop at street level on the right at t = 9 |
+| Skyline strip | four thin boxes 620 m out around the corridor, alpha-faded top and bottom (`Art.faded`), `materials.artSkyline`; the fog cap `Theme.fogMax` went 0.92 -> 0.88 for Neon City so the strip keeps 12 % | a faint skyline in the haze past the gateway; the A/B frames differ by eye only in the facades and the horizon |
+| Arena bowl | four thin boxes at `halfSize + 360`, black keyed to alpha with a tone lift (`Art.keyedBlack(lift: 4)`), `Theme.fogMax` 0.35 on The Grid | tiers, pylons and crowd lights behind the data towers (`p11/grid/frame-3`), still dim: tune `fogMax` and the lift on the phone |
+| Jumbotron | four faces of a thin box over the arena centre at 46 m | not in the chase frames (it needs the bike to face the centre); check on the phone |
+
+Two bugs on the way, both in `ArtLibrary`: a `CGContext(data: &array ...)` with a Swift array is a
+dangling pointer (the context drew into a temporary; the keyed bowl came out as speckles) and flat
+`generatePlane` quads this far from the origin never drew (the RealityKit zero-thickness cull from 11
+Sep again; the backdrops are 0.5 m boxes now). The depth fog also takes 92 % of anything at sky depth,
+so a backdrop needs the cap (`fogMax`, new `weather.z` in the post uniforms).
+
+What the samples taught for the next batch: the generator ignores "no frame" (both billboards came
+with a bezel and a building around them; the crop handles it) and "transparent sky" (the skyline came
+with a painted sky and a fog band; the fade handles it, but a black sky would key cleanly). The
+facades and the bowl were right first time. Still wanted from the brief: the canyon set, the crowd
+strip, the far / mid skyline variants, more billboards with faces.
+
+## Street polish from the reference render (28 Sep 2026, second pass)
+
+Five items from Mark against the Unreal-vs-RealityKit reference image. Captures in `Captures/polish/p12/`.
+
+| Item | What changed | Proof |
+|---|---|---|
+| 1. Grid colours | `FXSettings.gridPalette` (dev panel row "grid"; `SPEEDER_GRID_PALETTE=cyan|red|amber|violet`): `Theme.gridAccent` drives the floor lines, wall panels, rails, base lines, pylons, tower edges, deck bands, lamps, the fog colour, the environment map's horizon band and the bowl's tint (`ProceduralTextures.gridFloor/gridWall/environmentGrid(accent:)`, `ArenaWorld`). In a duel the accent follows the rival: KADE cyan, ORIN violet, SABLE amber, VESS red; free play uses the setting. A change rebuilds the arena | `p12/grid-cyan`, `-red`, `-amber`, `-violet` (frame-3): red reads strongest against the lime decks and the white trail; the bowl takes the accent |
+| 2. Rain direction | The streak phase was `uv.y * rows + t * speed`; texture y runs down the screen, so the streaks climbed. Now `- t * speed` | by formula (a still frame cannot show it) |
+| 3. Showers | `GameController.rainMode`: `SPEEDER_RAIN=always|showers|heavy|0`; the demo keeps `always` so captures align. Otherwise light showers (18 to 34 s on, 22 to 48 s off, swelling in at rate 0.35) in chapters 1 and 2 and free play, heavy showers in chapter 3 (strength 1.7, and `post.rainFog` thickens the depth fog by up to 110 % while it rains, so the streets close in). Lightning only while it rains | `p12/heavy/frame-9` against `p12/street/frame-9` |
+| 4. Wider, darker street | Near-black asphalt aprons 12 m wide either side of the road (`materials.asphalt`, `SPEEDER_APRON=0` for the A/B), the near and tall building rows pushed 2.5 m further out, the far ring's tint 0.45 -> 0.30, the generated facades' albedo 0.5 -> 0.38. The driveable road, the barriers and the lane limit are unchanged (the fork geometry depends on them) | `p12/street/frame-4` vs `p12/noapron/frame-4`: the buildings stand on black instead of the violet void, the street reads wider |
+| 5. Crossroads | `TrackBlock.Dressing.crossroad`, on 65 % of the composer's bend leads: a dark cross street 16 m deep through both building rows at the segment's middle (`RoadSegment.crossroadHidden`: anything whose bounds overlap the street is hidden on that block), lane dashes and three pairs of lights receding down each side street, red-and-white chevron barricades with red hazard lamps across each mouth just beyond the barrier, and a signal gantry 9 m before the crossing with three red arrow panels (`ProceduralTextures.arrowSign`, swapped per block to point left, ahead or right with the bend). The block is named "crossroads, left / right" | `p12/street/frame-5` (the gantry and barricades at the first bend of RELAY 01, arrows left, the road bends left), `p12/street-over/frame-5.5` |
+
+Not changed: the driveable width (18 m; widening it means the barriers, studs, lights, the lane limit and the
+fork's ±11.5 m rows all move together, a pass of its own), the Grid's default (cyan; the rival mapping
+is the way in). On the phone: pick the Grid accent by eye (the dev panel row rebuilds), judge the showers'
+timing and the heavy mode's visibility in chapter 3, and the crossroads at speed.
+
+Follow-up (same day): the crossroads now forces the turn. A chevron barricade with a red rail and three
+hazard lamps closes the half of the road the bend turns away from, 10 m past the crossing
+(`RoadSegment.crossBarricade`, an `Obstacle` of kind `.barricade`, active on crossroad blocks only). Hitting
+it costs a hit like any obstacle but the barricade stays up (`GameController`: only non-barricade obstacles
+are hidden on contact). The app icon is now Mark's GRDRNNR: QUANTIS art (`AppIcon.appiconset`, all sizes
+from the 1080 px source). `p12/junction/frame-5.6` shows the demo bike taking the hit on the closed half.
+
+## The hoverboard: an alternative vehicle (29 Sep 2026)
+
+Mark's question: could the skater and board from `kerb_skate_game` (the sibling project under GamenCtr) ride
+this game as a flying board, same movement as the speeder, a rider with limited animation, glow on the board?
+Assessment: low to medium, because the vehicle already sits behind one class (`SpeederController`) and KERB
+ships RealityKit-ready USDZs. Built the same day as a **test build that leaves the speeder untouched**.
+
+- **Assets** copied from KERB: `Resources/Board.usdz` (the skateboard, 8.7k tri) and `Resources/Rider.usdz`
+  (`skater_dude1`, a Character Creator 5 export through KERB's `Tools/convert_cc.py`: 44 joints, no clips,
+  rest pose = arms hanging). Both stay in KERB's frame: Y up, forward -Z, 1 unit = 1 m.
+- **`VehicleKind`** (`Scene/SpeederController.swift`): `SPEEDER_VEHICLE=board` or the new SETTINGS row
+  **VEHICLE: SPEEDER / HOVERBOARD** (`PlayerPrefs.vehicle`, `prefs.vehicle`; the change rebuilds the world).
+  The speeder path is the original initializer unchanged; the board has its own `init(board:rider:materials:)`
+  and shares every hook (`update`, `poseArena`, `tint`, `setVisible`, dissolve, lights, trail).
+- **The board**: longest axis to Z, fitted to 1.7 m, deck top at the holder's origin, floating 0.35 m below the
+  gameplay root (the deck rides 0.7 m over the road; `halfHeight` 0.9 for the taller box). KERB's board is one
+  mesh with nine material subsets in file order, so the urethane wheels and bearing shields get a fully
+  transparent material and the aluminium trucks an emissive cyan PBR: they read as hover pods. Edge light
+  strips along both rails, a tail thruster core + halo, front / rear pod glows, a tight hover pool and
+  contact shadow, the same particle exhaust at the tail.
+- **`Scene/RiderRig.swift`**: a compact port of KERB's `SkaterRig` without the foot IK. Joint deltas are
+  world-space rotations in the character's rest frame composed through the rest hierarchy into local joint
+  transforms (`apply`), slerped toward the authored pose. The character axes come from the mesh (wide axis =
+  left-right, toe direction = forward) and are converted into skeleton space, so KERB's calibrated signs hold
+  (`+F` raises the left arm, `-L` swings a limb forward, `+U` turns toward the nose, `+L` on the spine leans
+  the chest). `pose(bank:speedNorm:boost:climb:time:dt:)` is the surf stance: feet apart along the deck,
+  knees 16 to 46 degrees (deeper with speed and boost, the hips drop by `legLength (1 - cos knee)`), hips and
+  spine opened toward the nose, head turned down the board, arms out, a spine dive with speed that backs off
+  when climbing, hips sliding into the turn and the spine countering part of the roll, an idle sway.
+- **Camera**: `CameraRig.lift` (height, distance) from `SpeederController.cameraLift` (0.7, 1.4 for the
+  board). `SPEEDER_CAMERA=side|side-front` adds a side elevation for pose checks.
+
+Captures in `Captures/polish/p13/`: `side2/frame-6` (the stance from the right, the rider leaning down the
+nose, pods glowing where the wheels were), `chase2/frame-12` (the tunnel), `front/frame-6` (the earlier
+pass, wheels still on), `speeder/frame-6` (the default vehicle, unchanged). The rider rides goofy from the
+chase camera (back to the right barrier); a `regular` flag is a one-line yaw if wanted.
+
+Not built / owed: a rider choice (dude2, girl1 convert the same way), a riding clip from iClone (the rig
+would play it through `AvatarActor`'s path), foot planting (the feet float a little at deep knees without
+KERB's IK), the rider in the light-cycle arena (the board rides there through `poseArena`, unverified),
+the phone feel (the taller camera on the 6.1-inch screen).
+
+Follow-up (30 Sep 2026, Mark's two refinements after the first phone look): the board and rider are scaled
+1.35x (`big` in the board initializer: deck 2.3 m, rider 2.4 m tall; `halfHeight` 1.1, camera lift 0.9 /
+1.9) so they read on the phone. **Tricks**: pad X = 360 spin, pad Y = barrel roll (keyboard Z / C);
+`SpeederController.startTrick` runs one at a time over 0.85 s with a smoothstep angle (soft launch and
+landing), a hop of 0.9 / 1.2 m, the rider tucked (knees to full crouch, arms pulled in and down to the deck,
+`pose(... tuck:)`), a centre stamp "360" / "BARREL ROLL", the section chime and a rumble. The trick rotation
+is composed after the bank so the camera does not roll with it. Cruise speed on Y is disabled while the
+board rides (Y is the roll); buying on the briefing still uses Y (parked). **Fire on the left bumper** (L1
+joins A / L2 / X was moved off fire to the spin): `RiderRig.shoot()` snaps the nose-side arm straight down
+the board for 0.38 s and turns the head after it (`aim` in `pose`). `SPEEDER_TRICK_AT=4:spin,7:roll` forces
+tricks for captures. Frames: `p13/tricks/frame-4.4` (mid-360 from the side, the post pass's reprojection
+blur ghosting the spin), `p13/chase3/frame-6.4` (upside down mid-roll in the chase view), `p13/chase3/frame-9`
+(the 1.35x rider), `p13/fire/frame-3.3` and `frame-4.6` (the shot pose).
+
+## KERB: GALACTIC, the companion frame (1 Oct 2026)
+
+With the hoverboard in, this game pairs with KERB (the skate game in the sibling folder): same shop, same
+four riders, the second trip through the cabinet. Mark's four shop renders are in
+`skateboard (hoverboard) shop scene/` at the repo root; the game carries them as `Resources/story_1..4.jpg`.
+
+- **Title.** "KERB: GALACTIC" everywhere the wordmark was SPEEDER: the title (`HUDStyle.wordmarkSize - 12`,
+  tracking 6), the launch logo (`Tools/render-brand.swift`, now `--logo-only` so Mark's app icon is kept),
+  the sub-screen over-heading, the window title and `CFBundleDisplayName` on both targets. The product
+  name, bundle id and scheme stay `SpeederProto` so the phone install and every script are unchanged.
+- **Opening** (`Views/StoryIntroView.swift`, `Screen.story`): KERB's motion-comic device in this game's
+  chrome (Chakra Petch, cyan bubbles on near-black, magenta shout, cyan caption bar, scanlines on the
+  cabinet beat). Four panels: the counter ("You kids back again? Ha! It's been a while."), the board
+  held up ("Well, if you're looking for the board to own, this one's it… the Kerbie Astro." + "No wheels.
+  Doesn't need 'em where it's going."), the point at the cabinet ("Oh, I see you eyeing that game again."
+  / "Didn't you learn your lesson the first time?"), the vortex (shout "DIDN'T WASTE ANY TIME, HUH?!?!",
+  flash + shake, caption "…and the cabinet takes another one. Only this time the machine is bigger."),
+  then the black card "You were at the cabinet. / Now you're in it. Again. / The routes are the currency
+  here. / Run them." with the wordmark. A hurries a beat, B / Menu skips; auto-advances. Plays once
+  (`story.seen`), replay from SETTINGS > STORY. `SPEEDER_SCREEN=story SPEEDER_STORYBEAT=<n>` freezes a beat.
+- **Riders** (`Missions/Riders.swift`, `Screen.riders`, `MenuRow.Kind.roster`): KERB's roster mirrored
+  (Cal Reyes, Jonah Vance, Dominic Rook, Mira Sable; stills copied from KERB, USDZs as
+  `Resources/Rider_<id>.usdz`, 4 to 32 MB each). The card: portrait, name, tag, two lines, four handling
+  bars (STEER, CLIMB, BOOST, HULL: 0.85 to 1.15 multipliers that are live on the hoverboard: steer and
+  climb speed in `SpeederController`, the boost gain in `GameController`, hit damage divided by hull in
+  `MissionRunner.hullScale`), signature and home spot. Left / right choose, persisted as `rider.id`
+  (`SPEEDER_RIDER=<id>` for captures). Changing the rider rebuilds the world when the board is the vehicle.
+  The speeder ignores the handling.
+- **Launch order** follows KERB: title -> RIDERS -> story -> callsign and livery -> the first briefing
+  (the briefing keeps the mission story: the routes, the ledger, the rival). After the first run RIDERS
+  is a title row and STORY a settings row.
+
+Shots: `Captures/polish/p14/sim/` (title, story beats 1 / 3 / 6 / 7 / 9, riders page with Mira on the board
+behind it, settings); `p14/cal|dude2|girl1/frame-5` (the three other rigs riding: 54 / 42 / 44 joints,
+all pose with the same axes). Follow-up the same night: the card grew (portrait 140 x 172 with KERB's 5 s profile clips looping
+muted over the stills, `Resources/rider_<id>.mp4`, ~130 KB each; `LoopingClipView` is AVQueuePlayer +
+AVPlayerLooper on both platforms; Cal has no clip and shows the still), name and tag on one line, the
+bio wrapping, HOME and SIGNATURE lines, the four handling bars two by two with signed percentages, all
+inside the left gradient where they read (`p14/sim/riders3-23`).
+
+**App icon** (same night): KERB's icon is the rider grabbing the deck over a red-shadowed KERB wordmark on
+cream; ours is the hoverboard rider mid-360 over a block KERB with a cyan drop shadow and a magenta
+GALACTIC line, on the dark neon ground. The rider is a real game frame: `SPEEDER_ICON_SHOT=1` hides every
+world entity but the vehicle, turns the post pass off (`PostProcessor.bypass`, which still services the
+screenshot request) and shoots from `SPEEDER_CAMERA=side-front SPEEDER_SIDE_UP=1.2` at `SPEEDER_TRICK_AT=4:spin`,
+frame 4.6 (`p14/icon2/`; the key colour did not take, the frame is black-backed, which the screen blend in
+`render-brand.swift` uses). The frame lives in `Tools/brand/icon-rider.png`; `swift Tools/render-brand.swift`
+renders the icon set from it (`iconGalactic`), `--logo-only` renders just the wordmark. Mark's GRDRNNR: QUANTIS
+icon (29 Sep) is kept at `p14/icon-grdrnnr-quantis-1024.png`. iOS caches icons: reboot the phone if the old one
+shows. Not built: a shop / garage tie-in, the story's audio.

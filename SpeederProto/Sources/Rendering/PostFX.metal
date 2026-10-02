@@ -13,7 +13,7 @@ struct PostUniforms {
     float4 haze;            // x,y: thruster position (uv)  z: haze strength  w: radius
     float4 extra;           // x: lightning  y: dither  z: lens FX  w: motion blur (metres per frame x shutter)
     float4 vehicle;         // x,y: vehicle centre (uv)  z: its distance (m)  w: mask radius
-    float4 weather;         // x: rain strength  y: rain speed (rows per second)
+    float4 weather;         // x: rain strength  y: rain speed (rows per second)  z: fog cap (the backdrop keeps the rest)
 };
 
 // colour fetch with the chromatic offset baked in, so blur taps and the base sample split the same way
@@ -164,7 +164,7 @@ kernel void compositePass(texture2d<float, access::sample> src   [[texture(0)]],
         float horizon = 1.0 - saturate(abs(uv.y - vp.y) * 2.2);
         float3 fogCol = mix(u.fogColor.rgb, u.fogColor.rgb * 0.35, enc) * (1.0 + u.fogColor.w * (1.0 - enc) * horizon * horizon);
         fogCol += u.extra.x * float3(0.18, 0.22, 0.34) * (1.0 - enc);   // lightning lights the haze first
-        fog = min(fog, 0.92);
+        fog = min(fog, u.weather.z > 0.0 ? u.weather.z : 0.92);
         color = mix(color, fogCol, fog);
     }
     // lightning: a cool lift over everything outside the tunnels for a couple of frames
@@ -178,7 +178,7 @@ kernel void compositePass(texture2d<float, access::sample> src   [[texture(0)]],
         for (int k = 0; k < 2; k++) {
             float cols = k == 0 ? 70.0 : 150.0;
             float rows = cols * 0.22;
-            float2 p = float2(uv.x * cols + uv.y * (k == 0 ? 3.0 : 5.0), uv.y * rows + t * u.weather.y * (k == 0 ? 1.0 : 0.7));
+            float2 p = float2(uv.x * cols + uv.y * (k == 0 ? 3.0 : 5.0), uv.y * rows - t * u.weather.y * (k == 0 ? 1.0 : 0.7));   // minus: texture y runs down, so the streaks fall
             float2 cell = floor(p), f = fract(p);
             float h = hash21(cell + float(k) * 17.0);
             if (h < (k == 0 ? 0.16 : 0.22)) {
