@@ -185,10 +185,22 @@ struct StoryIntroView: View {
             try? await Task.sleep(for: rate)
             if Task.isCancelled { return }
             shown += 1
+            if shown % 3 == 1 { controller.soundtrack.cue("sfx_bubble", volume: 0.35) }
         }
         try? await Task.sleep(for: .seconds(beats[beat].hold))
         if Task.isCancelled { return }
         advance()
+    }
+
+    /// The Kenney CC0 story cues (KERB's set): a caption slides in, a bubble pops, the board clacks on the
+    /// counter when the owner holds it up, the vortex on the shout, the sting on the end card.
+    private func storyCue(for b: StoryScript.Beat, newPanel: Bool) {
+        switch b.kind {
+        case .caption: controller.soundtrack.cue("sfx_caption", volume: 0.6)
+        case .bubble: controller.soundtrack.cue(newPanel && b.panel == 2 ? "sfx_clack" : "sfx_tick", volume: 0.7)
+        case .shout: controller.soundtrack.cue("sfx_vortex", volume: 0.9)
+        case .card: controller.soundtrack.cue("sfx_sting", volume: 0.8)
+        }
     }
 
     private func nudge() {
@@ -200,6 +212,7 @@ struct StoryIntroView: View {
         guard beat + 1 < beats.count else { controller.finishStory(); return }
         let now = Date()
         let newPanel = beats[beat + 1].panel != beats[beat].panel
+        storyCue(for: beats[beat + 1], newPanel: newPanel)
         withAnimation(.easeInOut(duration: newPanel ? 0.6 : 0.25)) {
             beat += 1
             shown = 0

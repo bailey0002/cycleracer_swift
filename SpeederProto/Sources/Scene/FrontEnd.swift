@@ -242,8 +242,8 @@ extension GameController {
         case "continue":
             guard worldReady else { return }
             // first run: riders -> story -> callsign -> the first briefing (KERB's order: title, riders, story, world)
-            if missions.isFirstRun { riderFirstRun = true; push(.riders) } else { startJobs() }
-        case "riders": riderFirstRun = false; push(.riders)
+            if missions.isFirstRun { riderFirstRun = true; push(.riders); soundtrack.announce(["vo_choose_your_character"], priority: true) } else { startJobs() }
+        case "riders": riderFirstRun = false; push(.riders); soundtrack.announce(["vo_choose_your_character"], priority: true)
         case "roster": adjust("roster", by: 1)
         case "rideon":
             if riderFirstRun { pop(); push(storySeen ? .rider : .story) } else { pop() }
@@ -344,8 +344,10 @@ extension GameController {
 
     /// Sound levels, haptics, and graphics / steering over the current world's look.
     func applyPrefs() {
-        sound.musicVolume = Float(prefs.music) / 10
+        sound.musicVolume = soundtrack.hasMusic ? 0 : Float(prefs.music) / 10
         sound.effectsVolume = Float(prefs.effects) / 10
+        soundtrack.musicVolume = Float(prefs.music) / 10 * 0.8
+        soundtrack.effectsVolume = Float(prefs.effects) / 10
         gamepad.enabled = prefs.haptics
         guard !demoMode else { return }        // captures keep the reference look
         var s = settings

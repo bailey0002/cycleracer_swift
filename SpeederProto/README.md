@@ -590,6 +590,13 @@ takes the rival's), the rain falls (it climbed), rain comes in showers and close
 back, and bends open onto **crossroads**: a cross street through the towers, chevron barricades, and a red
 arrow gantry pointing the way (`docs/polish-log.md`, "Street polish").
 
+## Music and the announcer (1 Oct 2026)
+
+`Resources/Audio/`: Mark's three tracks ("Hideaway" under the menus, "First Place" and "Too Late" on the run),
+Kenney's CC0 announcer lines (READY / GO, ROUND n, WINNER, MISSION FAILED, WRONG, COMBO, HURRY UP…) and the story
+cues, all through `Sources/Audio/Soundtrack.swift`. The generative music mutes while a track plays. `SPEEDER_TRACKS=0`
+turns the file audio off. Stand-ins until the real voices are recorded.
+
 ## KERB: GALACTIC (1 Oct 2026)
 
 The game is titled **KERB: GALACTIC**, the companion to KERB (the skate game in `../kerb_skate_game`): the same

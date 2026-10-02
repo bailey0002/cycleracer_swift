@@ -554,3 +554,30 @@ frame 4.6 (`p14/icon2/`; the key colour did not take, the frame is black-backed,
 renders the icon set from it (`iconGalactic`), `--logo-only` renders just the wordmark. Mark's GRDRNNR: QUANTIS
 icon (29 Sep) is kept at `p14/icon-grdrnnr-quantis-1024.png`. iOS caches icons: reboot the phone if the old one
 shows. Not built: a shop / garage tie-in, the story's audio.
+
+## Music, the cabinet announcer, story cues (1 Oct 2026, late)
+
+Mirrors KERB's audio pass (`kerb_skate_game/RESEARCH_AUDIO_2026-10-01.md`): Mark's music plus Kenney's CC0
+voice and effect packs as stand-ins until the real voices are recorded. `Sources/Audio/Soundtrack.swift`,
+file-based, next to the synthesised `SoundEngine` (which keeps every cue and loop; only its generative
+music mutes while a track plays, `sound.musicVolume = 0` when `soundtrack.hasMusic`). `SPEEDER_TRACKS=0`
+turns the file audio off; the demo is silent unless `SPEEDER_SOUND=1`, as before.
+
+- **Music** (`Resources/Audio/music_*.m4a`, Mark's, AAC 128 kbps, 11 MB; KERB converted "First Place" from
+  the 38 MB WAV): `mood .menu` = "Hideaway" looping under the title, riders, story and briefings; `mood .run`
+  = "First Place" then "Too Late", playing through, next song when one ends. Two slots crossfade over about
+  a second; a pause holds the music at a third; a line ducks it to 40 % and back.
+- **Announcer** (`vo_*.wav`, Kenney CC0, 24 lines): READY + GO at a launch and the arena's GO; ROUND 1/2/3,
+  FINAL ROUND or READY at a round start; WINNER or FLAWLESS VICTORY (no round lost) / YOU LOSE at a match end;
+  MISSION COMPLETED / OBJECTIVE ACHIEVED / CONGRATULATIONS and MISSION FAILED / GAME OVER on the job outcome;
+  WRONG on a hit, COMBO BREAKER when the hit ends a streak of 3+; COMBO on a 3+ gate streak; COMBO or POWER UP
+  on a landed trick; POWER UP on a beacon; HURRY UP once when under 12 s remain; CHOOSE YOUR CHARACTER on the
+  riders page. Rules: a 3 s gap between lines, per-moment cooldowns (7 to 12 s) and chances (0.6 to 0.75),
+  a pool never repeats one of its last two lines, start / finish lines interrupt (`priority`).
+- **Story cues** (`sfx_*.wav`, Kenney CC0): a blip every third typed character, the caption slide, a tick
+  when a bubble pops, the board clacking on the counter when the owner lifts it (panel 2), the vortex on
+  the shout, the sting on the end card.
+
+Verified by log (`Captures/polish/p15/run/log.txt`): 30 clips and 1+2 tracks loaded, Hideaway then First
+Place, `vo_ready`, `vo_go`, `vo_wrong`, `vo_combo` in the demo run. The mix needs ears on the phone: the
+0.8 music scale, the 40 % duck, whether WRONG on every hit is too much.

@@ -278,6 +278,8 @@ final class SpeederController {
     private let trickDuration: Float = 0.85
     /// 0 ... 1 through the current trick (0 when none).
     var trickProgress: Float { trick == nil ? 0 : min(1, trickTime / trickDuration) }
+    /// True for the one frame a trick completes (the announcer's cue).
+    private(set) var trickLandedNow = false
 
     /// Start a 360 spin or a barrel roll; nil when one is already running or the vehicle is not a board.
     func startTrick(_ t: Trick) -> String? {
@@ -288,13 +290,14 @@ final class SpeederController {
 
     /// Extra orientation and hop from the running trick; advances it by `dt`.
     private func trickTransform(dt: Float) -> (rotation: simd_quatf, hop: Float, air: Float) {
+        trickLandedNow = false
         guard let t = trick else { return (simd_quatf(angle: 0, axis: [0, 1, 0]), 0, 0) }
         trickTime += dt
         let p = min(1, trickTime / trickDuration)
         let e = p * p * (3 - 2 * p)                      // smoothstep: launches and lands soft
         let angle = e * 2 * .pi
         let air = sin(p * .pi)
-        if p >= 1 { trick = nil }
+        if p >= 1 { trick = nil; trickLandedNow = true }
         let rot = t == .spin ? simd_quatf(angle: angle, axis: [0, 1, 0]) : simd_quatf(angle: angle, axis: [0, 0, 1])
         return (rot, air * (t == .spin ? 0.9 : 1.2), air)
     }
