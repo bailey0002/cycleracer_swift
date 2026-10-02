@@ -581,3 +581,34 @@ turns the file audio off; the demo is silent unless `SPEEDER_SOUND=1`, as before
 Verified by log (`Captures/polish/p15/run/log.txt`): 30 clips and 1+2 tracks loaded, Hideaway then First
 Place, `vo_ready`, `vo_go`, `vo_wrong`, `vo_combo` in the demo run. The mix needs ears on the phone: the
 0.8 music scale, the 40 % duck, whether WRONG on every hit is too much.
+
+Follow-ups (2 Oct 2026, small hours). **Music from launch**: `Soundtrack` runs on its own 30 Hz timer (common
+run-loop mode) so Hideaway starts under the splash, before the world builds and the scene loop runs; the frame
+loop only steers it, before any early return (The Grid gets its music too). The bed sits at 0.35 under the story,
+0.45 under the riders, 0.55 on the title, 0.7 under the briefing. SETTINGS > SOUNDTRACK ON / OFF (`prefs.tracks`;
+off fades the tracks out and brings the generative music back). The audio session is `.playback` with
+`.mixWithOthers`: the music and the announcer play through the ring switch (ambient went silent with it).
+
+**Review pass** (three read-only agents over the hoverboard / rider rig, the front-end flow and story, and the
+soundtrack; findings applied the same night, Mac build, 14 headless tests green, captures `p15/`):
+- Vehicle: the chase-camera lift was assigned to a nil rig and never applied (now set on the new rig per
+  build; `p15/chase/frame-4` shows the rider with headroom); cruise speed could be lowered but never raised on
+  the board (B gated like Y); a trick hop now counts for the obstacle test (`visualAltitude`: a hop is a real
+  dodge); the ground quads counter the heading only (`aimOrientation`), so a barrel roll no longer flips the
+  shadow and pool face down; bolts fire along the aim, not the trick rotation; `tint` finds the halo by role
+  (the board's rail strips come first in the glow list); the arena rival is always a cycle; `poseArena`
+  takes the arena's dt; the thruster haze follows the board's real nozzle.
+- Front end: a rebuild requested while one is running is re-queued (vehicle / rider changes mid-build no
+  longer silently stale); stepping riders marks the rider dirty and rebuilds once on leaving the page (was a
+  full world build per step); backing out to the title ends the first-run intent (STORY from SETTINGS no longer
+  pushes the callsign screen over SETTINGS); START routes through riders + story whenever the story has not
+  been seen (a callsign set from SETTINGS no longer skips the opening); `pop()` clamps the cursor when rows
+  shrink (MESSAGES after a reset); the riders page has a wider wash so the handling bars read
+  (`p15/sim-riders-24`); the story hint says TAP on the phone; the first caption gets its cue.
+- Soundtrack: the duel outcome lines never fired (the phase snapshot was taken before `updateDuel`; the check
+  now follows the update); an AVAudioSession interruption no longer restarts the track every tick (ended =
+  reached the end, interruptions hold the slot machine, resume on end); duel rounds say ROUND 1 / 2 / 3 and
+  FINAL ROUND against the real target (was inverted with free play); the dev panel's SOUND switch mutes the
+  files too; outcome lines wait 0.5 s (1.2 s in the arena) so they do not talk over the synth cue, and
+  `slam()` dips the track where the generative slam / cut used to; HURRY UP only when the distance is at risk;
+  TIME OVER on a timeout; SOUNDTRACK off stops the decoders; VO / sfx carry the 0.8 master like the synth cues.

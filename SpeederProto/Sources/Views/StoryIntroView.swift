@@ -149,10 +149,15 @@ struct StoryIntroView: View {
     private func chrome(size: CGSize, side: CGFloat) -> some View {
         let panel = beats[beat].panel
         let pad = controller.glyphs.connected
+        #if os(iOS)
+        let hint = pad ? "A  NEXT     B  SKIP" : "TAP  NEXT     SKIP"
+        #else
+        let hint = pad ? "A  NEXT     B  SKIP" : "RETURN  NEXT     ESC  SKIP"
+        #endif
         return VStack {
             HStack {
                 Spacer()
-                Text(pad ? "A  NEXT     B  SKIP" : "RETURN  NEXT     ESC  SKIP")
+                Text(hint)
                     .font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2)
                     .foregroundStyle(.white.opacity(0.7))
                     .padding(.horizontal, 10).padding(.vertical, 5)
@@ -179,6 +184,7 @@ struct StoryIntroView: View {
     private func play() async {
         let n = beats[beat].text.count
         if frozen { shown = n; return }
+        if beat == 0 { storyCue(for: beats[0], newPanel: true) }
         shown = 0
         let rate: Duration = beats[beat].kind.isCard ? .milliseconds(45) : .milliseconds(24)
         while shown < n {

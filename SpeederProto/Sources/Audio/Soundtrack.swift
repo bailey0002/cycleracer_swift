@@ -21,6 +21,12 @@ final class Soundtrack {
     }
     /// A pause holds the music down without stopping it.
     var held = false
+    /// The menu bed's level relative to the run music (low under the riders and the story).
+    var bedLevel: Float = 0.55
+    /// The SOUNDTRACK setting: off fades the tracks out (the generative music takes over).
+    var musicOn = true
+    private var timer: Timer?
+    private var lastTick = Date()
     private var duckTime: Float = 0
     private var announceGap: Float = 0
     private var lastLines: [String] = []
@@ -29,6 +35,9 @@ final class Soundtrack {
     private var clock: Float = 0
 
     let enabled: Bool
+    /// The developer panel's SOUND switch (the engine's `enabled`); off silences the files too.
+    var muted = false
+    private var suspended = false      // an AVAudioSession interruption: hold the slot machine
     var hasMusic: Bool { !(playlists[0].isEmpty && playlists[1].isEmpty) }
     /// The player's MUSIC and EFFECTS levels (0 ... 1).
     var musicVolume: Float = 0.8
@@ -48,7 +57,32 @@ final class Soundtrack {
         playlists[0] = ["music_hideaway"].compactMap(open)
         playlists[1] = ["music_firstplace", "music_toolate"].compactMap(open)
         print("Soundtrack: \(clips.count) clips, music \(playlists[0].count)+\(playlists[1].count) tracks")
+        // its own clock, so the title bed starts at launch, before the world is built and the scene loop runs
+        let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                let now = Date()
+                let dt = Float(min(0.2, now.timeIntervalSince(self.lastTick)))
+                self.lastTick = now
+                self.update(dt: dt)
+            }
+        }
+        RunLoop.main.add(t, forMode: .common)          // keeps ticking while a scroll view tracks
+        timer = t
+        #if os(iOS)
+        NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] n in
+            guard let raw = n.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt, let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+            Task { @MainActor in
+                guard let self else { return }
+                self.suspended = type == .began
+                if type == .ended { for p in self.slots { p?.play() } }
+            }
+        }
+        #endif
     }
+
+    /// The finish: duck hard and recover over a bar (the generative slam, for the tracks).
+    func slam() { duckTime = max(duckTime, 1.1) }
 
     // MARK: - Music
 
@@ -79,28 +113,34 @@ final class Soundtrack {
         clock += dt
         duckTime = max(0, duckTime - dt)
         announceGap = max(0, announceGap - dt)
-        for k in cooldowns.keys { cooldowns[k] = max(0, (cooldowns[k] ?? 0) - dt) }
+        cooldowns = cooldowns.mapValues { max(0, $0 - dt) }
         while let next = queue.first, next.at <= clock {
             queue.removeFirst()
             fire(next.name)
         }
         let duck: Float = duckTime > 0 ? 0.4 : 1
+        let on = musicOn && !muted
         for i in 0..<2 {
-            let target: Float = (i == active && !held) ? musicVolume * duck : (i == active ? musicVolume * 0.35 : 0)
+            let scale: Float = (i == 0 ? bedLevel : 1) * (on ? 1 : 0)
+            let target: Float = (i == active && !held) ? musicVolume * scale * duck : (i == active ? musicVolume * scale * 0.35 : 0)
             let rate: Float = target < level[i] ? (duckTime > 0 ? 3.0 : 0.9) : 0.9
             level[i] += (target - level[i]) * min(1, rate * dt)
-            if let p = slots[i] {
-                p.volume = level[i]
-                if !p.isPlaying, i == active {
-                    // the song ended: the next one in the list (a one-track list loops by itself)
-                    slots[i] = nil
-                    startTrack(i)
-                } else if !p.isPlaying, i != active, level[i] < 0.001 {
-                    slots[i] = nil
-                } else if i != active, level[i] < 0.001 {
-                    p.pause()
-                    slots[i] = nil
-                }
+            guard let p = slots[i] else {
+                if i == active, on, !suspended { startTrack(i) }        // SOUNDTRACK back on: resume the bed / list
+                continue
+            }
+            p.volume = level[i]
+            if suspended { continue }                                     // an interruption paused it; not an ending
+            let ended = !p.isPlaying && p.numberOfLoops == 0 && p.currentTime >= p.duration - 0.1
+            if i == active && !on && level[i] < 0.001 {
+                p.pause(); slots[i] = nil                                 // SOUNDTRACK off: stop the decoder, keep nothing running
+            } else if ended, i == active {
+                slots[i] = nil                                            // the song ended: the next one in the list
+                startTrack(i)
+            } else if i != active, level[i] < 0.001 {
+                p.pause(); slots[i] = nil
+            } else if !p.isPlaying, !ended, i == active, on {
+                p.play()                                                  // paused by something else (backgrounding): resume
             }
         }
     }
@@ -110,36 +150,36 @@ final class Soundtrack {
     /// Play `names` back to back (`gap` s apart). `key` + `cooldown` rate-limit a moment; `chance` thins it;
     /// `pool` picks one of several lines, never one of the last two said. Lines in progress are interrupted
     /// only by `priority` lines (round start, finish). A 3 s gap keeps the voice from nagging.
-    func announce(_ names: [String], gap: Float = 0.12, key: String? = nil, cooldown: Float = 0, chance: Float = 1, priority: Bool = false) {
-        guard enabled, !names.isEmpty else { return }
+    func announce(_ names: [String], gap: Float = 0.12, key: String? = nil, cooldown: Float = 0, chance: Float = 1, priority: Bool = false, delay: Float = 0) {
+        guard enabled, !muted, !names.isEmpty else { return }
         if let key, (cooldowns[key] ?? 0) > 0 { return }
         if !priority && announceGap > 0 { return }
         if chance < 1 && Float.random(in: 0..<1) > chance { return }
         if let key, cooldown > 0 { cooldowns[key] = cooldown }
         if priority { queue.removeAll(); for p in clips.values where p.isPlaying && p.numberOfLoops == 0 && p.duration > 0.45 { p.stop() } }
-        var at: Float = 0
+        var at: Float = delay
         for n in names {
             queue.append((n, clock + at))
             at += Float(clips[n]?.duration ?? 0.6) + gap
         }
-        duckTime = at + 0.3
+        duckTime = max(duckTime, at + 0.3)
         announceGap = at + 3.0
         lastLines.append(contentsOf: names); if lastLines.count > 2 { lastLines.removeFirst(lastLines.count - 2) }
     }
 
     /// One line out of several, avoiding the two most recent.
-    func announcePool(_ pool: [String], key: String? = nil, cooldown: Float = 0, chance: Float = 1, priority: Bool = false) {
+    func announcePool(_ pool: [String], key: String? = nil, cooldown: Float = 0, chance: Float = 1, priority: Bool = false, delay: Float = 0) {
         let fresh = pool.filter { !lastLines.contains($0) }
         guard let pick = (fresh.isEmpty ? pool : fresh).randomElement() else { return }
-        announce([pick], key: key, cooldown: cooldown, chance: chance, priority: priority)
+        announce([pick], key: key, cooldown: cooldown, chance: chance, priority: priority, delay: delay)
     }
 
     /// A story / interface cue, right now.
     func cue(_ name: String, volume: Float = 1) { fire(name, volume: volume) }
 
     private func fire(_ name: String, volume: Float = 1) {
-        guard let p = clips[name] else { return }
-        p.volume = volume * effectsVolume
+        guard !muted, let p = clips[name] else { return }
+        p.volume = volume * effectsVolume * 0.8           // the engine's master, so a line sits with the synth cues
         p.currentTime = 0
         p.play()
         if name != "sfx_bubble" { print("CUE \(name)") }

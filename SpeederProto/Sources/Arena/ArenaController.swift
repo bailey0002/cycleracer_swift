@@ -449,6 +449,7 @@ final class ArenaController {
     // MARK: - Update
 
     func update(dt rawDt: Float, time: Float, input: CycleInput, aiInput: CycleInput? = nil) {
+        lastDt = max(1 / 240, min(0.1, rawDt))
         self.time = time
         var dt = rawDt
         events = Events()
@@ -1010,6 +1011,7 @@ final class ArenaController {
         if let p = pulseOrigin, time - p.t > 6 { pulseOrigin = nil }
     }
 
+    private var lastDt: Float = 1 / 60
     private func pose() {
         if let r = zoneRadius {
             // the ring pulses a little faster as it closes
@@ -1022,7 +1024,7 @@ final class ArenaController {
         let sp = clamp01((player.speed - 10) / 60)
         var pos = player.position
         if phaseTimer > 0 { pos.y += sin(time * 60) * 0.02 }
-        playerVehicle.poseArena(position: pos, heading: player.visualHeading, lean: player.lean, pitch: player.pitch, time: time, speedNorm: sp, airborne: player.airborne)
+        playerVehicle.poseArena(position: pos, heading: player.visualHeading, lean: player.lean, pitch: player.pitch, time: time, speedNorm: sp, airborne: player.airborne, dt: lastDt)
         if dissolve.player <= 0 { if phaseTimer > 0 { playerVehicle.setVisible(Int(time * 24) % 4 != 0) } else if player.alive { playerVehicle.setVisible(true) } }
         if let ov = opponentVehicle {
             ov.poseArena(position: opponent.position, heading: opponent.visualHeading, lean: opponent.lean, pitch: opponent.pitch, time: time,

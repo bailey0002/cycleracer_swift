@@ -66,8 +66,9 @@ final class SoundEngine {
         if silent { enabled = false; return }
         synthesise()
         #if os(iOS)
-        // ambient: mixes with the player's own music and respects the silent switch
-        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        // playback: the music and the announcer play through the ring switch (a game with a soundtrack, 1 Oct 2026;
+        // was .ambient, which went silent with the switch); still mixes with the player's own audio
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
         NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] n in
             guard let raw = n.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt, let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }

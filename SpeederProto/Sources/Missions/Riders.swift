@@ -8,7 +8,7 @@ import Foundation
 struct RiderHandling: Equatable {
     var steer: Float = 1      // lateral steering speed
     var climb: Float = 1      // vertical speed
-    var boost: Float = 1      // boost kick (the post pass and the engine hum follow it)
+    var boost: Float = 1      // boost speed gain (1.8x at 1.0)
     var hull: Float = 1       // hull energy drained per hit is divided by this
     static let neutral = RiderHandling()
     /// 0 ... 1 for the card bars (0.85 -> 0, 1.15 -> 1).
