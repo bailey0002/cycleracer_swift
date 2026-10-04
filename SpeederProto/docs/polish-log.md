@@ -641,3 +641,14 @@ Mark's five items after the first full play. Captures in `Captures/polish/p16/`.
   The in-game hint adds L1 FIRE and, on the board, X 360 and Y ROLL; the pips add a TRICK pip on the board
   (`ActionAck.trick`); `ControllerGlyphs` carries the pad's own X and L1 art. The front-end legends (MOVE / SELECT /
   BACK, the callsign editor's LETTER / MOVE / KEEP / CANCEL) matched already.
+
+Follow-up (3 Oct 2026): Mark still saw the rings "clear" and no change in the photons on the phone. The build
+had landed (the new strings are in the Release binary); the problem was size. The ring was a 0.35 m band with a
+white inner band and a faint halo, so at speed it read as a wire outline. Now: a 0.9 m deep red band at r 1.9, a
+second red rim at r 2.2, intensity 9 / 6, and a 7.5 m red halo at 0.85 that fills the ring as a disc
+(`p16/ring2/frame-8.8` from 150 m, `frame-9.1` at the nose). The photon was a 0.14 m stick: now a 3.6 m white core
+in a 0.38 m cyan sheath with a 0.32 m head sphere, a 2.6 m halo, a denser trail and a stronger flash
+(`p16/bolt/frame-4.7`, `-4.8`). **Music shuffle**: Mark's four new tracks (That Chain Ain't Heavy, The Rake, Too
+Late Too Late, Too Long; kerb's AAC conversions) join First Place and Too Late in the run playlist, which is
+shuffled at launch and reshuffled each time it wraps (never opening with the song that just ended). Hideaway stays
+the menu bed. Seven tracks, 30 MB.

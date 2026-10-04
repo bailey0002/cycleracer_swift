@@ -55,7 +55,10 @@ final class Soundtrack {
         }
         func open(_ n: String) -> URL? { Bundle.main.url(forResource: n, withExtension: "m4a") }
         playlists[0] = ["music_hideaway"].compactMap(open)
-        playlists[1] = ["music_firstplace", "music_toolate"].compactMap(open)
+        // the run: every other track Mark has, shuffled (`Resources/Audio/music_*.m4a`); a new order each launch
+        if let all = Bundle.main.urls(forResourcesWithExtension: "m4a", subdirectory: nil) {
+            playlists[1] = all.filter { $0.lastPathComponent.hasPrefix("music_") && $0.lastPathComponent != "music_hideaway.m4a" }.shuffled()
+        }
         print("Soundtrack: \(clips.count) clips, music \(playlists[0].count)+\(playlists[1].count) tracks")
         // its own clock, so the title bed starts at launch, before the world is built and the scene loop runs
         let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
@@ -96,7 +99,13 @@ final class Soundtrack {
     private func startTrack(_ i: Int) {
         let list = playlists[i]
         guard !list.isEmpty else { return }
-        let url = list[trackIndex[i] % list.count]
+        if i == 1, list.count > 1, trackIndex[i] > 0, trackIndex[i] % list.count == 0 {
+            // the list wrapped: a new shuffle that does not open with the song that just ended
+            var next = list.shuffled()
+            if next.first == list.last, next.count > 1 { next.swapAt(0, 1) }
+            playlists[i] = next
+        }
+        let url = playlists[i][trackIndex[i] % playlists[i].count]
         trackIndex[i] += 1
         guard let p = try? AVAudioPlayer(contentsOf: url) else { return }
         p.numberOfLoops = list.count == 1 ? -1 : 0        // a one-track list loops, a playlist plays through

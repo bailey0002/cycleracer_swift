@@ -25,18 +25,21 @@ final class WeaponSystem {
         let halo = materials.glow(Neon.cyan, opacity: 0.8)
         for _ in 0..<16 {
             let e = Entity()
-            let body = ModelEntity(mesh: .generateBox(size: [0.10, 0.10, 2.4], cornerRadius: 0.05), materials: [core])
-            let shell = ModelEntity(mesh: .generateBox(size: [0.22, 0.22, 2.0], cornerRadius: 0.11), materials: [sheath])
-            let g = ModelEntity(mesh: .generatePlane(width: 1.4, height: 1.4), materials: [halo])
-            g.position = [0, 0, -0.9]
+            let body = ModelEntity(mesh: .generateBox(size: [0.16, 0.16, 3.6], cornerRadius: 0.08), materials: [core])
+            let shell = ModelEntity(mesh: .generateBox(size: [0.38, 0.38, 3.0], cornerRadius: 0.19), materials: [sheath])
+            let head = ModelEntity(mesh: .generateSphere(radius: 0.32), materials: [core])
+            head.position = [0, 0, -1.7]
+            e.addChild(head)
+            let g = ModelEntity(mesh: .generatePlane(width: 2.6, height: 2.6), materials: [halo])
+            g.position = [0, 0, -1.5]
             g.orientation = simd_quatf(angle: 0.02, axis: [1, 0, 0])
             var p = ParticleEmitterComponent()
             p.emitterShape = .point
             p.emissionDirection = [0, 0, 1]
             p.speed = 4
-            p.mainEmitter.birthRate = 220
-            p.mainEmitter.lifeSpan = 0.18
-            p.mainEmitter.size = 0.12
+            p.mainEmitter.birthRate = 320
+            p.mainEmitter.lifeSpan = 0.24
+            p.mainEmitter.size = 0.2
             p.mainEmitter.sizeVariation = 0.05
             p.mainEmitter.stretchFactor = 6
             p.mainEmitter.blendMode = .additive
@@ -51,7 +54,7 @@ final class WeaponSystem {
             bolts.append(Bolt(entity: e))
         }
         flash.light.color = .rgb(Neon.cyan)
-        flash.light.intensity = 40000
+        flash.light.intensity = 70000
         flash.light.attenuationRadius = 6
         flash.isEnabled = false
         root.addChild(flash)
@@ -113,7 +116,7 @@ final class WeaponSystem {
             bolts[i].age += dt
             let e = bolts[i].entity
             e.position += e.orientation.act([0, 0, -boltSpeed * dt])
-            let tip = e.position + e.orientation.act([0, 0, -0.9])
+            let tip = e.position + e.orientation.act([0, 0, -1.9])
             if bolts[i].age > 1.6 || hitTest(tip) {
                 bolts[i].alive = false
                 e.isEnabled = false

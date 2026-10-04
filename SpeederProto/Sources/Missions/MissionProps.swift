@@ -23,10 +23,13 @@ final class BeaconLayer {
         // NOTE: zero-thickness meshes (flat rings, planes) on an entity that moves every frame are
         // culled by RealityKit and never draw; the ring is a short cylinder band and the flat quads
         // carry a tiny tilt so their bounds have volume.
-        let bandMesh = try? Meshes.tube(radius: 1.7, length: 0.35, segments: 40, uRepeat: 1, vRepeat: 1)
-        var core = materials.neon(Self.ringColor, intensity: 7)
+        // a deep red band (0.9 m) plus a second thinner band and a translucent red disc filling the ring,
+        // so it reads as a target from 300 m and not as a wire outline
+        let bandMesh = try? Meshes.tube(radius: 1.9, length: 0.9, segments: 48, uRepeat: 1, vRepeat: 1)
+        let rimMesh = try? Meshes.tube(radius: 2.2, length: 0.25, segments: 48, uRepeat: 1, vRepeat: 1)
+        var core = materials.neon(Self.ringColor, intensity: 9)
         core.faceCulling = .none
-        var inner = materials.neon(SIMD3(1.0, 0.9, 0.9), intensity: 4)
+        var inner = materials.neon(Self.ringColor, intensity: 6)
         inner.faceCulling = .none
         var grey = materials.neon(SIMD3(0.5, 0.5, 0.55), intensity: 0.6)
         grey.faceCulling = .none
@@ -37,16 +40,16 @@ final class BeaconLayer {
         let spacing = max(200, (trackLength - 600 - first) / Float(max(1, count - 1)))
         for i in 0..<count {
             let e = Entity()
-            if let bandMesh {
+            if let bandMesh, let rimMesh {
                 let band = ModelEntity(mesh: bandMesh, materials: [core])
-                band.position.z = 0.17
+                band.position.z = 0.45
                 e.addChild(band)
-                let band2 = ModelEntity(mesh: bandMesh, materials: [inner])
-                band2.scale = [0.86, 0.86, 0.5]
-                band2.position.z = 0.09
+                let band2 = ModelEntity(mesh: rimMesh, materials: [inner])
+                band2.position.z = 0.12
                 e.addChild(band2)
             }
-            let halo = ModelEntity(mesh: .generatePlane(width: 6.0, height: 6.0), materials: [materials.glow(Self.ringColor, opacity: 0.55)])
+            // the halo doubles as the disc: a big soft red glow filling the ring and spilling past it
+            let halo = ModelEntity(mesh: .generatePlane(width: 7.5, height: 7.5), materials: [materials.glow(Self.ringColor, opacity: 0.85)])
             halo.orientation = simd_quatf(angle: 0.03, axis: [1, 0, 0])
             e.addChild(halo)
             let y: Float = rng.chance(0.4) ? 3.7 : 1.05
@@ -88,7 +91,7 @@ final class BeaconLayer {
                 b.entity.children[2].scale = SIMD3<Float>(repeating: pulse)
                 if z >= 0 {
                     beacons[i].passed = true
-                    if abs(b.entity.position.x - playerX) < 2.3 && abs(b.y - playerY) < 1.8 {
+                    if abs(b.entity.position.x - playerX) < 2.5 && abs(b.y - playerY) < 2.0 {
                         hits += 1; hit += 1
                         b.entity.isEnabled = false
                     } else {
