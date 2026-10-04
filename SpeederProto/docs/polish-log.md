@@ -703,3 +703,38 @@ thinned to 0.18 m, the under-deck lamps gone (they read through the glass as clu
 edge. The deck rose from 9 m to 14 m (`ArenaTerrain.garage`), the ramps from 40 m to 62 m to keep the slope.
 Frames `p17/glass-chase`, `glass-side`, `glass2`. Mark's call pending on the balance: the first pass at 0.42 made
 the ramps read as two lines only.
+
+## The garage relaid: helix ramps, a high deck, solid barriers (4 Oct 2026)
+
+Mark's layout: a big open first floor, the second level high above it on two back-corner columns, and the
+ramp entrances moved out to the side walls, curving up like a parking garage, so the floor and its views stay
+clear. Captures in `Captures/polish/p18/`.
+- **`ArenaTerrain.Ramp` is now an arc**: centre, centreline radius, lane width, a signed angular sweep and a
+  linear rise; `fraction(_:)` unwraps the point's angle into the sweep for the height query. `garage` builds
+  the arena at 150 m half-size (was 110; `SPEEDER_ARENA_HALF=` overrides), the deck 22 m high along the north
+  wall (x ±96), two 90-degree helix ramps of radius 44 and lane 16 that start on the west and east walls heading
+  north and land on the deck's ends, two 3.2 m columns at the deck's back corners, four red hazards, deck rails
+  with gaps where the ramps land, ramp rails as 16-point arcs. Floor pads scale with the arena; the deck's pad
+  chain follows its north edge. The AI's ramp approach points come from the arc's foot and top tangents.
+- **Visible ramps**: 24 short straight pieces per arc, each a glass top (the floor grid faint through it) over a
+  solid 1.2 m slab with red edge bands and a solid skirt hanging from the outer edge toward the ground, so the
+  structure reads from the floor (`p18/ramp/frame-2.8`: the west helix climbing from the wall). Deck slabs and
+  the columns are solid; only the deck top stays glass.
+- **Barriers solid**: `trailSurface`'s static branch is an opaque smoked panel (alpha 0.84) with a seam and the
+  red rim, no longer see-through (`p18/chase/frame-2.2`).
+
+Two capture gotchas found on the way, both now in `capture.sh`: macOS shows "the app crashed last time, restore
+windows?" as a modal after any crash, which blocks the main thread in a headless run (the script passes
+`-ApplePersistenceIgnoreState YES`); and RealityKit stops rendering, so no scene updates and no frames, when the
+display sleeps (the script wraps the run in `caffeinate -d -u`). `SPEEDER_CHECK_NAN=1` walks the world for
+NaN transforms and traces the frame loop once a second, the aid that separated the two.
+
+Follow-up (4 Oct 2026): the arena chase camera now holds the round-start framing Mark picked from
+`p18/ramp/frame-1.6`: 9.6 m back and 4.3 m up (was 6.4 / 2.7), the look target 7 m ahead (was 5), lens 62
+(was 60), same speed and kick terms. The rival, the ramps and the walls stay in frame around the rider
+(`p18/cam/frame-3`, `frame-5`).
+
+Follow-up (4 Oct 2026, last of the thread): the two trails moved into the Grid's hue family. The player's
+default livery is AQUA (0.30, 1.0, 0.82; was CYAN 0.12, 0.72, 1.0) and the rival's trail a deep electric blue
+(0.18, 0.50, 1.0; was orange), both cool, both reading as the arena's own material under the same bloom; the
+hazards stay red for contrast (`p18/trails/frame-7`). The other liveries are unchanged.

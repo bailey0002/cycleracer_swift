@@ -204,8 +204,11 @@ final class ArenaWorld {
     /// Six pads on open ground (clear of the deck, ramps and hazard walls): four boost, two slow;
     /// plus a chain of four boost pads along the upper deck's north edge, so the ramps are a route.
     private func buildPads(materials: SceneMaterials) {
-        let layout: [(SIMD2<Float>, Bool)] = [([0, 62], true), ([-82, 10], true), ([82, 10], true), ([0, -100], true), ([-40, 85], false), ([40, 85], false),
-                                              ([-45, -78], true), ([-15, -78], true), ([15, -78], true), ([45, -78], true)]
+        // floor pads scale with the arena; the deck chain sits along the deck's north edge
+        let k = halfSize / 110
+        let deckRow = (terrain.decks.first?.min.y ?? -100) + 12
+        let layout: [(SIMD2<Float>, Bool)] = [([0, 62 * k], true), ([-82 * k, 10], true), ([82 * k, 10], true), ([0, -40], true), ([-40 * k, 85 * k], false), ([40 * k, 85 * k], false),
+                                              ([-45, deckRow], true), ([-15, deckRow], true), ([15, deckRow], true), ([45, deckRow], true)]
         let boostColor = SIMD3<Float>(0.6, 0.95, 1.0), slowColor = SIMD3<Float>(1.0, 0.2, 0.25)
         for (pos, boost) in layout {
             let color = boost ? boostColor : slowColor
@@ -272,12 +275,13 @@ final class ArenaWorld {
         deckMat.specular = .init(floatLiteral: 1.0)
         deckMat.blending = .transparent(opacity: .init(floatLiteral: 0.62))
         deckMat.faceCulling = .none
+        // the slabs and side faces are solid (Mark, 4 Oct 2026: barriers must read as solid); only the top
+        // surface is glass so the floor shows through from above
         var slabMat = PhysicallyBasedMaterial()
-        slabMat.baseColor = .init(tint: .rgb(0.02, 0.04, 0.06))
-        slabMat.roughness = .init(floatLiteral: 0.2)
-        slabMat.metallic = .init(floatLiteral: 0.0)
-        slabMat.blending = .transparent(opacity: .init(floatLiteral: 0.5))
-        let thick: Float = 0.5
+        slabMat.baseColor = .init(tint: .rgb(0.05, 0.08, 0.11))
+        slabMat.roughness = .init(floatLiteral: 0.35)
+        slabMat.metallic = .init(floatLiteral: 0.2)
+        let thick: Float = 1.2
         for d in terrain.decks {
             let w = d.max.x - d.min.x, l = d.max.y - d.min.y
             let c = (d.min + d.max) / 2
@@ -304,37 +308,49 @@ final class ArenaWorld {
             }
         }
         for r in terrain.ramps {
-            let w = r.xMax - r.xMin
-            let run = r.length
-            let hyp = sqrt(run * run + r.rise * r.rise)
-            var top = deckMat
-            top.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(w / 32, hyp / 32), rotation: 0)
-            let holder = Entity()
-            let cz = (r.z0 + r.z1) / 2
-            holder.position = [(r.xMin + r.xMax) / 2, (r.h0 + r.h1) / 2, cz]
-            // the surface rises toward the end with the greater height; rotate about X accordingly
-            let angle = atan2(r.h1 - r.h0, r.z1 - r.z0)
-            holder.orientation = simd_quatf(angle: -angle, axis: [1, 0, 0])
-            let surface = ModelEntity(mesh: .generatePlane(width: w, depth: hyp), materials: [top])
-            surface.position = [0, 0.01, 0]
-            holder.addChild(surface)
-            let slab = ModelEntity(mesh: .generateBox(size: [w, thick, hyp]), materials: [slabMat])
-            slab.position = [0, -thick / 2, 0]
-            holder.addChild(slab)
-            for x in [-w / 2, w / 2] {
-                let e = ModelEntity(mesh: .generateBox(size: [0.2, 0.18, hyp]), materials: [bandMat])
-                e.position = [x, -0.2, 0]
-                holder.addChild(e)
+            // the helix: 24 short straight pieces along the arc, each a glass top over a solid slab, with a
+            // solid side skirt on the outer edge so the ramp reads as a structure from the floor
+            let n = 24
+            for i in 0..<n {
+                let t0 = Float(i) / Float(n), t1 = Float(i + 1) / Float(n)
+                let a = r.point(t0), b = r.point(t1)
+                let mid = (a + b) / 2
+                let dir = b - a
+                let len = simd_length(SIMD2(dir.x, dir.z)) * 1.04       // a hair of overlap hides the seams
+                let yaw = atan2(dir.x, dir.z)
+                let pitch = -atan2(dir.y, simd_length(SIMD2(dir.x, dir.z)))
+                let holder = Entity()
+                holder.position = mid
+                holder.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0]) * simd_quatf(angle: pitch, axis: [1, 0, 0])
+                var top = deckMat
+                top.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(r.width / 32, len / 32), rotation: 0)
+                let surface = ModelEntity(mesh: .generatePlane(width: r.width, depth: len), materials: [top])
+                surface.position = [0, 0.01, 0]
+                holder.addChild(surface)
+                let slab = ModelEntity(mesh: .generateBox(size: [r.width, thick, len]), materials: [slabMat])
+                slab.position = [0, -thick / 2, 0]
+                holder.addChild(slab)
+                for x in [-r.width / 2, r.width / 2] {
+                    let e = ModelEntity(mesh: .generateBox(size: [0.2, 0.18, len]), materials: [bandMat])
+                    e.position = [x, -0.2, 0]
+                    holder.addChild(e)
+                }
+                // outer skirt: a solid dark face hanging from the outer edge toward the ground (reads from the floor)
+                let outerX: Float = r.a1 > r.a0 ? -r.width / 2 : r.width / 2
+                let skirtH = max(1.5, mid.y * 0.45)
+                let skirt = ModelEntity(mesh: .generateBox(size: [0.3, skirtH, len]), materials: [slabMat])
+                skirt.position = [outerX * 0.98, -thick - skirtH / 2 + 0.2, 0]
+                holder.addChild(skirt)
+                root.addChild(holder)
             }
-            root.addChild(holder)
         }
         for (p, h) in terrain.columns {
-            let col = ModelEntity(mesh: .generateBox(size: [1.6, h, 1.6]), materials: [slabMat])
+            let col = ModelEntity(mesh: .generateBox(size: [3.2, h, 3.2]), materials: [slabMat])
             col.position = [p.x, h / 2, p.y]
             root.addChild(col)
             // one lit edge so the column reads
-            let edge = ModelEntity(mesh: .generateBox(size: [0.12, h, 0.12]), materials: [bandMat])
-            edge.position = [p.x + 0.8, h / 2, p.y + 0.8]
+            let edge = ModelEntity(mesh: .generateBox(size: [0.14, h, 0.14]), materials: [bandMat])
+            edge.position = [p.x + 1.6, h / 2, p.y + 1.6]
             root.addChild(edge)
         }
     }
