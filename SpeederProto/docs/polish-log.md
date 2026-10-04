@@ -733,3 +733,8 @@ Follow-up (4 Oct 2026): the arena chase camera now holds the round-start framing
 `p18/ramp/frame-1.6`: 9.6 m back and 4.3 m up (was 6.4 / 2.7), the look target 7 m ahead (was 5), lens 62
 (was 60), same speed and kick terms. The rival, the ramps and the walls stay in frame around the rider
 (`p18/cam/frame-3`, `frame-5`).
+
+Follow-up (4 Oct 2026, last of the thread): the two trails moved into the Grid's hue family. The player's
+default livery is AQUA (0.30, 1.0, 0.82; was CYAN 0.12, 0.72, 1.0) and the rival's trail a deep electric blue
+(0.18, 0.50, 1.0; was orange), both cool, both reading as the arena's own material under the same bloom; the
+hazards stay red for contrast (`p18/trails/frame-7`). The other liveries are unchanged.

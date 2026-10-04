@@ -43,8 +43,10 @@ final class ArenaController {
 
     // colour roles: player cyan/white family, opponent orange/amber family, hazards lime
     /// The player's trail and derez colour: the livery (set by the game controller before a build).
-    nonisolated(unsafe) static var playerColor = SIMD3<Float>(0.12, 0.72, 1.0)
-    static let opponentColor = SIMD3<Float>(1.0, 0.42, 0.06)
+    // the two trails in the Grid's own hue family (Mark, 4 Oct 2026): the player a rich aqua, the rival a deep
+    // electric blue; both cool, both read as the same material as the arena, the hazards stay the red
+    nonisolated(unsafe) static var playerColor = SIMD3<Float>(0.30, 1.0, 0.82)
+    static let opponentColor = SIMD3<Float>(0.18, 0.50, 1.0)
     static let hazardColor = SIMD3<Float>(1.0, 0.18, 0.22)      // red (was lime; 3 Oct 2026: lime fought the teal arena)
     static let pickupColor = SIMD3<Float>(0.85, 0.7, 1.0)
 

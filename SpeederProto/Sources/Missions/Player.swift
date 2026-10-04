@@ -6,7 +6,7 @@ import simd
 /// duel score, the derez cam), never edited mid-run (Rocket League Sideswipe's avatar / banner / title).
 struct Player: Equatable {
     static let liveries: [(name: String, color: SIMD3<Float>)] = [
-        ("CYAN", SIMD3(0.12, 0.72, 1.0)),
+        ("AQUA", SIMD3(0.30, 1.0, 0.82)),
         ("MAGENTA", SIMD3(1.0, 0.28, 0.82)),
         ("LIME", SIMD3(0.72, 1.0, 0.25)),
         ("AMBER", SIMD3(1.0, 0.70, 0.20)),
