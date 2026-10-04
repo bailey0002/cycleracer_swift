@@ -40,6 +40,8 @@
 		1DCDB9F975249B1F36C99403 /* Debrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3073385324BD69D6531D493B /* Debrief.swift */; };
 		1E92C15593BF04F0B48CC0B2 /* sfx_blast.wav in Resources */ = {isa = PBXBuildFile; fileRef = 112A966EAECC2CDFAAB233DD /* sfx_blast.wav */; };
 		1F5E5A0A979F8BC11125F84A /* RiderRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D96550312C15666E180F90E2 /* RiderRig.swift */; };
+		1F672A82AAA3CB2A05DA968E /* grid-skyline.png in Resources */ = {isa = PBXBuildFile; fileRef = 9DC487A4345E2CC9F61002B7 /* grid-skyline.png */; };
+		201B0F59AAAF966EDA948DD2 /* grid-skyline.png in Resources */ = {isa = PBXBuildFile; fileRef = 9DC487A4345E2CC9F61002B7 /* grid-skyline.png */; };
 		2041480EF5DFBBCE490E6797 /* ChakraPetch-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */; };
 		21D4C1613ADD6523B9E745F7 /* LICENSE-kenney-scifi.txt in Resources */ = {isa = PBXBuildFile; fileRef = 694AEFD902D6B70165AC202A /* LICENSE-kenney-scifi.txt */; };
 		2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
@@ -61,7 +63,9 @@
 		39B55898EFD94C6D219D2273 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58455DAE604D8289457A1546 /* GameMode.swift */; };
 		3A986515EB226197CD23580F /* Rider_dude1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */; };
 		3B54FAA079FB92CEB507CE1E /* TrailSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AEEC5E124D38AE0A2AD3AF1 /* TrailSystem.swift */; };
+		3B8F063CD89EBCBF2FEE6CE3 /* grid-floor-01.png in Resources */ = {isa = PBXBuildFile; fileRef = C765DA287634C20B6B424CD0 /* grid-floor-01.png */; };
 		3C44532136594CAAA65EBDC9 /* vo_choose_your_character.wav in Resources */ = {isa = PBXBuildFile; fileRef = CD3F17AA038F0C1C8607B66B /* vo_choose_your_character.wav */; };
+		3C846351B806D474B8AE1C33 /* grid-wall-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 9964E64CC1620BAAB88C54AE /* grid-wall-01.png */; };
 		3EEA9A12F0D52EA687DE3BB7 /* MissionProps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A7B277A67AB843AA132612 /* MissionProps.swift */; };
 		3F7B818E7B637A6E084541C0 /* rider_dude1.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 8EDF10696E742E8061B8AF01 /* rider_dude1.mp4 */; };
 		3FCDC955200F7350A5E05524 /* sfx_clack.wav in Resources */ = {isa = PBXBuildFile; fileRef = 4F7A7B82DA5F3AAD6B3EE4B2 /* sfx_clack.wav */; };
@@ -73,6 +77,7 @@
 		449C35A22DB5104DD3D8AE6D /* vo_hurry_up.wav in Resources */ = {isa = PBXBuildFile; fileRef = 803B8B368E2D6E01BDD5BF41 /* vo_hurry_up.wav */; };
 		44D867CA914D3443D0E4B4EB /* AvatarActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF5F98B937F71B03F109B71 /* AvatarActor.swift */; };
 		451774AC556FB15981FC8971 /* story_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 5B58731A4EF9758C2717FA4B /* story_1.jpg */; };
+		45AEF4D00B2512F36EFB7E92 /* grid-wall-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 9964E64CC1620BAAB88C54AE /* grid-wall-01.png */; };
 		472C0735C4D70DF7B9F64EA7 /* story_2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE46DBA0D6DC93E154C375E2 /* story_2.jpg */; };
 		49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
 		4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
@@ -81,6 +86,7 @@
 		4C82EB5F2D71407DA09681A7 /* Meshes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D83E3F361A9C9EB05F9A7 /* Meshes.swift */; };
 		4C8F89058E4C29D76391BBCF /* story_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 5B58731A4EF9758C2717FA4B /* story_1.jpg */; };
 		4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */; };
+		4EF5239FC8391F606497B992 /* music_therake.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 8DDA67B043FD0C9EF42B14B7 /* music_therake.m4a */; };
 		4FF502840DA59438EA0F737B /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
 		507A4263BAB3E632DF4A6B8F /* sfx_blast.wav in Resources */ = {isa = PBXBuildFile; fileRef = 112A966EAECC2CDFAAB233DD /* sfx_blast.wav */; };
 		537DFE8C00EFA879E867F1BD /* vo_objective_achieved.wav in Resources */ = {isa = PBXBuildFile; fileRef = C4128ED8FE5663202FB0B4B7 /* vo_objective_achieved.wav */; };
@@ -153,6 +159,7 @@
 		8D38D4DF070DB041AB7E0150 /* sfx_sting.wav in Resources */ = {isa = PBXBuildFile; fileRef = 555662A045A2583B9FC9C716 /* sfx_sting.wav */; };
 		8D95728BF1B5AADFA69B1497 /* sfx_caption.wav in Resources */ = {isa = PBXBuildFile; fileRef = C915C997E763C88A348863BE /* sfx_caption.wav */; };
 		8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */; };
+		8DDD6F87CCA5A8CC74A0A983 /* grid-floor-01.png in Resources */ = {isa = PBXBuildFile; fileRef = C765DA287634C20B6B424CD0 /* grid-floor-01.png */; };
 		8EBD5014EC55D58F75E50817 /* FrontEndView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D6EAA6259FFC006598A922 /* FrontEndView.swift */; };
 		8FFDC94911BA0A5C3A75CA69 /* sfx_vortex.wav in Resources */ = {isa = PBXBuildFile; fileRef = 459CA2CFB0E8ED96B0C304F9 /* sfx_vortex.wav */; };
 		91E7D2FCD69A80425889BA8A /* neon-facade-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */; };
@@ -162,15 +169,19 @@
 		9A4F9D347B1295FBCD282F7B /* neon-sign-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 6D1B4DBDA31434E0BA32AA40 /* neon-sign-01.png */; };
 		9ABE1C9549DF94F07F1FB124 /* Rider_dude1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */; };
 		9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
+		9B52A0069746B0F140E38408 /* music_toolong.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 8ABEA19F20BFF87D573FD3A3 /* music_toolong.m4a */; };
 		9D9093F4819EE9359D41FC2A /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE1291018C742677C899082 /* SoundEngine.swift */; };
 		9EA99108BE32B15F7EE57071 /* SpeederController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8DF279E3837CB1F79FD7FE /* SpeederController.swift */; };
 		9ECDBAA937A725E9B2B5C005 /* Rider_girl1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 9DB0CC259A8A6C66CF178667 /* Rider_girl1.usdz */; };
 		A06C7847B0BA24E8EFC4E1F6 /* neon-facade-05.png in Resources */ = {isa = PBXBuildFile; fileRef = 9D6EF71876933BEFDD6D367D /* neon-facade-05.png */; };
+		A16A6513EC3242347F998132 /* music_toolatetoolate.m4a in Resources */ = {isa = PBXBuildFile; fileRef = F78469BF83CF45E3F7B3A898 /* music_toolatetoolate.m4a */; };
 		A37EB33B22D9E43B7E1370F7 /* neon-facade-01.png in Resources */ = {isa = PBXBuildFile; fileRef = EE1999A537D2D7C94544538B /* neon-facade-01.png */; };
 		A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
+		A51668861252ED415D35FC4A /* music_toolong.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 8ABEA19F20BFF87D573FD3A3 /* music_toolong.m4a */; };
 		A611F5A5EBD64E9D8E21B73A /* music_hideaway.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A6AD2E56DC74F874A8DD2B3E /* music_hideaway.m4a */; };
 		A8829E568872E47E16AA03A7 /* ArenaController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA98E8EC40131A52017CCC61 /* ArenaController.swift */; };
 		A975139BC959AB5AC5F0212B /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
+		AA96D1F818707E3B6FFD042C /* music_chainaintheavy.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 490D01F92B02094B43BDD678 /* music_chainaintheavy.m4a */; };
 		AB48F2AEB092D1CB4D3B1CEC /* neon-facade-04.png in Resources */ = {isa = PBXBuildFile; fileRef = 6BE6651996893CE31D1284E4 /* neon-facade-04.png */; };
 		ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
 		ACF99E83C3047CB5EF2F9A47 /* music_firstplace.m4a in Resources */ = {isa = PBXBuildFile; fileRef = AC52AECFF158D9BC6F58F4C3 /* music_firstplace.m4a */; };
@@ -178,6 +189,7 @@
 		AEC904D33615D2515E160A69 /* vo_time_over.wav in Resources */ = {isa = PBXBuildFile; fileRef = D01204372EF005EBD11A98D1 /* vo_time_over.wav */; };
 		AFAAE7976C181293DD0AAAFD /* sfx_laser_alt.wav in Resources */ = {isa = PBXBuildFile; fileRef = 6FC21E881A9072639B29216A /* sfx_laser_alt.wav */; };
 		AFB983264A7AB37663B129A4 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A1F6907665CF7ECFD7DDF5 /* Player.swift */; };
+		B009023ED78BB62D7A898F16 /* music_chainaintheavy.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 490D01F92B02094B43BDD678 /* music_chainaintheavy.m4a */; };
 		B03E44A86F4DEB1A338643D1 /* StoryIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE24CC7D71AAD9CB37666722 /* StoryIntroView.swift */; };
 		B055466367E72700EAD46FE9 /* music_toolate.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 69831278549751BF45A9F238 /* music_toolate.m4a */; };
 		B29C27AEA5231468237F3607 /* story_3.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E86D56308A5079A2AB4ACC26 /* story_3.jpg */; };
@@ -196,6 +208,7 @@
 		C13FB08266CC67352F52BD43 /* MessageLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1B3D9DCB545B5257A55F15 /* MessageLog.swift */; };
 		C305CEA6F0C4C770C6B8C0E0 /* vo_wrong.wav in Resources */ = {isa = PBXBuildFile; fileRef = 64EC264A7A4A9123592EF82A /* vo_wrong.wav */; };
 		C4889FD8DB7F29A04EE364A8 /* vo_power_up.wav in Resources */ = {isa = PBXBuildFile; fileRef = FCD58AD5EC0C408FEBB37FA7 /* vo_power_up.wav */; };
+		C74AE7E7E2CC3A9C3A504ABF /* music_toolatetoolate.m4a in Resources */ = {isa = PBXBuildFile; fileRef = F78469BF83CF45E3F7B3A898 /* music_toolatetoolate.m4a */; };
 		C76A061DDDE52E69116C1696 /* Rider_dude2.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */; };
 		CA35324DE2FFFBF698C0B09C /* sfx_caption.wav in Resources */ = {isa = PBXBuildFile; fileRef = C915C997E763C88A348863BE /* sfx_caption.wav */; };
 		CD01F1F11C34161205DB8379 /* sfx_ring.wav in Resources */ = {isa = PBXBuildFile; fileRef = 0ED407FC767B57F570CFC7D4 /* sfx_ring.wav */; };
@@ -240,6 +253,7 @@
 		F611F1A14B9E7E7897D1153C /* Debrief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3073385324BD69D6531D493B /* Debrief.swift */; };
 		F7F866353C2595C4A553AFFA /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868ACE88113A37309BDE3C7D /* HUDView.swift */; };
 		F8D064177C2090AA84FD26C1 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 4CEFC5EEF0192DCE155B6328 /* OFL.txt */; };
+		F935E9BC12BB256F746CED73 /* music_therake.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 8DDA67B043FD0C9EF42B14B7 /* music_therake.m4a */; };
 		FB396F46FA9102E4E3803E26 /* rider_girl1.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C5166421E2AA1C608CB65D5B /* rider_girl1.mp4 */; };
 		FC6957272CC122A996E98B49 /* rider_dude2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = EAF66509AA5D17A0EA16E4BF /* rider_dude2.jpg */; };
 		FD00C5FCF8D3CF15B23917D5 /* sfx_vortex.wav in Resources */ = {isa = PBXBuildFile; fileRef = 459CA2CFB0E8ED96B0C304F9 /* sfx_vortex.wav */; };
@@ -282,6 +296,7 @@
 		44E74DD4583F19C94BE32E39 /* CameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRig.swift; sourceTree = "<group>"; };
 		459CA2CFB0E8ED96B0C304F9 /* sfx_vortex.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_vortex.wav; sourceTree = "<group>"; };
 		4692E36D43C542266B26E80F /* story_4.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = story_4.jpg; sourceTree = "<group>"; };
+		490D01F92B02094B43BDD678 /* music_chainaintheavy.m4a */ = {isa = PBXFileReference; path = music_chainaintheavy.m4a; sourceTree = "<group>"; };
 		4A26928F0EB1F3188C3B97A6 /* vo_ready.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_ready.wav; sourceTree = "<group>"; };
 		4CEFC5EEF0192DCE155B6328 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		4F7A7B82DA5F3AAD6B3EE4B2 /* sfx_clack.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_clack.wav; sourceTree = "<group>"; };
@@ -318,16 +333,20 @@
 		84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaAI.swift; sourceTree = "<group>"; };
 		85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Speeder.usdz; sourceTree = "<group>"; };
 		868ACE88113A37309BDE3C7D /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
+		8ABEA19F20BFF87D573FD3A3 /* music_toolong.m4a */ = {isa = PBXFileReference; path = music_toolong.m4a; sourceTree = "<group>"; };
+		8DDA67B043FD0C9EF42B14B7 /* music_therake.m4a */ = {isa = PBXFileReference; path = music_therake.m4a; sourceTree = "<group>"; };
 		8EDF10696E742E8061B8AF01 /* rider_dude1.mp4 */ = {isa = PBXFileReference; path = rider_dude1.mp4; sourceTree = "<group>"; };
 		9053514CE8B1F571D4E90C4A /* rider_cal.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_cal.jpg; sourceTree = "<group>"; };
 		92AB31F80D364C74D73A338B /* neon-facade-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-03.png"; sourceTree = "<group>"; };
 		95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostProcessor.swift; sourceTree = "<group>"; };
 		96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralTextures.swift; sourceTree = "<group>"; };
 		9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaTerrain.swift; sourceTree = "<group>"; };
+		9964E64CC1620BAAB88C54AE /* grid-wall-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-wall-01.png"; sourceTree = "<group>"; };
 		9B5C03888AE8219F9A655351 /* vo_round_3.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_round_3.wav; sourceTree = "<group>"; };
 		9D1146D252113EB8417E5731 /* SpeederApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeederApp.swift; sourceTree = "<group>"; };
 		9D6EF71876933BEFDD6D367D /* neon-facade-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-05.png"; sourceTree = "<group>"; };
 		9DB0CC259A8A6C66CF178667 /* Rider_girl1.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider_girl1.usdz; sourceTree = "<group>"; };
+		9DC487A4345E2CC9F61002B7 /* grid-skyline.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-skyline.png"; sourceTree = "<group>"; };
 		9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaWorld.swift; sourceTree = "<group>"; };
 		9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_girl1.jpg; sourceTree = "<group>"; };
 		A6AD2E56DC74F874A8DD2B3E /* music_hideaway.m4a */ = {isa = PBXFileReference; path = music_hideaway.m4a; sourceTree = "<group>"; };
@@ -349,6 +368,7 @@
 		C4128ED8FE5663202FB0B4B7 /* vo_objective_achieved.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_objective_achieved.wav; sourceTree = "<group>"; };
 		C5166421E2AA1C608CB65D5B /* rider_girl1.mp4 */ = {isa = PBXFileReference; path = rider_girl1.mp4; sourceTree = "<group>"; };
 		C5BBB920AF1A8FF05456388B /* sfx_laser.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_laser.wav; sourceTree = "<group>"; };
+		C765DA287634C20B6B424CD0 /* grid-floor-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-floor-01.png"; sourceTree = "<group>"; };
 		C915C997E763C88A348863BE /* sfx_caption.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_caption.wav; sourceTree = "<group>"; };
 		C9878B4DE09B4382EE413D42 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		C9E8B2EDA2388B369D66ECFE /* Soundtrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Soundtrack.swift; sourceTree = "<group>"; };
@@ -376,6 +396,7 @@
 		F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-Regular.ttf"; sourceTree = "<group>"; };
 		F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider_dude1.usdz; sourceTree = "<group>"; };
 		F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-shop-02.png"; sourceTree = "<group>"; };
+		F78469BF83CF45E3F7B3A898 /* music_toolatetoolate.m4a */ = {isa = PBXFileReference; path = music_toolatetoolate.m4a; sourceTree = "<group>"; };
 		FC3987DDEE5BD7658001B6C9 /* SpeederProto-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SpeederProto-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FC6DBC66827CF202624BE7B3 /* Weapons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weapons.swift; sourceTree = "<group>"; };
 		FCD58AD5EC0C408FEBB37FA7 /* vo_power_up.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_power_up.wav; sourceTree = "<group>"; };
@@ -416,9 +437,13 @@
 			isa = PBXGroup;
 			children = (
 				694AEFD902D6B70165AC202A /* LICENSE-kenney-scifi.txt */,
+				490D01F92B02094B43BDD678 /* music_chainaintheavy.m4a */,
 				AC52AECFF158D9BC6F58F4C3 /* music_firstplace.m4a */,
 				A6AD2E56DC74F874A8DD2B3E /* music_hideaway.m4a */,
+				8DDA67B043FD0C9EF42B14B7 /* music_therake.m4a */,
 				69831278549751BF45A9F238 /* music_toolate.m4a */,
+				F78469BF83CF45E3F7B3A898 /* music_toolatetoolate.m4a */,
+				8ABEA19F20BFF87D573FD3A3 /* music_toolong.m4a */,
 				112A966EAECC2CDFAAB233DD /* sfx_blast.wav */,
 				5D404305FE27F5FCF741D9BF /* sfx_bubble.wav */,
 				C915C997E763C88A348863BE /* sfx_caption.wav */,
@@ -471,7 +496,10 @@
 			isa = PBXGroup;
 			children = (
 				1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */,
+				C765DA287634C20B6B424CD0 /* grid-floor-01.png */,
 				72882052C02160C92D4332AF /* grid-screen-01.png */,
+				9DC487A4345E2CC9F61002B7 /* grid-skyline.png */,
+				9964E64CC1620BAAB88C54AE /* grid-wall-01.png */,
 				EE1999A537D2D7C94544538B /* neon-facade-01.png */,
 				56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */,
 				92AB31F80D364C74D73A338B /* neon-facade-03.png */,
@@ -753,10 +781,17 @@
 				DF340130C1C957D59ADE29B9 /* Rider_girl1.usdz in Resources */,
 				4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */,
 				BA819C5B884C6C3A20236A47 /* grid-bowl.png in Resources */,
+				8DDD6F87CCA5A8CC74A0A983 /* grid-floor-01.png in Resources */,
 				5F8EA8B586550D8112C81C83 /* grid-screen-01.png in Resources */,
+				1F672A82AAA3CB2A05DA968E /* grid-skyline.png in Resources */,
+				3C846351B806D474B8AE1C33 /* grid-wall-01.png in Resources */,
+				AA96D1F818707E3B6FFD042C /* music_chainaintheavy.m4a in Resources */,
 				0086F2EE7150F3FBA01E131E /* music_firstplace.m4a in Resources */,
 				A611F5A5EBD64E9D8E21B73A /* music_hideaway.m4a in Resources */,
+				F935E9BC12BB256F746CED73 /* music_therake.m4a in Resources */,
 				B055466367E72700EAD46FE9 /* music_toolate.m4a in Resources */,
+				C74AE7E7E2CC3A9C3A504ABF /* music_toolatetoolate.m4a in Resources */,
+				A51668861252ED415D35FC4A /* music_toolong.m4a in Resources */,
 				A37EB33B22D9E43B7E1370F7 /* neon-facade-01.png in Resources */,
 				EA4EA13681E94E0ADAF38079 /* neon-facade-02.png in Resources */,
 				43C5E4BCCC197D4225A1A726 /* neon-facade-03.png in Resources */,
@@ -834,10 +869,17 @@
 				9ECDBAA937A725E9B2B5C005 /* Rider_girl1.usdz in Resources */,
 				7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */,
 				DB9070E503B2652C1E01EA27 /* grid-bowl.png in Resources */,
+				3B8F063CD89EBCBF2FEE6CE3 /* grid-floor-01.png in Resources */,
 				673451B190DBEFCCA82C5ECD /* grid-screen-01.png in Resources */,
+				201B0F59AAAF966EDA948DD2 /* grid-skyline.png in Resources */,
+				45AEF4D00B2512F36EFB7E92 /* grid-wall-01.png in Resources */,
+				B009023ED78BB62D7A898F16 /* music_chainaintheavy.m4a in Resources */,
 				ACF99E83C3047CB5EF2F9A47 /* music_firstplace.m4a in Resources */,
 				4C4EF9601FA091E54BC168DC /* music_hideaway.m4a in Resources */,
+				4EF5239FC8391F606497B992 /* music_therake.m4a in Resources */,
 				030D9FA4B60592711B8A7E08 /* music_toolate.m4a in Resources */,
+				A16A6513EC3242347F998132 /* music_toolatetoolate.m4a in Resources */,
+				9B52A0069746B0F140E38408 /* music_toolong.m4a in Resources */,
 				6477786B4FEC8FD6E79B7681 /* neon-facade-01.png in Resources */,
 				91E7D2FCD69A80425889BA8A /* neon-facade-02.png in Resources */,
 				CEE259DD889694D01531BF49 /* neon-facade-03.png in Resources */,

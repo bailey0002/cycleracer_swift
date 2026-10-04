@@ -677,3 +677,18 @@ component test (one 4 m wall module + a 20 x 20 m floor stage, camera at 1.2 m, 
 environment) with the geometry from Blender (a deterministic Python script -> USDZ, as the riders already
 are), Swift keeping the grid shader, placement, trails and gameplay. Mark offered isolated reference sheets
 for the wall and the floor; the stage waits for them.
+
+Follow-up (3 Oct 2026, late): the city's route instead of Blender. Mark had GPT render the three brief items
+(a wall module tile, a floor plate tile, the skyline strip with the spire; first as one sheet, then as separate
+panels at about 600 px with captions, cropped out with ffmpeg into `Resources/Art/grid-wall-01.png`,
+`grid-floor-01.png`, `grid-skyline.png`). `MaterialFactory` uses them when present: the floor plate is the
+albedo with a Sobel normal map derived from its luminance (`Art.normalMap`) and the plate's own roughness
+where a `-rough` map exists, the procedural grid staying as the emissive layer; the wall tile is the slab's
+base colour with a normal map and an emissive mask derived from its cyan (`Art.emissiveMask`, tinted by the
+palette accent so duels keep the rival's colour), one tile per module at the tile's aspect, the 3D buttress
+columns off since the tile carries them; the skyline is keyed off its black sky (`Art.keyedBlack`, lift 2.5)
+on four planes 170 m past the walls, replacing the far 3D towers and spire. Frames `p17/art-chase2`,
+`art-side`, `art-over`. Gotcha: new files in `Resources/` need `xcodegen generate` or the bundle silently
+lacks them (the first run loaded nothing). Owed: the full 1024 px panels Mark requested (drop-in, same
+names), a `grid-floor-01-rough.png` if GPT delivers one, a crowd strip, and the bloom / haze pass over the
+new materials on the phone.

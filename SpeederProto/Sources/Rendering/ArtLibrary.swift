@@ -46,6 +46,71 @@ enum Art {
         return ctx.makeImage() ?? img
     }
 
+    /// Pixels of a decoded copy (RGBA8, premultiplied, w * 4 stride) with a writable context.
+    private static func pixels(_ img: CGImage) -> (CGContext, UnsafeMutablePointer<UInt8>)? {
+        let w = img.width, h = img.height
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+              let base = ctx.data else { return nil }
+        ctx.draw(img, in: CGRect(x: 0, y: 0, width: w, height: h))
+        return (ctx, base.bindMemory(to: UInt8.self, capacity: w * 4 * h))
+    }
+
+    /// White where the image is saturated in the accent's hue (the tile's own cyan light channels), black
+    /// elsewhere: the emissive mask when the generator did not deliver one.
+    static func emissiveMask(_ img: CGImage, minValue: Float = 0.45, minChroma: Float = 0.18) -> CGImage {
+        guard let (ctx, d) = pixels(img) else { return img }
+        let n = img.width * img.height
+        for i in 0..<n {
+            let r = Float(d[i * 4]) / 255, g = Float(d[i * 4 + 1]) / 255, b = Float(d[i * 4 + 2]) / 255
+            let v = max(r, g, b), chroma = (g + b) * 0.5 - r
+            let m: Float = (v > minValue && chroma > minChroma) ? min(1, (v - minValue) / 0.35) : 0
+            let o = UInt8(m * 255)
+            d[i * 4] = o; d[i * 4 + 1] = o; d[i * 4 + 2] = o; d[i * 4 + 3] = 255
+        }
+        return ctx.makeImage() ?? img
+    }
+
+    /// A greyscale mask multiplied by a colour (the Grid's wall emissive follows the palette).
+    static func tinted(_ img: CGImage, _ c: SIMD3<Float>) -> CGImage {
+        guard let (ctx, d) = pixels(img) else { return img }
+        let n = img.width * img.height
+        for i in 0..<n {
+            let l = Float(d[i * 4]) * 0.299 + Float(d[i * 4 + 1]) * 0.587 + Float(d[i * 4 + 2]) * 0.114
+            d[i * 4] = UInt8(min(255, l * c.x)); d[i * 4 + 1] = UInt8(min(255, l * c.y)); d[i * 4 + 2] = UInt8(min(255, l * c.z)); d[i * 4 + 3] = 255
+        }
+        return ctx.makeImage() ?? img
+    }
+
+    /// A tangent-space normal map from the image's luminance as a height field (Sobel), wrapping at the
+    /// edges so a tiling albedo gives a tiling normal. `strength` scales the slope.
+    static func normalMap(_ img: CGImage, strength: Float = 2.0) -> CGImage {
+        guard let (src, d) = pixels(img) else { return img }
+        let w = img.width, h = img.height
+        func lum(_ x: Int, _ y: Int) -> Float {
+            let xx = (x + w) % w, yy = (y + h) % h, i = (yy * w + xx) * 4
+            return (Float(d[i]) * 0.299 + Float(d[i + 1]) * 0.587 + Float(d[i + 2]) * 0.114) / 255
+        }
+        guard let out = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+              let ob = out.data else { return img }
+        let o = ob.bindMemory(to: UInt8.self, capacity: w * 4 * h)
+        for y in 0..<h {
+            for x in 0..<w {
+                let gx = (lum(x + 1, y - 1) + 2 * lum(x + 1, y) + lum(x + 1, y + 1)) - (lum(x - 1, y - 1) + 2 * lum(x - 1, y) + lum(x - 1, y + 1))
+                let gy = (lum(x - 1, y + 1) + 2 * lum(x, y + 1) + lum(x + 1, y + 1)) - (lum(x - 1, y - 1) + 2 * lum(x, y - 1) + lum(x + 1, y - 1))
+                var n = SIMD3<Float>(-gx * strength, gy * strength, 1)
+                n /= max(1e-5, (n.x * n.x + n.y * n.y + n.z * n.z).squareRoot())
+                let i = (y * w + x) * 4
+                o[i] = UInt8((n.x * 0.5 + 0.5) * 255); o[i + 1] = UInt8((n.y * 0.5 + 0.5) * 255); o[i + 2] = UInt8((n.z * 0.5 + 0.5) * 255); o[i + 3] = 255
+            }
+        }
+        _ = src
+        return out.makeImage() ?? img
+    }
+
     /// A copy with black keyed to transparent by luminance (backdrops generated on a black ground).
     /// `lift` is a soft tone curve (1 - exp(-lift * v)) that raises the darks without clipping the lights:
     /// a dark backdrop must survive the depth fog and the grade.

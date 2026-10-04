@@ -34,7 +34,7 @@ final class ArenaWorld {
         // floor
         var floorMat = materials.gridFloor ?? materials.road
         let floorExtent = size + 120
-        floorMat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(floorExtent / 16, floorExtent / 16), rotation: 0)
+        floorMat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(floorExtent / 16, floorExtent / 16), rotation: 0)   // one tile = one 16 m grid cell block (4 x 4 cells)
         let floor = ModelEntity(mesh: .generatePlane(width: floorExtent, depth: floorExtent), materials: [floorMat])
         floor.position = [0, 0, 0]
         root.addChild(floor)
@@ -48,7 +48,10 @@ final class ArenaWorld {
             let holder = Entity()
             holder.orientation = simd_quatf(angle: Float(side) * .pi / 2, axis: [0, 1, 0])
             var wallMat = materials.gridWall ?? materials.barrier
-            wallMat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(size / 6, 1), rotation: 0)
+            // one tile per module: the generated tile's aspect sets the module width (about 2.2 x the height)
+            let moduleWidth: Float = (materials.gridWallAspect ?? (6 / wallHeight)) * wallHeight
+            let repeats = max(1, (size / moduleWidth).rounded())
+            wallMat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(repeats, 1), rotation: 0)
             let slab = ModelEntity(mesh: .generateBox(width: size + 4, height: wallHeight, depth: 3.0), materials: [wallMat])
             slab.position = [0, wallHeight / 2, -halfSize - 1.5]
             holder.addChild(slab)
@@ -63,8 +66,8 @@ final class ArenaWorld {
             let colMat = materials.barrier
             let stripMat = materials.neon(lit(0.1), intensity: 3.2)
             let trimMat = materials.neon(accent * 0.8, intensity: 2.4)
-            let columns = Int(size / 12)
-            for c in 0...columns {
+            let columns = Int(repeats)
+            for c in 0...columns where materials.gridWallAspect == nil {         // the generated tile carries its own buttresses
                 let x = -halfSize + Float(c) * (size / Float(columns))
                 let col = ModelEntity(mesh: .generateBox(size: [2.4, wallHeight + 1.6, 1.6]), materials: [wallMat])
                 col.position = [x, (wallHeight + 1.6) / 2, -halfSize + 0.3]
@@ -103,7 +106,7 @@ final class ArenaWorld {
         // far data towers: dark slabs with one lit edge, well outside the fog range so they read as silhouettes
         var rng = SeededRNG(seed: 7771)
         let edgeMat = materials.neon(accent * 0.75, intensity: 2.5)
-        for i in 0..<28 {
+        for i in 0..<(materials.artGridSkyline == nil ? 28 : 0) {
             let a = Float(i) / 28 * 2 * .pi + rng.float(-0.08, 0.08)
             let r = halfSize + rng.float(120, 320)
             let w = rng.float(14, 40), h = rng.float(40, 190)
@@ -127,8 +130,22 @@ final class ArenaWorld {
             e.position = [-w / 2, 0, w / 2]
             t.addChild(e)
         }
+        if let sky = materials.artGridSkyline {
+            // the generated skyline strip with the spire: four planes past the mid ring, sized so the spire
+            // clears the walls (the far 3D towers and spire stay off when the strip is in)
+            let dist = halfSize + 170, width = 2 * dist + 120
+            let height = width / materials.gridSkylineAspect
+            for i in 0..<4 {
+                let plane = ModelEntity(mesh: .generateBox(width: width, height: height, depth: 0.5), materials: [sky])
+                let holder = Entity()
+                holder.orientation = simd_quatf(angle: Float(i) * .pi / 2, axis: [0, 1, 0])
+                plane.position = [0, height * 0.46, -dist]
+                holder.addChild(plane)
+                root.addChild(holder)
+            }
+        }
         // the landmark: one spire past the north wall with a lit core, a halo ring at two thirds and a beam
-        do {
+        if materials.artGridSkyline == nil {
             let spireMat = materials.barrier
             let coreMat = materials.neon(lit(0.2), intensity: 3.0)
             let spire = Entity()
