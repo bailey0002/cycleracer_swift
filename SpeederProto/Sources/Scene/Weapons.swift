@@ -11,23 +11,53 @@ final class WeaponSystem {
     private var explosions: [(entity: Entity, light: PointLight, timer: Float)] = []
     private var cooldown: Float = 0
     private var muzzleSide: Float = 1
+    private let flash = PointLight()
+    private var flashTimer: Float = 0
     let boltSpeed: Float = 95
     let fireInterval: Float = 0.14
 
     init(materials: SceneMaterials) {
         root.name = "Weapons"
-        let core = materials.neon(SIMD3(0.75, 1.0, 1.0), intensity: 6)
-        let halo = materials.glow(Neon.cyan, opacity: 0.55)
+        // the photon (2 Oct 2026): a hot white core inside a cyan sheath, a head halo and a short additive
+        // trail, so a shot reads at 95 m/s against the neon
+        let core = materials.neon(SIMD3(1.0, 1.0, 1.0), intensity: 9)
+        let sheath = materials.neon(SIMD3(0.45, 0.95, 1.0), intensity: 5)
+        let halo = materials.glow(Neon.cyan, opacity: 0.8)
         for _ in 0..<16 {
             let e = Entity()
-            let body = ModelEntity(mesh: .generateBox(size: [0.14, 0.14, 1.8], cornerRadius: 0.06), materials: [core])
-            let g = ModelEntity(mesh: .generatePlane(width: 0.9, height: 0.9), materials: [halo])
-            g.position = [0, 0, 0.6]
-            e.addChild(body); e.addChild(g)
+            let body = ModelEntity(mesh: .generateBox(size: [0.16, 0.16, 3.6], cornerRadius: 0.08), materials: [core])
+            let shell = ModelEntity(mesh: .generateBox(size: [0.38, 0.38, 3.0], cornerRadius: 0.19), materials: [sheath])
+            let head = ModelEntity(mesh: .generateSphere(radius: 0.32), materials: [core])
+            head.position = [0, 0, -1.7]
+            e.addChild(head)
+            let g = ModelEntity(mesh: .generatePlane(width: 2.6, height: 2.6), materials: [halo])
+            g.position = [0, 0, -1.5]
+            g.orientation = simd_quatf(angle: 0.02, axis: [1, 0, 0])
+            var p = ParticleEmitterComponent()
+            p.emitterShape = .point
+            p.emissionDirection = [0, 0, 1]
+            p.speed = 4
+            p.mainEmitter.birthRate = 320
+            p.mainEmitter.lifeSpan = 0.24
+            p.mainEmitter.size = 0.2
+            p.mainEmitter.sizeVariation = 0.05
+            p.mainEmitter.stretchFactor = 6
+            p.mainEmitter.blendMode = .additive
+            p.mainEmitter.opacityCurve = .linearFadeOut
+            p.mainEmitter.color = .evolving(start: .single(.rgb(0.6, 1.0, 1.0, 0.9)), end: .single(.rgb(0.2, 0.5, 1.0, 0.0)))
+            let trail = Entity()
+            trail.components.set(p)
+            trail.position = [0, 0, 1.0]
+            e.addChild(body); e.addChild(shell); e.addChild(g); e.addChild(trail)
             e.isEnabled = false
             root.addChild(e)
             bolts.append(Bolt(entity: e))
         }
+        flash.light.color = .rgb(Neon.cyan)
+        flash.light.intensity = 70000
+        flash.light.attenuationRadius = 6
+        flash.isEnabled = false
+        root.addChild(flash)
         for _ in 0..<3 {
             let e = Entity()
             var p = ParticleEmitterComponent()
@@ -72,17 +102,21 @@ final class WeaponSystem {
         bolts[i].entity.position = muzzle
         bolts[i].entity.orientation = orientation
         bolts[i].entity.isEnabled = true
+        flash.position = muzzle
+        flash.isEnabled = true
+        flashTimer = 0.06
         return true
     }
 
     /// Advance bolts; `hitTest` receives the bolt tip position and returns true when it consumed the bolt.
     func update(dt: Float, hitTest: (SIMD3<Float>) -> Bool) {
         cooldown -= dt
+        if flashTimer > 0 { flashTimer -= dt; if flashTimer <= 0 { flash.isEnabled = false } }
         for i in bolts.indices where bolts[i].alive {
             bolts[i].age += dt
             let e = bolts[i].entity
             e.position += e.orientation.act([0, 0, -boltSpeed * dt])
-            let tip = e.position + e.orientation.act([0, 0, -0.9])
+            let tip = e.position + e.orientation.act([0, 0, -1.9])
             if bolts[i].age > 1.6 || hitTest(tip) {
                 bolts[i].alive = false
                 e.isEnabled = false

@@ -136,6 +136,13 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   callsign -> briefing (KERB's order). The board is controller-only (pad X 360, Y roll, L1 fire), no touch.
   App icon = the rider mid-360 over the KERB wordmark (`Tools/brand/icon-rider.png` shot with `SPEEDER_ICON_SHOT=1`,
   rendered by `swift Tools/render-brand.swift`; `--logo-only` for the wordmark alone).
+- Audio 1 Oct 2026 (late; `docs/polish-log.md` "Music, the cabinet announcer"): `Sources/Audio/Soundtrack.swift` plays
+  Mark's music (`Resources/Audio/music_*.m4a`: Hideaway = menus, First Place + Too Late = runs) and Kenney CC0 announcer
+  lines / story cues copied from `../kerb_skate_game/KerbSkate/Assets/audio`. Generative music mutes when tracks exist;
+  `SPEEDER_TRACKS=0` disables the files; SETTINGS > SOUNDTRACK toggles them; the session is `.playback` (plays through
+  the ring switch); the soundtrack has its own timer so Hideaway starts under the splash. PR #5 merged 1 Oct 2026
+  (master has the hoverboard + KERB: GALACTIC frame); audio + a three-agent review pass on branch `claude/audio`, PR #6
+  (`docs/polish-log.md` "Follow-ups (2 Oct 2026)" lists the fixes: camera lift, rebuild re-queue, duel lines, etc.).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

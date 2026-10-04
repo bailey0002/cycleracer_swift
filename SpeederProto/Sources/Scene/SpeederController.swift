@@ -25,10 +25,20 @@ final class SpeederController {
     var cameraLift: SIMD2<Float> = .zero
     /// The rider's handling multipliers (steer, climb, boost, hull); neutral for the speeder.
     private(set) var handling = RiderHandling.neutral
+    /// A soft light at the rider's chest for worlds with no ambient (The Grid); off elsewhere.
+    private let riderLight = PointLight()
     let engineLight = PointLight()
     let underLight = PointLight()
     private let holder = Entity()
     private var glows: [ModelEntity] = []
+    /// The wide halo (dimmed by `tint`); found by role, not by index, since the board appends its rail strips first.
+    private var halo: ModelEntity?
+    /// The main nozzle in root space (differs per vehicle).
+    private var thrusterOffset = SIMD3<Float>(0.02, 0.15, 1)
+    /// The vehicle's heading without the trick rotation: what the bolts and the ground quads use.
+    private(set) var aimOrientation = simd_quatf(angle: 0, axis: [0, 1, 0])
+    /// Altitude plus the trick hop: the height the collision test should use (a hop is a real dodge).
+    private(set) var visualAltitude: Float = 1.05
     private var underGlow: ModelEntity?
     private var shadow: ModelEntity?
     private var rearZ: Float = 1
@@ -53,7 +63,8 @@ final class SpeederController {
     let restHeight: Float = 1.05
     let scale: Float = 2.0
 
-    static func load(materials: SceneMaterials, kind: VehicleKind = .current) async throws -> SpeederController {
+    /// `rider` overrides the chosen rider (the arena rival rides a board with another face).
+    static func load(materials: SceneMaterials, kind: VehicleKind = .current, rider override: RiderProfile? = nil) async throws -> SpeederController {
         func entity(_ name: String) async throws -> Entity {
             guard let url = Bundle.main.url(forResource: name, withExtension: "usdz") else {
                 throw NSError(domain: "Speeder", code: 1, userInfo: [NSLocalizedDescriptionKey: "\(name).usdz missing from bundle"])
@@ -64,7 +75,7 @@ final class SpeederController {
         case .speeder:
             return SpeederController(model: try await entity("Speeder"), materials: materials)
         case .board:
-            let profile = Roster.current()
+            let profile = override ?? Roster.current()
             let c = SpeederController(board: try await entity("Board"), rider: try await entity(profile.asset), materials: materials)
             c.handling = profile.handling
             print("Board: rider \(profile.name) (\(profile.asset))")
@@ -98,7 +109,9 @@ final class SpeederController {
             q.position = offset
             root.addChild(q)
             glows.append(q)
+            if size == 2.0 { halo = q }
         }
+        thrusterOffset = [0.02, 0.15, rearZ * 1.0]
         // hover glow pool on the road surface under the vehicle
         let pool = ModelEntity(mesh: .generatePlane(width: 3.2, depth: 4.5), materials: [materials.glow(Neon.magenta, opacity: 0.22)])
         pool.position = [0, -restHeight + 0.04, 0.2]
@@ -196,13 +209,18 @@ final class SpeederController {
         rearZ = boardLength * 0.5 * big
         let deckWidth = b2.extents.x * big, deckThickness = b2.extents.y * big
 
+        riderLight.light.color = .rgb(SIMD3(0.75, 0.95, 1.0))
+        riderLight.light.intensity = 5000
+        riderLight.light.attenuationRadius = 3.2
+        riderLight.position = [0.3, -deckDrop + 1.4, 0]
+        riderLight.isEnabled = false
+        root.addChild(riderLight)
         if let rig = RiderRig(entity: riderModel) {
             let target: Float = 1.75
             if rig.height > 0.5 { rig.root.scale = SIMD3<Float>(repeating: target / rig.height) }
             deck.addChild(rig.root)
             rider = rig
             rig.pose(bank: 0, speedNorm: 0, boost: 0, climb: 0, time: 0, dt: 1)
-            rig.apply(dt: 1, rate: 1000)
         } else {
             print("Board: rider rig missing, riding empty")
         }
@@ -226,7 +244,9 @@ final class SpeederController {
             q.position = offset
             root.addChild(q)
             glows.append(q)
+            if size == 1.3 { halo = q }
         }
+        thrusterOffset = [0, -deckDrop - 0.05, rearZ * 1.02]
         let pool = ModelEntity(mesh: .generatePlane(width: 1.6, depth: 2.6), materials: [materials.glow(Neon.magenta, opacity: 0.26)])
         pool.position = [0, -restHeight + 0.04, 0]
         root.addChild(pool)
@@ -278,6 +298,8 @@ final class SpeederController {
     private let trickDuration: Float = 0.85
     /// 0 ... 1 through the current trick (0 when none).
     var trickProgress: Float { trick == nil ? 0 : min(1, trickTime / trickDuration) }
+    /// True for the one frame a trick completes (the announcer's cue).
+    private(set) var trickLandedNow = false
 
     /// Start a 360 spin or a barrel roll; nil when one is already running or the vehicle is not a board.
     func startTrick(_ t: Trick) -> String? {
@@ -288,15 +310,22 @@ final class SpeederController {
 
     /// Extra orientation and hop from the running trick; advances it by `dt`.
     private func trickTransform(dt: Float) -> (rotation: simd_quatf, hop: Float, air: Float) {
+        trickLandedNow = false
         guard let t = trick else { return (simd_quatf(angle: 0, axis: [0, 1, 0]), 0, 0) }
         trickTime += dt
         let p = min(1, trickTime / trickDuration)
         let e = p * p * (3 - 2 * p)                      // smoothstep: launches and lands soft
         let angle = e * 2 * .pi
         let air = sin(p * .pi)
-        if p >= 1 { trick = nil }
+        if p >= 1 { trick = nil; trickLandedNow = true }
         let rot = t == .spin ? simd_quatf(angle: angle, axis: [0, 1, 0]) : simd_quatf(angle: angle, axis: [0, 0, 1])
         return (rot, air * (t == .spin ? 0.9 : 1.2), air)
+    }
+
+    /// The Grid: a self-lit suit and a chest light so the rider reads against the black arena.
+    func setArenaLook(_ on: Bool) {
+        rider?.selfLight(on ? 0.85 : 0)
+        riderLight.isEnabled = on && rider != nil
     }
 
     func setParticles(_ on: Bool) { trail?.isEnabled = on }
@@ -318,7 +347,7 @@ final class SpeederController {
     private var lastTrailRate = -1
 
     /// World position of the main nozzle (for the post pass's heat haze).
-    var thrusterWorldPosition: SIMD3<Float> { root.convert(position: [0.02, 0.15, rearZ * 1.0], to: nil) }
+    var thrusterWorldPosition: SIMD3<Float> { root.convert(position: thrusterOffset, to: nil) }
 
     /// Shadow and ground glow on the road plane under the vehicle: the glow grows with throttle, the
     /// shadow shrinks and fades as the vehicle climbs (contact reads on a phone screen).
@@ -399,12 +428,14 @@ final class SpeederController {
         bank = smoothBank - jolt * recoilDir
         let yaw = -steer * 0.12 + sin(time * 0.7) * 0.012 * idle
         let pitch = -speedNorm * 0.035 + sin(time * 3.1) * 0.008 + jolt * 0.4 + vy * 0.045
-        root.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0])
-                         * simd_quatf(angle: pitch, axis: [1, 0, 0])
-                         * simd_quatf(angle: bank, axis: [0, 0, 1])
-                         * trickFX.rotation
+        aimOrientation = simd_quatf(angle: yaw, axis: [0, 1, 0])
+                       * simd_quatf(angle: pitch, axis: [1, 0, 0])
+                       * simd_quatf(angle: bank, axis: [0, 0, 1])
+        root.orientation = aimOrientation * trickFX.rotation
+        visualAltitude = altitude + trickFX.hop
 
-        placeGround(height: altitude + hover + vibration + trickFX.hop, inverse: root.orientation.inverse, throttle: speedNorm + boost * 0.6, hidden: inTube)
+        // the ground quads counter the heading only: a barrel roll would flip them face down (culled)
+        placeGround(height: altitude + hover + vibration + trickFX.hop, inverse: aimOrientation.inverse, throttle: speedNorm + boost * 0.6, hidden: inTube)
         rider?.pose(bank: bank, speedNorm: speedNorm, boost: boost, climb: vy, time: time, dt: dt, tuck: trickFX.air)
         let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5 + boost * 0.55
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
@@ -424,7 +455,7 @@ final class SpeederController {
 
     /// Place the vehicle directly from a light cycle's state (position is the ground
     /// contact point, y = height above the deck).
-    func poseArena(position: SIMD3<Float>, heading: Float, lean: Float, pitch: Float, time: Float, speedNorm: Float, airborne: Bool) {
+    func poseArena(position: SIMD3<Float>, heading: Float, lean: Float, pitch: Float, time: Float, speedNorm: Float, airborne: Bool, dt: Float = 1 / 60) {
         let hover = sin(time * 4.5) * 0.04 + sin(time * 2.3) * 0.02
         let vibration = sin(time * 23) * 0.012 * speedNorm
         root.position = position + [0, restHeight + hover + vibration, 0]
@@ -432,8 +463,10 @@ final class SpeederController {
         root.orientation = simd_quatf(angle: heading, axis: [0, 1, 0])
                          * simd_quatf(angle: pitch, axis: [1, 0, 0])
                          * simd_quatf(angle: lean, axis: [0, 0, 1])
+        aimOrientation = root.orientation
+        visualAltitude = altitude
         placeGround(height: restHeight + hover + vibration + position.y, inverse: root.orientation.inverse, throttle: speedNorm, hidden: airborne)
-        rider?.pose(bank: lean, speedNorm: speedNorm, boost: 0, climb: 0, time: time, dt: 1 / 60)
+        rider?.pose(bank: lean, speedNorm: speedNorm, boost: 0, climb: 0, time: time, dt: dt)
         let pulse = 1 + 0.08 * sin(time * 27) + speedNorm * 0.5
         for g in glows { g.scale = SIMD3<Float>(repeating: pulse) }
         engineLight.light.intensity = 14000 + speedNorm * 18000
@@ -441,8 +474,8 @@ final class SpeederController {
 
     /// Recolour the engine halos and lights (opponent cycles).
     func tint(_ color: SIMD3<Float>, materials: SceneMaterials) {
-        for (i, g) in glows.enumerated() {
-            if var model = g.model { model.materials = [materials.glow(color, opacity: i == 1 ? 0.28 : 0.8)]; g.model = model }
+        for g in glows {
+            if var model = g.model { model.materials = [materials.glow(color, opacity: g === halo ? 0.28 : 0.8)]; g.model = model }
         }
         engineLight.light.color = .rgb(color)
         underLight.light.color = .rgb(color)

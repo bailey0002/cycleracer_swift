@@ -177,6 +177,55 @@ Use the first bracket value for far, the second for mid, the third for near.
 > "3 - 1", in a squared-off display face, white with a cyan glow. No photographs, no cyan
 > gradients bleeding to the edges, no other colour. Style: Tron-like, clean, game texture.
 
+
+### 11. Arena wall module (`grid-wall-01.png`, 1024 x 1024 PNG; refreshed 3 Oct 2026)
+
+Delivery rules for all three Grid tiles: PNG at the stated size, **the image only** (no caption, no title text,
+no border or padding; the game crops nothing), flat even lighting, no bloom or glow halos painted in (the post
+pass adds them), no perspective. The first panels worked at 600 px; these are the full-size versions.
+
+Reference: Mark's delivered module (`Captures/polish/p17/`), which composes well: a buttress at each side edge
+so the tile repeats horizontally into a colonnade, one module per 16 m of wall.
+
+> A straight-on, flat elevation of one modular futuristic arena wall segment, filling the whole square
+> frame edge to edge: a heavy dark structural shell in blue-black composite (#0B1A2E to #16304A) with a
+> brushed surface and faint seams, a projecting buttress column at the LEFT edge and at the RIGHT edge
+> (each exactly half a column, so two tiles side by side form one full column), a recessed central panel
+> with a bevelled border and three sub-panels, a thick upper cap with a recessed horizontal light channel
+> glowing deep teal-green (#29DBC7) along the top, a projecting lower plinth with a thinner teal channel
+> along the bottom, one thin vertical teal channel inside each buttress, one thin horizontal teal trim line
+> at about 40 percent of the height. The left edge continues seamlessly into the right edge. No floor, no
+> sky, no text, even lighting, no glow halos. Style: Tron-like, clean hard-surface, game texture.
+
+Optional second file `grid-wall-01-mask.png`: the same image with every lit channel pure white and everything
+else pure black. Without it the game derives the mask from the teal.
+
+### 12. Arena floor plate (`grid-floor-01.png`, 1024 x 1024 PNG, tiles on all four edges)
+
+> A straight-down, flat view of a dark polished architectural composite floor filling the whole square frame,
+> seamlessly tileable on all four edges: very dark blue-black (#0A1626 to #10243A), divided into four equal
+> square plates by thin dark bevelled seams that meet in a small cross at the centre and run to the middle
+> of each edge, each plate with subtle flaked or crazed surface texture, faint lighter worn patches and a few
+> hairline scratches, a brushed grain. NO grid lines, NO teal or cyan, NO painted reflections or highlights,
+> no text, flat even lighting. Style: clean hard-surface, game texture.
+
+Also `grid-floor-01-rough.png`: a greyscale roughness map of the same tile, white where matte (seams, scratches,
+worn patches), near-black where polished, mid-grey on the flaked areas.
+
+### 13. Arena skyline strip with the spire (`grid-skyline.png`, 4096 x 1024 PNG, edges wrap)
+
+> A wide panoramic skyline of a dark futuristic city at night from ground level, filling the frame width:
+> tower silhouettes in deep blue-black (#0A1C38) with thin vertical teal-green (#29DBC7) light strips and a
+> few teal beams rising into the sky; one dominant central spire about twice the height of the rest with a
+> thin glowing halo ring around it at two thirds of its height. The sky above the towers is PURE BLACK
+> (#000000). The bottom edge of the image is the towers' base line: NO water, NO ground, NO reflections below
+> the city. No clouds, no text, no lens flare, even lighting. The left edge continues seamlessly into the
+> right edge. Style: Tron-like, clean hard-surface, game texture.
+
+Palette note (3 Oct 2026): the Grid's default accent moved from sky cyan (#47D1FF) to a deeper teal-green
+(#29DBC7, `Theme.gridAccent`). The game recolours the emissive channels to the current palette, so the exact
+teal in the images matters less than keeping the lit parts saturated and the structure neutral blue-black.
+
 ## What the code does with each
 
 | Asset | Where it lands |

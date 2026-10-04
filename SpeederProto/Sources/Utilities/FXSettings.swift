@@ -86,6 +86,7 @@ struct ActionAck: Equatable {
     var fire = false
     var jump = false
     var pickup = false
+    var trick = false
     var snap = false
     var beacon = false
     var hit = false
@@ -103,6 +104,8 @@ struct ControllerGlyphs: Equatable {
     var a = "a.circle"
     var b = "b.circle"
     var y = "y.circle"
+    var x = "x.circle"
+    var l1 = "l1.rectangle.roundedbottom"
     var boost = "r2.rectangle.roundedtop"
     var stick = "l.joystick"
     var menu = "line.3.horizontal.circle"

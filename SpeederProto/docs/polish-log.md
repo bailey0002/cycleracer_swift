@@ -554,3 +554,152 @@ frame 4.6 (`p14/icon2/`; the key colour did not take, the frame is black-backed,
 renders the icon set from it (`iconGalactic`), `--logo-only` renders just the wordmark. Mark's GRDRNNR: QUANTIS
 icon (29 Sep) is kept at `p14/icon-grdrnnr-quantis-1024.png`. iOS caches icons: reboot the phone if the old one
 shows. Not built: a shop / garage tie-in, the story's audio.
+
+## Music, the cabinet announcer, story cues (1 Oct 2026, late)
+
+Mirrors KERB's audio pass (`kerb_skate_game/RESEARCH_AUDIO_2026-10-01.md`): Mark's music plus Kenney's CC0
+voice and effect packs as stand-ins until the real voices are recorded. `Sources/Audio/Soundtrack.swift`,
+file-based, next to the synthesised `SoundEngine` (which keeps every cue and loop; only its generative
+music mutes while a track plays, `sound.musicVolume = 0` when `soundtrack.hasMusic`). `SPEEDER_TRACKS=0`
+turns the file audio off; the demo is silent unless `SPEEDER_SOUND=1`, as before.
+
+- **Music** (`Resources/Audio/music_*.m4a`, Mark's, AAC 128 kbps, 11 MB; KERB converted "First Place" from
+  the 38 MB WAV): `mood .menu` = "Hideaway" looping under the title, riders, story and briefings; `mood .run`
+  = "First Place" then "Too Late", playing through, next song when one ends. Two slots crossfade over about
+  a second; a pause holds the music at a third; a line ducks it to 40 % and back.
+- **Announcer** (`vo_*.wav`, Kenney CC0, 24 lines): READY + GO at a launch and the arena's GO; ROUND 1/2/3,
+  FINAL ROUND or READY at a round start; WINNER or FLAWLESS VICTORY (no round lost) / YOU LOSE at a match end;
+  MISSION COMPLETED / OBJECTIVE ACHIEVED / CONGRATULATIONS and MISSION FAILED / GAME OVER on the job outcome;
+  WRONG on a hit, COMBO BREAKER when the hit ends a streak of 3+; COMBO on a 3+ gate streak; COMBO or POWER UP
+  on a landed trick; POWER UP on a beacon; HURRY UP once when under 12 s remain; CHOOSE YOUR CHARACTER on the
+  riders page. Rules: a 3 s gap between lines, per-moment cooldowns (7 to 12 s) and chances (0.6 to 0.75),
+  a pool never repeats one of its last two lines, start / finish lines interrupt (`priority`).
+- **Story cues** (`sfx_*.wav`, Kenney CC0): a blip every third typed character, the caption slide, a tick
+  when a bubble pops, the board clacking on the counter when the owner lifts it (panel 2), the vortex on
+  the shout, the sting on the end card.
+
+Verified by log (`Captures/polish/p15/run/log.txt`): 30 clips and 1+2 tracks loaded, Hideaway then First
+Place, `vo_ready`, `vo_go`, `vo_wrong`, `vo_combo` in the demo run. The mix needs ears on the phone: the
+0.8 music scale, the 40 % duck, whether WRONG on every hit is too much.
+
+Follow-ups (2 Oct 2026, small hours). **Music from launch**: `Soundtrack` runs on its own 30 Hz timer (common
+run-loop mode) so Hideaway starts under the splash, before the world builds and the scene loop runs; the frame
+loop only steers it, before any early return (The Grid gets its music too). The bed sits at 0.35 under the story,
+0.45 under the riders, 0.55 on the title, 0.7 under the briefing. SETTINGS > SOUNDTRACK ON / OFF (`prefs.tracks`;
+off fades the tracks out and brings the generative music back). The audio session is `.playback` with
+`.mixWithOthers`: the music and the announcer play through the ring switch (ambient went silent with it).
+
+**Review pass** (three read-only agents over the hoverboard / rider rig, the front-end flow and story, and the
+soundtrack; findings applied the same night, Mac build, 14 headless tests green, captures `p15/`):
+- Vehicle: the chase-camera lift was assigned to a nil rig and never applied (now set on the new rig per
+  build; `p15/chase/frame-4` shows the rider with headroom); cruise speed could be lowered but never raised on
+  the board (B gated like Y); a trick hop now counts for the obstacle test (`visualAltitude`: a hop is a real
+  dodge); the ground quads counter the heading only (`aimOrientation`), so a barrel roll no longer flips the
+  shadow and pool face down; bolts fire along the aim, not the trick rotation; `tint` finds the halo by role
+  (the board's rail strips come first in the glow list); the arena rival is always a cycle; `poseArena`
+  takes the arena's dt; the thruster haze follows the board's real nozzle.
+- Front end: a rebuild requested while one is running is re-queued (vehicle / rider changes mid-build no
+  longer silently stale); stepping riders marks the rider dirty and rebuilds once on leaving the page (was a
+  full world build per step); backing out to the title ends the first-run intent (STORY from SETTINGS no longer
+  pushes the callsign screen over SETTINGS); START routes through riders + story whenever the story has not
+  been seen (a callsign set from SETTINGS no longer skips the opening); `pop()` clamps the cursor when rows
+  shrink (MESSAGES after a reset); the riders page has a wider wash so the handling bars read
+  (`p15/sim-riders-24`); the story hint says TAP on the phone; the first caption gets its cue.
+- Soundtrack: the duel outcome lines never fired (the phase snapshot was taken before `updateDuel`; the check
+  now follows the update); an AVAudioSession interruption no longer restarts the track every tick (ended =
+  reached the end, interruptions hold the slot machine, resume on end); duel rounds say ROUND 1 / 2 / 3 and
+  FINAL ROUND against the real target (was inverted with free play); the dev panel's SOUND switch mutes the
+  files too; outcome lines wait 0.5 s (1.2 s in the arena) so they do not talk over the synth cue, and
+  `slam()` dips the track where the generative slam / cut used to; HURRY UP only when the distance is at risk;
+  TIME OVER on a timeout; SOUNDTRACK off stops the decoders; VO / sfx carry the 0.8 master like the synth cues.
+
+## Rings, photons, fresh start, run cards, control legends (2 Oct 2026, evening)
+
+Mark's five items after the first full play. Captures in `Captures/polish/p16/`.
+- **Rings are red** (`BeaconLayer.ringColor`, the role colour; was the Grid's pale pickup violet, intensity 4):
+  intensity 7 core, a wider 6 m halo at 0.55, a breathing pulse on the live ring. A **missed ring goes
+  colourless**: grey low-emissive bands, the halo almost off, the floor pool gone, and it recedes with the road
+  (visible 90 m behind) instead of vanishing at the nose. A hit ring still disappears. `p16/rings-over/frame-8`
+  shows the first ring under the NEXUS gantry from the overview camera.
+- **The photon** (`WeaponSystem`): a hot white core in a cyan sheath, a 1.4 m head halo, a short additive trail and
+  a 60 ms muzzle flash light; same speed, interval and hit test. Kenney's CC0 Sci-Fi Sounds (fetched from
+  kenney.nl, licence in `Resources/Audio/LICENSE-kenney-scifi.txt`): `sfx_laser` (laserSmall_001) on each shot,
+  `sfx_blast` (explosionCrunch_000) on a kill, `sfx_ring` kept for a future ring chime. The synth fire cue is the
+  fallback when the clip is missing.
+- **Fresh start + manual save** (`Missions/SaveSlot.swift`): every launch clears the live progress keys (jobs,
+  credits, garage, ranks, flags, records, messages, callsign, livery, rider, story seen), so riders -> story ->
+  callsign play every time. **SAVE GAME** (pause menu and SETTINGS) snapshots the live progress into one slot;
+  **CONTINUE SAVE** on the title (shown when a save exists and nothing is in progress) loads it and goes to the
+  saved job's briefing. `SPEEDER_KEEP_PROGRESS=1` skips the clear; `SPEEDER_MISSION`, `SPEEDER_FLAGS` and the demo
+  skip it too (captures set progress themselves). The headless tests use their own suite and are unaffected.
+- **Run cards**: the briefing has an OBJECTIVES block (verbs per job kind: fly through the red rings, stay ahead of
+  the pursuer, derez the rival into a trail or a wall, destroy the targets, thread the obstacles, no weapons) and a
+  controls line for the vehicle. Free play gets its own card (`runCardUp`; world, the run, controls, RIDE) before
+  the road moves or the match starts; A / fire / tap dismisses it with READY, GO. `SPEEDER_RUNCARD=1` for captures.
+- **Control legends** checked against the bindings: pad A / L2 / L1 fire (X was fire before the tricks; it is the
+  360 now, Y the barrel roll), R2 / R1 boost, B cruise down (speeder only), Y cruise up (speeder only), Menu pause.
+  The in-game hint adds L1 FIRE and, on the board, X 360 and Y ROLL; the pips add a TRICK pip on the board
+  (`ActionAck.trick`); `ControllerGlyphs` carries the pad's own X and L1 art. The front-end legends (MOVE / SELECT /
+  BACK, the callsign editor's LETTER / MOVE / KEEP / CANCEL) matched already.
+
+Follow-up (3 Oct 2026): Mark still saw the rings "clear" and no change in the photons on the phone. The build
+had landed (the new strings are in the Release binary); the problem was size. The ring was a 0.35 m band with a
+white inner band and a faint halo, so at speed it read as a wire outline. Now: a 0.9 m deep red band at r 1.9, a
+second red rim at r 2.2, intensity 9 / 6, and a 7.5 m red halo at 0.85 that fills the ring as a disc
+(`p16/ring2/frame-8.8` from 150 m, `frame-9.1` at the nose). The photon was a 0.14 m stick: now a 3.6 m white core
+in a 0.38 m cyan sheath with a 0.32 m head sphere, a 2.6 m halo, a denser trail and a stronger flash
+(`p16/bolt/frame-4.7`, `-4.8`). **Music shuffle**: Mark's four new tracks (That Chain Ain't Heavy, The Rake, Too
+Late Too Late, Too Long; kerb's AAC conversions) join First Place and Too Late in the run playlist, which is
+shuffled at launch and reshuffled each time it wraps (never opening with the song that just ended). Hideaway stays
+the menu bed. Seven tracks, 30 MB.
+
+## The Grid: rider visibility, board rivals, a first depth pass, then a stop (3 Oct 2026)
+
+Mark's three items against his ChatGPT art-direction target (`docs/reference/grid-arena-target.png`, the
+component breakdown `grid-arena-breakdown.png`). Captures in `Captures/polish/p17/`.
+- **The rider was black in The Grid**: the arena has no ambient light beyond its own lines, so a PBR rider
+  went to silhouette. `RiderRig.selfLight(_:)` uses the base-colour texture as the emissive map (the Tron suit
+  look) and `SpeederController.setArenaLook` adds a soft chest light; both on for the player and the rival in
+  the arena only (`p17/chase3/frame-2.2`: Cal reads against the floor).
+- **The rival rides a board** with another rider's face (`GameController.rivalRider(for:)`: KADE Jonah, ORIN
+  Dominic, SABLE Mira, VESS Cal; never the player's own), through `SpeederController.load(..., rider:)`.
+- **Depth, first pass**: charcoal floor plates with seams and grain in the base map, lines at 0.38 / 0.85,
+  roughness 0.42 and near-zero metallic (a metallic floor mirrored the horizon band and went navy), walls to
+  16 m and 3 m thick with buttress columns every 12 m (dark face, vertical strip, cap) and a mid trim line, a
+  lifted grey-teal frame tone on the slab so it has a top and a bottom, a nearer ring of low blocks for mid
+  depth, a landmark spire past the north wall (three tiers, lit core, halo ring, beam), bloom to level 0, the
+  environment map's zenith wash and horizon band cut to a third, fog max 0.55, haze colour darker.
+
+**Stopped here on Mark's direction** (relayed from chat): the result captures the concept, not the material
+quality. The gap is at the component level, not the arena: a flat plane with an emissive grid and box walls
+cannot reach the reference's panel seams, bevels, recessed channels and rough reflections. Next is a
+component test (one 4 m wall module + a 20 x 20 m floor stage, camera at 1.2 m, three-quarter view, black
+environment) with the geometry from Blender (a deterministic Python script -> USDZ, as the riders already
+are), Swift keeping the grid shader, placement, trails and gameplay. Mark offered isolated reference sheets
+for the wall and the floor; the stage waits for them.
+
+Follow-up (3 Oct 2026, late): the city's route instead of Blender. Mark had GPT render the three brief items
+(a wall module tile, a floor plate tile, the skyline strip with the spire; first as one sheet, then as separate
+panels at about 600 px with captions, cropped out with ffmpeg into `Resources/Art/grid-wall-01.png`,
+`grid-floor-01.png`, `grid-skyline.png`). `MaterialFactory` uses them when present: the floor plate is the
+albedo with a Sobel normal map derived from its luminance (`Art.normalMap`) and the plate's own roughness
+where a `-rough` map exists, the procedural grid staying as the emissive layer; the wall tile is the slab's
+base colour with a normal map and an emissive mask derived from its cyan (`Art.emissiveMask`, tinted by the
+palette accent so duels keep the rival's colour), one tile per module at the tile's aspect, the 3D buttress
+columns off since the tile carries them; the skyline is keyed off its black sky (`Art.keyedBlack`, lift 2.5)
+on four planes 170 m past the walls, replacing the far 3D towers and spire. Frames `p17/art-chase2`,
+`art-side`, `art-over`. Gotcha: new files in `Resources/` need `xcodegen generate` or the bundle silently
+lacks them (the first run loaded nothing). Owed: the full 1024 px panels Mark requested (drop-in, same
+names), a `grid-floor-01-rough.png` if GPT delivers one, a crowd strip, and the bloom / haze pass over the
+new materials on the phone.
+
+Follow-up (3 Oct 2026, night): the second level as dark glass. The lime decks, ramps and hazard walls were the
+loudest thing left once the arena went teal. The static hazard trail (rails, ramp sides, hazards, column
+collars) now renders as smoked glass in `trailSurface` (Shaders.metal, `isStatic` when the custom parameter's
+head is the 1e6 marker): a near-black translucent body, the strand's colour only as a crisp rim along the top
+edge and a faint base line, the glow hugging the rim. The deck and ramp surfaces are a translucent dark PBR
+(opacity 0.62, roughness 0.12, the floor grid as a faint emissive), the slabs smoked at 0.5, lime edge bands
+thinned to 0.18 m, the under-deck lamps gone (they read through the glass as clutter), columns with one lit
+edge. The deck rose from 9 m to 14 m (`ArenaTerrain.garage`), the ramps from 40 m to 62 m to keep the slope.
+Frames `p17/glass-chase`, `glass-side`, `glass2`. Mark's call pending on the balance: the first pass at 0.42 made
+the ramps read as two lines only.

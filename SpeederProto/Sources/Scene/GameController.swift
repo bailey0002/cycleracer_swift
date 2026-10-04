@@ -31,6 +31,9 @@ final class GameController: ObservableObject {
     }
     /// Synthesised sound: cues on the same frame as the visual and haptic acks, loops per frame.
     let sound = SoundEngine()
+    /// Mark's music, the cabinet announcer and the story cues (file-based, next to the synth).
+    lazy var soundtrack = Soundtrack(enabled: sound.enabled)
+    private var hurryCalled = false
     /// The controls hint shows for the first half minute and whenever the settings panel opens.
     @Published var hintVisible = true
     var hintTimer: Float = 0
@@ -47,9 +50,12 @@ final class GameController: ObservableObject {
     @Published var loadError: String? = nil
     /// Same-frame action acknowledgement for the HUD.
     @Published var ack = ActionAck()
-    private var ackTimers = (fire: Float(0), jump: Float(0), pickup: Float(0), snap: Float(0), beacon: Float(0), hit: Float(0), stamp: Float(0), boost: Float(0))
+    private var ackTimers = (fire: Float(0), jump: Float(0), pickup: Float(0), snap: Float(0), beacon: Float(0), hit: Float(0), stamp: Float(0), boost: Float(0), trick: Float(0))
+    /// The hoverboard is the vehicle (the HUD shows its controls).
+    var onBoard: Bool { VehicleKind.current == .board }
     private var stampText = ""
     private var trickPrev = (spin: false, roll: false)
+    private var runCardPrev = false
     /// Comms: the contact's line in the ear, at most three per job (launch, one event, the last stretch).
     private var commsTimer: Float = 0
     private var commsSpeaker = "", commsText = ""
@@ -83,6 +89,10 @@ final class GameController: ObservableObject {
     @Published var resetArmed = false
     /// The rider screen was opened by the first START (RIDE goes on to the first briefing).
     @Published var riderFirstRun = false
+    /// SAVE GAME was just pressed (the row reads SAVED until the screen changes).
+    @Published var saveArmed = false
+    /// The rider changed on the riders page; the board rebuilds once when the page is left.
+    var riderDirty = false
     /// A on the story screen: hurry the beat (the view watches the count).
     @Published var storyNudge = 0
     var devTaps = 0
@@ -103,7 +113,9 @@ final class GameController: ObservableObject {
     private var curtainTarget: Float = 0
     private var pendingRebuild = false
     /// Job loop (delivery missions) for the corridor worlds.
-    let missions = MissionRunner()
+    let missions: MissionRunner
+    /// Free play's run card (world, objective, controls) holds the run until A / fire.
+    @Published var runCardUp = false
     @Published var mission = MissionState()
     /// Free-play match result card on The Grid (nil while playing).
     @Published var matchResult: ArenaController.MatchResult? = nil
@@ -202,12 +214,16 @@ final class GameController: ObservableObject {
     ]
 
     init() {
+        // every launch is a fresh start (riders, the opening, job 1); CONTINUE loads the manual save
+        if SaveSlot.freshStartAtLaunch { SaveSlot.clearLive(.standard) }
+        missions = MissionRunner()
         #if os(macOS)
         arView = GameARView(frame: NSRect(x: 0, y: 0, width: 1280, height: 720))
         #else
         arView = GameARView()
         #endif
         configureView()
+        soundtrack.mood = screens.first == .game ? .run : .menu     // Hideaway from the splash on
         applyVariantPreset()
         if settings.missions && ProcessInfo.processInfo.environment["SPEEDER_VARIANT"] == nil {
             // the current job decides the world
@@ -216,10 +232,14 @@ final class GameController: ObservableObject {
         }
         if !demoMode { prefs.apply(to: &settings) }
         titleMix = onTitle ? 1 : 0             // the demo starts in the game: no drift in the first frames
-        sound.musicVolume = Float(prefs.music) / 10
+        sound.musicVolume = soundtrack.hasMusic && prefs.tracks ? 0 : Float(prefs.music) / 10     // Mark's tracks replace the generative music
         sound.effectsVolume = Float(prefs.effects) / 10
+        soundtrack.musicOn = prefs.tracks
+        soundtrack.musicVolume = Float(prefs.music) / 10 * 0.8
+        soundtrack.effectsVolume = Float(prefs.effects) / 10
         gamepad.enabled = prefs.haptics
         mission = missionActive ? missions.snapshot() : MissionState()
+        if ProcessInfo.processInfo.environment["SPEEDER_RUNCARD"] == "1" { settings.missions = false; runCardUp = true }   // capture hook: free play's run card
         Task { await build() }
     }
 
@@ -284,7 +304,7 @@ final class GameController: ObservableObject {
 
     /// Tear down and rebuild the world for the selected theme (behind the curtain).
     private func rebuildScene() async {
-        guard !rebuilding else { return }
+        guard !rebuilding else { pendingRebuild = true; return }    // asked again mid-build: run once more after this one
         rebuilding = true
         worldReady = false
         lastStyle = nil
@@ -294,6 +314,7 @@ final class GameController: ObservableObject {
         post.captureRequest = nil
         await build()
         rebuilding = false
+        if pendingRebuild { curtainTarget = 1 }                    // a request that arrived during the build
         if missions.autoStart {
             // one-tap retry: the failed card's accept rebuilt the job; launch it as the curtain opens
             missions.autoStart = false
@@ -358,7 +379,6 @@ final class GameController: ObservableObject {
             await stage(2, theme.displayName)
             worldAnchor.addChild(speeder.root)
             self.speeder = speeder
-            cameraRig?.lift = speeder.cameraLift
             missions.hullScale = speeder.handling.hull
             player = missions.player
             if player.tintsBike { speeder.tint(player.liveryColor, materials: materials) }
@@ -370,8 +390,12 @@ final class GameController: ObservableObject {
                 arena.rumble = { [weak self] i, s in self?.gamepad.rumble(intensity: i, sharpness: s) }
                 worldAnchor.addChild(arena.root)
                 self.arena = arena
-                let rival = try await SpeederController.load(materials: materials)
+                // the rival is one of the other riders on a board (KADE Jonah, ORIN Dominic, SABLE Mira, VESS Cal), never the player's face
+                let rivalName = missionActive ? (missions.current.rival?.name ?? arena.rival.name) : arena.rival.name
+                let rival = try await SpeederController.load(materials: materials, kind: .board, rider: Self.rivalRider(for: rivalName))
                 arena.attachOpponent(rival)
+                speeder.setArenaLook(true)
+                rival.setArenaLook(true)
             } else {
                 let program = missionActive ? TrackProgram(blocks: missions.current.blocks) : TrackProgram()
                 let world = WorldScroller(materials: materials, settings: settings, program: program)
@@ -404,6 +428,7 @@ final class GameController: ObservableObject {
             }
 
             let rig = CameraRig()
+            rig.lift = speeder.cameraLift                 // the board's taller framing (set here: the rig is new per build)
             worldAnchor.addChild(rig.root)
             self.cameraRig = rig
 
@@ -530,6 +555,7 @@ final class GameController: ObservableObject {
     private func applySettings() {
         post.settings = settings
         sound.enabled = settings.sound
+        soundtrack.muted = !settings.sound
         sound.musicEnabled = settings.music
         print("settings applied: fog=\(settings.fogLevel) bloom=\(settings.bloomLevel) skin=\(settings.obstacleSkin) secondRow=\(settings.secondRow) storefronts=\(settings.storefronts) windowsBright=\(settings.windowsBright) world=\(world != nil)")
         world?.apply(settings)
@@ -546,10 +572,19 @@ final class GameController: ObservableObject {
     // MARK: - Frame update
 
     private func update(dt rawDt: Float) {
+        // the soundtrack runs on its own clock; the loop only steers it (before any early return, so The Grid gets it too)
+        soundtrack.mood = screen == .game && !(missionActive && !missions.allowsMotion) ? .run : .menu
+        soundtrack.held = simFrozen
+        soundtrack.bedLevel = screen == .story ? 0.35 : (screen == .riders ? 0.45 : (screen == .game ? 0.7 : 0.55))
         guard let speeder, let cameraRig else { return }
         let dt: Float = demoMode ? 1.0 / 60.0 : min(max(rawDt, 1.0 / 240.0), 1.0 / 20.0)
         updateCurtain(dt: dt)
         let input = arView.input
+        // free play's run card: A / fire / tap dismisses it and the run starts
+        if runCardUp && screen == .game && worldReady {
+            if input.firing && !runCardPrev { dismissRunCard() }
+            runCardPrev = input.firing
+        }
         gamepad.poll(into: input)
         if gamepad.glyphs != glyphs { glyphs = gamepad.glyphs; hintVisible = true; hintTimer = 0 }
         // the front end owns the pad and the keys; in a run, Menu / Escape pauses
@@ -601,7 +636,7 @@ final class GameController: ObservableObject {
         // and Y / ] is the garage's buy button on the briefing)
         let cruiseLocked = missionActive
         if input.speedUp && !cruiseLocked && speeder.kind == .speeder { settings.cruiseSpeed = min(110, settings.cruiseSpeed + 30 * dt) }
-        if input.speedDown && !cruiseLocked { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
+        if input.speedDown && !cruiseLocked && speeder.kind == .speeder { settings.cruiseSpeed = max(15, settings.cruiseSpeed - 30 * dt) }
         // missions: A / F / tap accepts a briefing or a result; the vehicle only moves during a live job
         if missionActive {
             // the job loop runs under the title too (parked, briefed); only the game takes the accept
@@ -614,7 +649,8 @@ final class GameController: ObservableObject {
             var beaconHits = 0
             if let beacons, missions.isRunning {
                 beaconHits = beacons.update(distance: distance, roadX: { world.offset(atWorldZ: $0) - world.playerOffset }, playerX: speeder.x, playerY: speeder.altitude, time: time)
-                if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9); sound.play(.beacon) }
+                if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9); sound.play(.beacon)
+                    soundtrack.announce(["vo_power_up"], key: "powerup", cooldown: 9, chance: 0.6) }
             }
             missions.update(dt: simDt, travel: speed * simDt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed,
                             scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits,
@@ -625,6 +661,7 @@ final class GameController: ObservableObject {
                 let timeText = s.time > 0 ? String(format: "  +%.1f s", s.time) : ""
                 stamp((s.streak > 1 ? "+\(s.value)  x\(s.streak)" : "+\(s.value)") + timeText, seconds: 0.6)
                 sound.play(.gate, volume: 0.7, pitch: 0.85 + Float(s.streak) * 0.06)
+                if s.streak >= 3 { soundtrack.announce(["vo_combo"], key: "combo", cooldown: 12, chance: 0.7) }
             }
             if missions.helmetUsedNow { stamp("HELMET", seconds: 0.9); flash = max(flash, 0.5); sound.play(.respawn, volume: 0.6) }
             if missions.respawnedNow {
@@ -651,10 +688,17 @@ final class GameController: ObservableObject {
             }
             if missions.phase != mission.phase {
                 switch missions.phase {
-                case .success: sound.play(.success)
-                case .failed: sound.play(.fail)
+                case .success: sound.play(.success); soundtrack.slam(); soundtrack.announcePool(["vo_mission_completed", "vo_objective_achieved", "vo_congratulations"], priority: true, delay: 0.5)
+                case .failed: sound.play(.fail); soundtrack.slam()
+                    soundtrack.announcePool(ms.failReason.hasPrefix("TIME") ? ["vo_time_over"] : ["vo_mission_failed", "vo_game_over"], priority: true, delay: 0.5)
+                case .running: hurryCalled = false
                 default: break
                 }
+            }
+            if missions.isRunning && !hurryCalled && ms.timeLeft > 0 && ms.timeLeft < 12 && missions.current.timeLimit > 30
+                && ms.distanceLeft / max(speed, 1) > ms.timeLeft * 0.6 {
+                hurryCalled = true
+                soundtrack.announce(["vo_hurry_up"], priority: true)
             }
             if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = ms }
             // music: the pad under the cards, bass on the run, the arp when it gets hot
@@ -674,7 +718,7 @@ final class GameController: ObservableObject {
         if onTitle { sound.setMusic(intensity: 1) }         // the title: pad and bass
         sound.setAmbience((0.5 - world.enclosure * 0.3) * (settings.weather || theme != .neonCity ? 1 : 0.7))
         sound.setEnclosure(world.enclosure)
-        let moving = settings.roadMotion && (!missionActive || missions.allowsMotion)
+        let moving = settings.roadMotion && (!missionActive || missions.allowsMotion) && !runCardUp
         let boosting = moving && input.boosting && (!missionActive || missions.boostAllowed)
         if boosting && !boostPrev {
             // boost onset: camera kick, haptic and the HUD pip on the same frame
@@ -735,7 +779,7 @@ final class GameController: ObservableObject {
         } else {
             lastUpcoming = nil
         }
-        let parked = missionActive && !missions.allowsMotion
+        let parked = (missionActive && !missions.allowsMotion) || runCardUp
         speeder.update(dt: simDt, time: time, steerInput: parked ? 0 : input.steering, climbInput: parked ? 0 : input.climb, speedNorm: speedNorm, roadShift: world.lastShift * world.tugFactor / 0.6, boost: boostLevel)
 
         // barrier scraping: bleed speed, sparks, shake
@@ -754,7 +798,7 @@ final class GameController: ObservableObject {
         if settings.obstacles && invulnerable <= 0 {
             for (o, p) in world.nearbyObstacles() {
                 if abs(p.x - speeder.x) < o.halfWidth + 0.95 && abs(p.z) < o.halfLength + 1.6
-                    && abs(p.y + o.centerY - speeder.altitude) < o.halfHeight + speeder.halfHeight {
+                    && abs(p.y + o.centerY - speeder.visualAltitude) < o.halfHeight + speeder.halfHeight {   // a trick hop clears low obstacles
                     o.active = false
                     if o.kind != .barricade { o.entity.isEnabled = false }   // a barricade stays; the run just took the hit
                     hits += 1
@@ -769,21 +813,23 @@ final class GameController: ObservableObject {
                     weapons?.explode(at: [p.x, p.y + o.centerY, p.z])
                     gamepad.rumble(intensity: 1.0, sharpness: 0.4)
                     sound.play(.hit)
+                    soundtrack.announce([mission.streak >= 3 ? "vo_combo_breaker" : "vo_wrong"], key: "hit", cooldown: 7, chance: 0.75)
                     break
                 }
             }
         }
         // hoverboard tricks (edge-triggered; one at a time)
         if speeder.kind == .board && !parked {
-            if input.trickSpin && !trickPrev.spin, let name = speeder.startTrick(.spin) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6) }
-            if input.trickRoll && !trickPrev.roll, let name = speeder.startTrick(.roll) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6) }
+            if input.trickSpin && !trickPrev.spin, let name = speeder.startTrick(.spin) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6); ackTimers.trick = 0.85 }
+            if input.trickRoll && !trickPrev.roll, let name = speeder.startTrick(.roll) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6); ackTimers.trick = 0.85 }
+            if speeder.trickLandedNow { soundtrack.announcePool(["vo_combo", "vo_power_up"], key: "trick", cooldown: 8, chance: 0.6) }
         }
         trickPrev = (input.trickSpin, input.trickRoll)
         // capture hook: SPEEDER_TRICK_AT=<seconds>:<spin|roll>[,<seconds>:<kind>...]
         if speeder.kind == .board, let spec = ProcessInfo.processInfo.environment["SPEEDER_TRICK_AT"] {
             for item in spec.split(separator: ",") {
                 let parts = item.split(separator: ":")
-                if parts.count == 2, let at = Float(parts[0]), time - simDt < at, time >= at {
+                if parts.count == 2, let at = Float(parts[0]), time - dt < at, time >= at {
                     _ = speeder.startTrick(parts[1] == "roll" ? .roll : .spin)
                 }
             }
@@ -791,12 +837,12 @@ final class GameController: ObservableObject {
         // weapons
         if let weapons {
             if input.firing && settings.obstacles && !parked && (!missionActive || missions.current.weaponsAllowed) {
-                if weapons.fire(from: speeder.root.position, orientation: speeder.root.orientation) {
+                if weapons.fire(from: speeder.root.position, orientation: speeder.aimOrientation) {
                     speeder.rider?.shoot()
                     shakeBurst = max(shakeBurst, 0.08)
                     ackTimers.fire = 0.15
                     gamepad.rumble(intensity: 0.25, sharpness: 1.0)
-                    sound.play(.fire, volume: 0.5)
+                    if soundtrack.has("sfx_laser") { soundtrack.cue("sfx_laser", volume: 0.55) } else { sound.play(.fire, volume: 0.5) }
                 }
             }
             let targets = world.nearbyObstacles(segments: 4)
@@ -812,6 +858,7 @@ final class GameController: ObservableObject {
                             shakeBurst = max(shakeBurst, 0.2)
                             gamepad.rumble(intensity: 0.5, sharpness: 0.9)
                             sound.play(.kill, volume: 0.8)
+                            if soundtrack.has("sfx_blast") { soundtrack.cue("sfx_blast", volume: 0.5) }
                         } else {
                             emitSparks(at: tip, duration: 0.08)
                         }
@@ -980,7 +1027,8 @@ final class GameController: ObservableObject {
         ackTimers.beacon = max(0, ackTimers.beacon - dt); ackTimers.hit = max(0, ackTimers.hit - dt)
         ackTimers.stamp = max(0, ackTimers.stamp - dt); ackTimers.boost = max(0, ackTimers.boost - dt)
         commsTimer = max(0, commsTimer - dt)
-        let a = ActionAck(boost: ackBoost || ackTimers.boost > 0, fire: ackTimers.fire > 0, jump: ackTimers.jump > 0, pickup: ackTimers.pickup > 0,
+        ackTimers.trick = max(0, ackTimers.trick - dt)
+        let a = ActionAck(boost: ackBoost || ackTimers.boost > 0, fire: ackTimers.fire > 0, jump: ackTimers.jump > 0, pickup: ackTimers.pickup > 0, trick: ackTimers.trick > 0,
                           snap: ackTimers.snap > 0, beacon: ackTimers.beacon > 0, hit: ackTimers.hit > 0,
                           stamp: ackTimers.stamp > 0 ? stampText : "",
                           commsSpeaker: commsTimer > 0 ? commsSpeaker : "", commsText: commsTimer > 0 ? commsText : "")
@@ -1096,7 +1144,25 @@ final class GameController: ObservableObject {
     }
 
     /// Accept the briefing or continue past a result (also called by the HUD tap).
+    /// The rider a Grid rival wears: by name, skipping the player's own.
+    static func rivalRider(for name: String) -> RiderProfile {
+        let map = ["KADE": "dude1", "ORIN": "dude2", "SABLE": "girl1", "VESS": "cal"]
+        let mine = Roster.current().id
+        if let id = map[name], id != mine, let r = Roster.all.first(where: { $0.id == id }) { return r }
+        return Roster.all.first { $0.id != mine } ?? Roster.all[0]
+    }
+
+    /// The free-play run card is done: the road moves (the corridor) or the match starts (The Grid).
+    func dismissRunCard() {
+        guard runCardUp else { return }
+        runCardUp = false
+        runCardPrev = true
+        stamp("GO", seconds: 0.6); sound.play(.go)
+        soundtrack.announce(["vo_ready", "vo_go"], priority: true)
+    }
+
     func acceptMission() {
+        if runCardUp { dismissRunCard(); return }
         if let arena, arena.awaitingRestart, !missionActive { restartArenaMatch(arena); return }
         guard missionActive, !pendingRebuild, !rebuilding else { return }
         let wasBriefing = missions.phase == .briefing
@@ -1110,6 +1176,7 @@ final class GameController: ObservableObject {
             gamepad.rumble(intensity: 0.6, sharpness: 0.4)
             stamp("GO", seconds: 0.6)
             sound.play(.go)
+            soundtrack.announce(["vo_ready", "vo_go"], priority: true)
         }
         if rebuild {
             let theme = missions.current.theme
@@ -1185,6 +1252,7 @@ final class GameController: ObservableObject {
         handleCommonInput(input)
         handleCaptures()
         if demoMode, let script = ProcessInfo.processInfo.environment["SPEEDER_DEMO_SCRIPT"], script == "noai" { aiCmd = CycleInput() }
+        if !missionActive { arena.paused = runCardUp }          // free play: the run card holds the match
         if missionActive {
             // duel: the briefing holds the arena; A / F / tap accepts, the arena's score decides the job
             // the demo pulses its accept (a held button has no edge, so the result card would stay up)
@@ -1197,17 +1265,19 @@ final class GameController: ObservableObject {
             if screen == .game { briefingInput(input) }
             if missions.phase == .rivalIntro { missions.tickIntro(dt: dt); if missions.phase == .running { stamp("ROUND 1", seconds: 1.0); sound.play(.roundStart, volume: 0.6) } }
             missions.lastDerezCause = arena.stateText
-            arena.paused = missions.phase != .running
+            arena.paused = missions.phase != .running || runCardUp
             arena.matchTarget = Int.max
-            if missions.phase != mission.phase {
+            if let r = missions.current.rival { arena.rival = r }
+            let phaseBefore = missions.phase
+            missions.updateDuel(dt: dt, wins: arena.wins, losses: arena.losses)
+            if missions.phase != phaseBefore {
+                // the duel's outcome, after the update that produced it (the snapshot below would hide it)
                 switch missions.phase {
-                case .success: sound.play(.success)
-                case .failed: sound.play(.fail)
+                case .success: sound.play(.success); soundtrack.announcePool(["vo_mission_completed", "vo_congratulations"], priority: true, delay: 1.2)
+                case .failed: sound.play(.fail); soundtrack.announcePool(["vo_mission_failed", "vo_game_over"], priority: true, delay: 1.2)
                 default: break
                 }
             }
-            if let r = missions.current.rival { arena.rival = r }
-            missions.updateDuel(dt: dt, wins: arena.wins, losses: arena.losses)
             if missions.phase != mission.phase || statsAccumulator > 0.2 { mission = missions.snapshot() }
             if missions.phase != .running { cmd = CycleInput() }
         }
@@ -1244,10 +1314,14 @@ final class GameController: ObservableObject {
         if ev.matchWon || ev.matchLost { rivalComms = nil }
         updateRivalComms(dt: dt)
         if ev.voidRound { stamp("VOID ROUND", seconds: 2.2); sound.play(.derez) }
-        if ev.matchWon { stamp("MATCH WON  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchWon) }
-        if ev.matchLost { stamp("MATCH LOST  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchLost) }
-        if ev.roundStart && !ev.matchWon && !ev.matchLost { stamp(arena.matchTarget == Int.max ? "READY" : "ROUND \(arena.roundNumber)", seconds: 1.0); sound.play(.roundStart, volume: 0.6) }
-        if ev.go { stamp("GO", seconds: 0.5); sound.play(.go) }
+        if ev.matchWon { stamp("MATCH WON  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchWon)
+            soundtrack.announce([arena.losses == 0 ? "vo_flawless_victory" : "vo_winner"], priority: true) }
+        if ev.matchLost { stamp("MATCH LOST  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchLost); soundtrack.announce(["vo_you_lose"], priority: true) }
+        if ev.roundStart && !ev.matchWon && !ev.matchLost { stamp(arena.matchTarget == Int.max ? "READY" : "ROUND \(arena.roundNumber)", seconds: 1.0); sound.play(.roundStart, volume: 0.6)
+            let target = arena.matchTarget == Int.max ? (missionActive ? missions.current.duelTarget : 3) : arena.matchTarget
+            let round = arena.roundNumber >= target * 2 - 1 ? "vo_final_round" : (arena.roundNumber <= 3 ? "vo_round_\(arena.roundNumber)" : "vo_ready")
+            soundtrack.announce([round], priority: true) }
+        if ev.go { stamp("GO", seconds: 0.5); sound.play(.go); soundtrack.announce(["vo_go"], priority: true) }
         let arenaLive = arena.stateText.isEmpty && !arena.paused
         sound.set(.engine, volume: arenaLive ? 0.25 + arena.speedNorm * 0.5 : 0.1, pitch: 0.75 + arena.speedNorm * 1.0)
         sound.set(.boost, volume: (arenaLive && cmd.boost && arena.energy > 0.02) ? 0.8 : 0, pitch: 1.1)
@@ -1259,8 +1333,8 @@ final class GameController: ObservableObject {
         let final = arenaLive && (arena.wins == target - 1 || arena.losses == target - 1)
         sound.setMusic(intensity: arenaLive ? (hot ? 2 : 1) : 0.4, lead: arena.wins > arena.losses || (cmd.boost && arena.energy > 0.02), finalStretch: final, gated: true)
         if onTitle { sound.setMusic(intensity: 1) }
-        if ev.roundLost || ev.voidRound { sound.musicCut() }
-        if ev.matchWon { sound.musicSlam() }
+        if ev.roundLost || ev.voidRound { sound.musicCut(); soundtrack.slam() }
+        if ev.matchWon { sound.musicSlam(); soundtrack.slam() }
         sound.setAmbience(0.35)
         sound.setEnclosure(0)
         if ev.matchResult, let r = arena.matchResult {

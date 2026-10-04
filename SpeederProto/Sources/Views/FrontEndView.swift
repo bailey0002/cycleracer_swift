@@ -80,7 +80,9 @@ struct FrontEndView: View {
 
     private var titleFrame: some View {
         ZStack(alignment: .bottomLeading) {
-            LinearGradient(colors: [.black.opacity(compactList ? 0.88 : 0.78), .black.opacity(compactList ? 0.55 : 0.36), .clear],
+            LinearGradient(stops: screen == .riders
+                               ? [.init(color: .black.opacity(0.9), location: 0), .init(color: .black.opacity(0.72), location: 0.55), .init(color: .black.opacity(0.3), location: 0.85), .init(color: .clear, location: 1)]
+                               : [.init(color: .black.opacity(compactList ? 0.88 : 0.78), location: 0), .init(color: .black.opacity(compactList ? 0.55 : 0.36), location: 0.5), .init(color: .clear, location: 1)],
                            startPoint: .leading, endPoint: .trailing)
                 .ignoresSafeArea()
                 .animation(.easeOut(duration: 0.3), value: compactList)
@@ -405,7 +407,7 @@ struct FrontEndView: View {
 
     private func rosterCard(_ sel: Int, hot: Bool) -> some View {
         let r = Roster.all[max(0, min(Roster.all.count - 1, sel))]
-        let h: CGFloat = 172
+        let h: CGFloat = 156
         return HStack(alignment: .top, spacing: 16) {
             stepper("chevron.left") { controller.adjust("roster", by: -1) }.frame(height: h)
             // portrait: the profile clip looping silently when the rider has one, over the still

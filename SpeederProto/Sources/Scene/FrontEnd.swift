@@ -25,6 +25,7 @@ struct PlayerPrefs: Equatable {
     var quality = 0          // 0 high, 1 balanced, 2 battery
     var gridSteering = 0     // 0 smooth (analog), 1 snap 90
     var vehicle = 0          // 0 speeder, 1 hoverboard (test build; `SPEEDER_VEHICLE=` overrides)
+    var tracks = true        // Mark's music on; off = the generative music
     /// The developer panel: five taps on the version line in SETTINGS (always on for the Mac).
     var devUnlocked = PlayerPrefs.devDefault
 
@@ -46,13 +47,14 @@ struct PlayerPrefs: Equatable {
         p.quality = max(0, min(2, d.integer(forKey: "prefs.quality")))
         p.gridSteering = max(0, min(1, d.integer(forKey: "prefs.gridSteering")))
         p.vehicle = max(0, min(1, d.integer(forKey: "prefs.vehicle")))
+        if d.object(forKey: "prefs.tracks") != nil { p.tracks = d.bool(forKey: "prefs.tracks") }
         p.devUnlocked = devDefault || d.bool(forKey: "prefs.devUnlocked")
         return p
     }
     func save(_ d: UserDefaults) {
         d.set(music, forKey: "prefs.music"); d.set(effects, forKey: "prefs.effects"); d.set(haptics, forKey: "prefs.haptics")
         d.set(quality, forKey: "prefs.quality"); d.set(gridSteering, forKey: "prefs.gridSteering"); d.set(devUnlocked, forKey: "prefs.devUnlocked")
-        d.set(vehicle, forKey: "prefs.vehicle")
+        d.set(vehicle, forKey: "prefs.vehicle"); d.set(tracks, forKey: "prefs.tracks")
     }
 
     /// Graphics quality and Grid steering over the world's look (call after `Theme.adjust`).
@@ -126,13 +128,15 @@ extension GameController {
         indexStack.append(menuIndex)
         screens.append(s)
         menuIndex = 0
-        callsignEdit = nil; resetArmed = false
+        callsignEdit = nil; resetArmed = false; saveArmed = false
         sound.play(.tick, volume: 0.5, pitch: 1.15)
     }
     func pop() {
         guard screens.count > 1 else { return }
-        screens.removeLast()
-        menuIndex = indexStack.popLast() ?? 0
+        let leaving = screens.removeLast()
+        menuIndex = min(indexStack.popLast() ?? 0, max(0, menuRows.count - 1))   // rows can shrink (MESSAGES, dev panel)
+        if screens.last == .title { riderFirstRun = false }                        // backing out of the first run ends it
+        if leaving == .riders, riderDirty { riderDirty = false; if VehicleKind.current == .board { requestRebuild() } }
         callsignEdit = nil; resetArmed = false
         sound.play(.tick, volume: 0.45, pitch: 0.8)
     }
@@ -158,6 +162,7 @@ extension GameController {
         case .title:
             return [
                 MenuRow(id: "continue", label: missions.hasProgress ? "CONTINUE" : "START", detail: "\(m.code)  //  \(m.title)"),
+            ] + (SaveSlot.exists(.standard) && !missions.hasProgress ? [MenuRow(id: "load", label: "CONTINUE SAVE", detail: "SAVED \(SaveSlot.savedText(.standard))")] : []) + [
                 MenuRow(id: "riders", label: "RIDERS", detail: "\(rider.name)  //  \(rider.tag)"),
                 MenuRow(id: "freeplay", label: "FREE PLAY", detail: "ANY WORLD, NO JOB"),
             ] + messagesRow + [
@@ -173,6 +178,7 @@ extension GameController {
         case .settings:
             var rows = [
                 MenuRow(id: "music", label: "MUSIC", kind: .level(prefs.music)),
+                MenuRow(id: "tracks", label: "SOUNDTRACK", detail: prefs.tracks ? "HIDEAWAY, FIRST PLACE, TOO LATE" : "GENERATIVE MUSIC", kind: .toggle(prefs.tracks)),
                 MenuRow(id: "effects", label: "EFFECTS", kind: .level(prefs.effects)),
                 MenuRow(id: "haptics", label: "HAPTICS", kind: .toggle(prefs.haptics)),
                 MenuRow(id: "quality", label: "GRAPHICS", detail: PlayerPrefs.qualityDetail[prefs.quality], kind: .choice(PlayerPrefs.qualityNames, prefs.quality)),
@@ -180,6 +186,7 @@ extension GameController {
                 MenuRow(id: "vehicle", label: "VEHICLE", detail: "TEST BUILD  //  REBUILDS THE WORLD", kind: .choice(PlayerPrefs.vehicleNames, prefs.vehicle)),
                 MenuRow(id: "rider", label: "CALLSIGN", detail: "\(player.callsign)  //  \(player.liveryName)"),
             ]
+            rows.append(MenuRow(id: "save", label: saveArmed ? "SAVED" : "SAVE GAME", detail: SaveSlot.exists(.standard) ? "LAST SAVE \(SaveSlot.savedText(.standard))" : "JOBS, CREDITS, GARAGE, RIDER"))
             if onTitle {
                 rows.append(MenuRow(id: "story", label: "STORY", detail: "GRIPTAP & CO  //  REPLAY THE OPENING"))
                 rows.append(MenuRow(id: "reset", label: resetArmed ? "PRESS AGAIN TO RESET" : "RESET PROGRESS", detail: "JOBS, CREDITS, GARAGE, RECORDS"))
@@ -207,6 +214,7 @@ extension GameController {
         case .paused:
             var rows = [
                 MenuRow(id: "resume", label: "RESUME"),
+                MenuRow(id: "save", label: saveArmed ? "SAVED" : "SAVE GAME", detail: SaveSlot.exists(.standard) ? "LAST SAVE \(SaveSlot.savedText(.standard))" : "JOBS, CREDITS, GARAGE, RIDER"),
             ] + (missionActive ? messagesRow : []) + [
                 MenuRow(id: "settings", label: "SETTINGS"),
                 MenuRow(id: "title", label: "QUIT TO TITLE", detail: missionActive && !missions.isParked ? "THE JOB STARTS OVER" : ""),
@@ -242,12 +250,25 @@ extension GameController {
         case "continue":
             guard worldReady else { return }
             // first run: riders -> story -> callsign -> the first briefing (KERB's order: title, riders, story, world)
-            if missions.isFirstRun { riderFirstRun = true; push(.riders) } else { startJobs() }
-        case "riders": riderFirstRun = false; push(.riders)
-        case "roster": adjust("roster", by: 1)
-        case "rideon":
+            if missions.isFirstRun || !storySeen { riderFirstRun = true; push(.riders); soundtrack.announce(["vo_choose_your_character"], priority: true) } else { startJobs() }
+        case "load":
+            guard worldReady, SaveSlot.load(.standard) else { return }
+            missions.reloadFromDefaults()
+            player = missions.player
+            mission = missions.snapshot()
+            sound.play(.accept)
+            if VehicleKind.current == .board { requestRebuild() }      // the saved rider rides
+            startJobs()
+        case "save":
+            SaveSlot.save(.standard)
+            saveArmed = true
+            sound.play(.accept, volume: 0.6)
+            gamepad.rumble(intensity: 0.3, sharpness: 0.6)
+        case "riders": riderFirstRun = false; push(.riders); soundtrack.announce(["vo_choose_your_character"], priority: true)
+        case "roster", "rideon":
+            // A on the card or on NEXT / DONE confirms the rider (left / right choose)
             if riderFirstRun { pop(); push(storySeen ? .rider : .story) } else { pop() }
-        case "story": push(.story)
+        case "story": riderFirstRun = false; push(.story)
         case "freeplay": push(.worlds)
         case "messages": openMessages()
         case "settings": push(.settings)
@@ -258,7 +279,7 @@ extension GameController {
         case "world.0", "world.1", "world.2":
             guard worldReady, let n = Int(id.suffix(1)) else { return }
             startFreePlay(world: n)
-        case "haptics": adjust(id, by: 1)
+        case "haptics", "tracks": adjust(id, by: 1)
         case "quality", "steering": adjust(id, by: 1)
         case "dev":
             panelVisible.toggle()
@@ -283,6 +304,7 @@ extension GameController {
         case "music": setValue(id, prefs.music + d)
         case "effects": setValue(id, prefs.effects + d)
         case "haptics": setValue(id, prefs.haptics ? 0 : 1)
+        case "tracks": setValue(id, prefs.tracks ? 0 : 1)
         case "quality": setValue(id, ((prefs.quality + d) % 3 + 3) % 3)
         case "steering": setValue(id, ((prefs.gridSteering + d) % 2 + 2) % 2)
         case "vehicle": setValue(id, ((prefs.vehicle + d) % 2 + 2) % 2)
@@ -305,7 +327,7 @@ extension GameController {
         Roster.select(r)
         objectWillChange.send()
         sound.play(.tick, volume: 0.45, pitch: 1.25)
-        if VehicleKind.current == .board { requestRebuild() }
+        riderDirty = true                                   // one rebuild when the page is left, not per step
     }
 
     static let storySeenKey = "story.seen"
@@ -326,6 +348,7 @@ extension GameController {
         case "music": p.music = max(0, min(10, v))
         case "effects": p.effects = max(0, min(10, v))
         case "haptics": p.haptics = v != 0
+        case "tracks": p.tracks = v != 0
         case "quality": p.quality = max(0, min(2, v))
         case "steering": p.gridSteering = max(0, min(1, v))
         case "vehicle": p.vehicle = max(0, min(1, v))
@@ -344,8 +367,11 @@ extension GameController {
 
     /// Sound levels, haptics, and graphics / steering over the current world's look.
     func applyPrefs() {
-        sound.musicVolume = Float(prefs.music) / 10
+        sound.musicVolume = soundtrack.hasMusic && prefs.tracks ? 0 : Float(prefs.music) / 10
         sound.effectsVolume = Float(prefs.effects) / 10
+        soundtrack.musicOn = prefs.tracks
+        soundtrack.musicVolume = Float(prefs.music) / 10 * 0.8
+        soundtrack.effectsVolume = Float(prefs.effects) / 10
         gamepad.enabled = prefs.haptics
         guard !demoMode else { return }        // captures keep the reference look
         var s = settings
@@ -459,6 +485,7 @@ extension GameController {
         settings = s
         requestRebuild()
         matchResult = nil
+        runCardUp = true                        // the run card explains the world before the road moves
         setRoot(.game)
         hintVisible = true; hintTimer = 0
         sound.play(.accept)
