@@ -80,6 +80,7 @@
 		45AEF4D00B2512F36EFB7E92 /* grid-wall-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 9964E64CC1620BAAB88C54AE /* grid-wall-01.png */; };
 		472C0735C4D70DF7B9F64EA7 /* story_2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = DE46DBA0D6DC93E154C375E2 /* story_2.jpg */; };
 		49FB925917BAB89EB8A93F92 /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
+		4A4CE37C4522A8DDE449B57E /* grid-floor-01-rough.png in Resources */ = {isa = PBXBuildFile; fileRef = C62F8C52AD7DFBC8C562E4C5 /* grid-floor-01-rough.png */; };
 		4BE77D26787DB8F1F89DDF77 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9878B4DE09B4382EE413D42 /* Theme.swift */; };
 		4BF57CE1C5F0965BAF170455 /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */; };
 		4C4EF9601FA091E54BC168DC /* music_hideaway.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A6AD2E56DC74F874A8DD2B3E /* music_hideaway.m4a */; };
@@ -228,6 +229,7 @@
 		DC41CBFF327A56F45112A39A /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */; };
 		DE274235EA71CC19E58BA9C1 /* sfx_bubble.wav in Resources */ = {isa = PBXBuildFile; fileRef = 5D404305FE27F5FCF741D9BF /* sfx_bubble.wav */; };
 		DE8993EE46F53B3F427C4AE8 /* vo_go.wav in Resources */ = {isa = PBXBuildFile; fileRef = DE56E4510631E777D5C934A1 /* vo_go.wav */; };
+		DEA888C53B52CC5F15EBF34E /* grid-floor-01-rough.png in Resources */ = {isa = PBXBuildFile; fileRef = C62F8C52AD7DFBC8C562E4C5 /* grid-floor-01-rough.png */; };
 		DF340130C1C957D59ADE29B9 /* Rider_girl1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 9DB0CC259A8A6C66CF178667 /* Rider_girl1.usdz */; };
 		E0C5AA1C0BA7466B1D0A6230 /* vo_ready.wav in Resources */ = {isa = PBXBuildFile; fileRef = 4A26928F0EB1F3188C3B97A6 /* vo_ready.wav */; };
 		E132C8599DEE43F567931FC4 /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE1291018C742677C899082 /* SoundEngine.swift */; };
@@ -368,6 +370,7 @@
 		C4128ED8FE5663202FB0B4B7 /* vo_objective_achieved.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_objective_achieved.wav; sourceTree = "<group>"; };
 		C5166421E2AA1C608CB65D5B /* rider_girl1.mp4 */ = {isa = PBXFileReference; path = rider_girl1.mp4; sourceTree = "<group>"; };
 		C5BBB920AF1A8FF05456388B /* sfx_laser.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_laser.wav; sourceTree = "<group>"; };
+		C62F8C52AD7DFBC8C562E4C5 /* grid-floor-01-rough.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-floor-01-rough.png"; sourceTree = "<group>"; };
 		C765DA287634C20B6B424CD0 /* grid-floor-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-floor-01.png"; sourceTree = "<group>"; };
 		C915C997E763C88A348863BE /* sfx_caption.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_caption.wav; sourceTree = "<group>"; };
 		C9878B4DE09B4382EE413D42 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -496,6 +499,7 @@
 			isa = PBXGroup;
 			children = (
 				1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */,
+				C62F8C52AD7DFBC8C562E4C5 /* grid-floor-01-rough.png */,
 				C765DA287634C20B6B424CD0 /* grid-floor-01.png */,
 				72882052C02160C92D4332AF /* grid-screen-01.png */,
 				9DC487A4345E2CC9F61002B7 /* grid-skyline.png */,
@@ -781,6 +785,7 @@
 				DF340130C1C957D59ADE29B9 /* Rider_girl1.usdz in Resources */,
 				4D1F534585584B46E2C516AD /* Speeder.usdz in Resources */,
 				BA819C5B884C6C3A20236A47 /* grid-bowl.png in Resources */,
+				DEA888C53B52CC5F15EBF34E /* grid-floor-01-rough.png in Resources */,
 				8DDD6F87CCA5A8CC74A0A983 /* grid-floor-01.png in Resources */,
 				5F8EA8B586550D8112C81C83 /* grid-screen-01.png in Resources */,
 				1F672A82AAA3CB2A05DA968E /* grid-skyline.png in Resources */,
@@ -869,6 +874,7 @@
 				9ECDBAA937A725E9B2B5C005 /* Rider_girl1.usdz in Resources */,
 				7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */,
 				DB9070E503B2652C1E01EA27 /* grid-bowl.png in Resources */,
+				4A4CE37C4522A8DDE449B57E /* grid-floor-01-rough.png in Resources */,
 				3B8F063CD89EBCBF2FEE6CE3 /* grid-floor-01.png in Resources */,
 				673451B190DBEFCCA82C5ECD /* grid-screen-01.png in Resources */,
 				201B0F59AAAF966EDA948DD2 /* grid-skyline.png in Resources */,
