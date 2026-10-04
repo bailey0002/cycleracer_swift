@@ -45,7 +45,7 @@ final class ArenaController {
     /// The player's trail and derez colour: the livery (set by the game controller before a build).
     nonisolated(unsafe) static var playerColor = SIMD3<Float>(0.12, 0.72, 1.0)
     static let opponentColor = SIMD3<Float>(1.0, 0.42, 0.06)
-    static let hazardColor = SIMD3<Float>(0.55, 1.0, 0.12)
+    static let hazardColor = SIMD3<Float>(1.0, 0.18, 0.22)      // red (was lime; 3 Oct 2026: lime fought the teal arena)
     static let pickupColor = SIMD3<Float>(0.85, 0.7, 1.0)
 
     // meters (0...1)
