@@ -34,6 +34,10 @@ final class SceneMaterials {
     private(set) var artSkyline: UnlitMaterial? = nil        // the far backdrop strip, alpha-faded top and bottom
     private(set) var artBowl: UnlitMaterial? = nil           // the arena bowl backdrop, black keyed out
     private(set) var artScreens: [UnlitMaterial] = []        // the hanging arena screens
+    private(set) var artGridSkyline: UnlitMaterial? = nil    // the Grid's skyline strip with the spire (black sky keyed out)
+    private(set) var gridSkylineAspect: Float = 1774 / 227
+    /// The Grid's wall tile aspect (width / height) when the generated tile is in use; nil = procedural.
+    private(set) var gridWallAspect: Float? = nil
     let library: MTLLibrary?
 
     private let glowTexture: TextureResource
@@ -64,21 +68,58 @@ final class SceneMaterials {
             let accent = Theme.gridAccent
             let (fb, fe) = ProceduralTextures.gridFloor(accent: accent)
             var gm = PhysicallyBasedMaterial()
-            gm.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(fb, .color)))
+            if let plate = Art.image("grid-floor-01") {
+                // the generated floor plate (3 Oct 2026): albedo + roughness map + a normal derived from the
+                // albedo, like the city road; the grid stays the procedural emissive layer on top
+                gm.baseColor = .init(tint: .init(red: 0.95, green: 0.93, blue: 0.86, alpha: 1), texture: Self.repeating(try Self.texture(plate, .color)))   // pull the tile's blue toward charcoal
+                gm.normal = .init(texture: Self.repeating(try Self.texture(Art.normalMap(plate, strength: 1.6), .normal)))
+                if let rough = Art.image("grid-floor-01-rough") {
+                    gm.roughness = .init(scale: 0.9, texture: Self.repeating(try Self.texture(rough, .raw)))
+                } else {
+                    gm.roughness = .init(floatLiteral: 0.42)
+                }
+                gm.specular = .init(floatLiteral: 1.0)
+            } else {
+                gm.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(fb, .color)))
+                gm.roughness = .init(floatLiteral: 0.42)
+                gm.specular = .init(floatLiteral: 0.6)
+            }
             gm.emissiveColor = .init(color: .black, texture: Self.repeating(try Self.texture(fe, .color)))
-            gm.emissiveIntensity = 2.2
-            gm.roughness = .init(floatLiteral: 0.2)
-            gm.metallic = .init(floatLiteral: 0.0)
-            gm.specular = .init(floatLiteral: 1.0)
+            gm.emissiveIntensity = 1.9
+            gm.metallic = .init(floatLiteral: 0.06)
             gridFloor = gm
             let (wb, we) = ProceduralTextures.gridWall(accent: accent)
             var wm = PhysicallyBasedMaterial()
-            wm.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(wb, .color)))
-            wm.emissiveColor = .init(color: .black, texture: Self.repeating(try Self.texture(we, .color)))
-            wm.emissiveIntensity = 2.6
-            wm.roughness = .init(floatLiteral: 0.35)
-            wm.metallic = .init(floatLiteral: 0.2)
+            if let tile = Art.image("grid-wall-01") {
+                // the generated wall module: the tile is the base colour (its own cyan dimmed, the mask relit
+                // in the palette's accent), a normal map from its luminance for the panel recesses
+                wm.baseColor = .init(tint: .init(red: 1.25, green: 1.25, blue: 1.2, alpha: 1), texture: Self.repeating(try Self.texture(tile, .color)))   // the slab body must read, not just its channels
+                wm.normal = .init(texture: Self.repeating(try Self.texture(Art.normalMap(tile, strength: 1.2), .normal)))
+                let mask = Art.image("grid-wall-01-mask") ?? Art.emissiveMask(tile)
+                wm.emissiveColor = .init(color: .black, texture: Self.repeating(try Self.texture(Art.tinted(mask, accent), .color)))
+                wm.emissiveIntensity = 2.6
+                wm.roughness = .init(floatLiteral: 0.5)
+                wm.metallic = .init(floatLiteral: 0.2)
+                gridWallAspect = Float(tile.width) / Float(tile.height)
+            } else {
+                wm.baseColor = .init(tint: .white, texture: Self.repeating(try Self.texture(wb, .color)))
+                wm.emissiveColor = .init(color: .black, texture: Self.repeating(try Self.texture(we, .color)))
+                wm.emissiveIntensity = 2.2
+                wm.roughness = .init(floatLiteral: 0.45)
+                wm.metallic = .init(floatLiteral: 0.25)
+            }
             gridWall = wm
+            if let sky = Art.image("grid-skyline") {
+                // the strip is on a black sky: key it out and lift the darks so the towers survive the haze
+                // keyed off the black sky, and the bottom (the city's own ground reflection) faded out so the
+                // strip sits on open sky above the walls instead of floating with a water line
+                let tex = try Self.texture(Art.faded(Art.keyedBlack(sky, floor: 0.03, ramp: 0.08, lift: 2.5), top: 0.0, bottom: 0.88, fade: 0.14), .color)
+                gridSkylineAspect = Float(sky.width) / Float(sky.height)
+                var m = UnlitMaterial()
+                m.color = .init(tint: .rgb(SIMD3(0.7, 0.78, 0.84)), texture: .init(tex))
+                m.blending = .transparent(opacity: .init(scale: 1, texture: .init(tex)))
+                artGridSkyline = m
+            }
             if let img = Art.image("grid-bowl") {
                 let tex = try Self.texture(Art.keyedBlack(img, lift: 4.0), .color)
                 var m = UnlitMaterial()

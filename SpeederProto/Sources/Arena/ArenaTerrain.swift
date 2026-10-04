@@ -67,10 +67,10 @@ struct ArenaTerrain {
     /// under the deck, and the four lime hazard walls on the ground.
     static func garage(halfSize: Float) -> ArenaTerrain {
         var t = ArenaTerrain()
-        let deckH: Float = 9
+        let deckH: Float = 14                     // raised from 9 (3 Oct 2026): the second level clears the sightline
         let deckMin = SIMD2<Float>(-60, -90), deckMax = SIMD2<Float>(60, -10)
         t.decks = [Deck(min: deckMin, max: deckMax, height: deckH, name: "upper deck")]
-        let rampLen: Float = 40
+        let rampLen: Float = 62                   // same slope as before
         let west = Ramp(xMin: -60, xMax: -44, z0: deckMax.y + rampLen, h0: 0, z1: deckMax.y, h1: deckH)
         let east = Ramp(xMin: 44, xMax: 60, z0: deckMax.y + rampLen, h0: 0, z1: deckMax.y, h1: deckH)
         t.ramps = [west, east]

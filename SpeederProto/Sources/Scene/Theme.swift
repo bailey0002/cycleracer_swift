@@ -28,7 +28,7 @@ enum Theme: Int, CaseIterable {
     var neonScale: Float { self == .sunsetCanyon ? 0.28 : 1.0 }
     /// Image-based light strength (2^x).
     var iblExponent: Float {
-        switch self { case .neonCity: return 0.6; case .sunsetCanyon: return 0.75; case .theGrid: return 0.45 }
+        switch self { case .neonCity: return 0.6; case .sunsetCanyon: return 0.75; case .theGrid: return 0.30 }
     }
 
     var sunColor: SIMD3<Float> {
@@ -49,7 +49,7 @@ enum Theme: Int, CaseIterable {
         switch self {
         case .neonCity: return SIMD4(0.075, 0.045, 0.150, 0.8)
         case .sunsetCanyon: return SIMD4(0.78, 0.50, 0.32, 0.25)
-        case .theGrid: let a = Theme.gridAccent * 0.06; return SIMD4(a.x + 0.004, a.y + 0.004, a.z + 0.006, 0.7)
+        case .theGrid: let a = Theme.gridAccent * 0.035; return SIMD4(a.x + 0.003, a.y + 0.004, a.z + 0.005, 0.7)   // blue-green black haze
         }
     }
 
@@ -63,13 +63,13 @@ enum Theme: Int, CaseIterable {
         case 1: return SIMD3(1.0, 0.22, 0.26)
         case 2: return SIMD3(1.0, 0.64, 0.16)
         case 3: return SIMD3(0.66, 0.36, 1.0)
-        default: return SIMD3(0.28, 0.82, 1.0)
+        default: return SIMD3(0.16, 0.86, 0.78)      // deeper teal-green (was sky cyan 0.28, 0.82, 1.0; 3 Oct 2026)
         }
     }
     var fogDensityScale: Float { self == .sunsetCanyon ? 0.5 : 1.0 }
     /// The most the depth fog may take: what is left is the far backdrop (the generated skyline and the
     /// arena bowl, `Art`). The corridors keep their frozen 0.92; the Grid's bowl needs the room.
-    var fogMax: Float { switch self { case .neonCity: return 0.88; case .sunsetCanyon: return 0.92; case .theGrid: return 0.35 } }
+    var fogMax: Float { switch self { case .neonCity: return 0.88; case .sunsetCanyon: return 0.92; case .theGrid: return 0.55 } }
     /// Cool lift in the shadows (neon) vs. none (daylight).
     var gradeStrength: Float { self == .sunsetCanyon ? 0.15 : 1.0 }
     var exposure: Float { self == .sunsetCanyon ? 0.82 : 1.0 }
@@ -95,7 +95,7 @@ enum Theme: Int, CaseIterable {
     /// Weather: rain streaks and lightning (Neon City only).
     var rain: Bool { self == .neonCity }
     /// Ghost flares and lens dirt strength (the canyon sun ghosts most).
-    var lensScale: Float { switch self { case .neonCity: return 0.55; case .sunsetCanyon: return 0.8; case .theGrid: return 0.35 } }
+    var lensScale: Float { switch self { case .neonCity: return 0.55; case .sunsetCanyon: return 0.8; case .theGrid: return 0.55 } }
     var speedParticleSize: Float { self == .sunsetCanyon ? 0.06 : 0.035 }
 
     /// Defaults that make sense for the environment (applied when switching).
@@ -106,7 +106,7 @@ enum Theme: Int, CaseIterable {
         case .sunsetCanyon:
             s.reflections = false; s.fogLevel = 0; s.bloomLevel = 0; s.ringColor = 3; s.palette = 3; s.streaks = false
         case .theGrid:
-            s.reflections = true; s.fogLevel = 1; s.bloomLevel = 1; s.ringColor = 2; s.palette = 1; s.streaks = true
+            s.reflections = true; s.fogLevel = 1; s.bloomLevel = 0; s.ringColor = 2; s.palette = 1; s.streaks = true   // bloom low: crisp lines, glow only at the source
         }
     }
 }

@@ -45,6 +45,36 @@ void trailSurface(realitykit::surface_parameters params)
     float alpha = tail;
     float gain = 1.0;
     float t = params.uniforms().time();
+    bool isStatic = cp.x > 1e5;                               // the arena's rails, ramps, hazards (TrailRenderer marks them)
+    if (isStatic) {
+        // dark glass (3 Oct 2026): a near-black translucent body that lets the floor read through, the
+        // strand's colour only as a crisp rim along the top edge and a faint line along the base
+        if (part < 0.5) {
+            float rim = smoothstep(0.90, 1.0, v);
+            float base = smoothstep(0.10, 0.0, v) * 0.35;
+            float3 glass = col * 0.10 + float3(0.015, 0.035, 0.045);
+            float3 c = mix(glass, col, rim + base);
+            float a = 0.42 + rim * 0.58 + base * 0.3;
+            params.surface().set_emissive_color(half3(c * (0.9 + rim * 2.6 + base * 0.8)));
+            params.surface().set_base_color(half3(0.0));
+            params.surface().set_opacity(half(a));
+            return;
+        } else if (part < 1.5) {
+            float edge = max(-v, v - 1.0);
+            float fall = 1.0 - smoothstep(0.0, 0.35, edge);
+            float topOnly = smoothstep(0.7, 1.0, v);           // the glow hugs the rim, not the body
+            params.surface().set_emissive_color(half3(col * 1.2));
+            params.surface().set_base_color(half3(0.0));
+            params.surface().set_opacity(half(0.16 * fall * fall * topOnly));
+            return;
+        } else {
+            float fall = pow(saturate(1.0 - abs(v)), 1.6);
+            params.surface().set_emissive_color(half3(col * 0.8));
+            params.surface().set_base_color(half3(0.0));
+            params.surface().set_opacity(half(0.06 * fall));
+            return;
+        }
+    }
     if (part < 0.5) {
         // the wall is hot, not glass (Tron: Ares): a bright rim along the top edge, a faint heat
         // flicker running along it, and a translucent body so the arena reads through it

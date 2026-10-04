@@ -328,6 +328,7 @@ struct HUDView: View {
                 pip(glyphs.a, "USE", a.pickup)
             } else {
                 pip(glyphs.a, "FIRE", a.fire)
+                if controller.onBoard { pip(glyphs.x, "TRICK", a.trick) }
             }
         }
     }
@@ -387,6 +388,7 @@ struct HUDView: View {
         if let r = controller.matchResult {
             matchCard(r, credits: m.credits)
         }
+        if controller.runCardUp && m.phase == .freePlay { runCard }
         switch m.phase {
         case .chapter:
             chapterCard(m)
@@ -408,6 +410,7 @@ struct HUDView: View {
                         } else if m.cleared { Text("CLEARED  //  REPLAY PAYS HALF").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.amber) }
                         Text(m.brief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
                         Text(m.goalText).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(accent)
+                        objectivesBlock(m)
                         if m.kind != .duel {
                             HStack(spacing: 10) {
                                 row("BEST", m.bestRank.text, "SILVER", "\(m.silverScore)", "GOLD", "\(m.goldScore)", valueColor: rankColor(m.bestRank))
@@ -807,6 +810,66 @@ struct HUDView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
+    // MARK: Run cards (2 Oct 2026): what this run is and how to ride it, before the road moves
+
+    /// The job's objectives as a short checklist (the goal line gives the numbers; this gives the verbs).
+    private func objectivesBlock(_ m: MissionState) -> some View {
+        var lines: [String] = []
+        switch m.kind {
+        case .delivery: lines = ["REACH THE DROP BEFORE THE WINDOW CLOSES", "GATES ADD TIME  //  HITS AND SCRAPES DRAIN THE HULL", "SHOOT THE LIME TARGETS FOR SCORE"]
+        case .search:   lines = ["FLY THROUGH THE RED RINGS  //  NEED \(m.beaconsRequired) OF \(m.beaconsTotal)", "A MISSED RING GOES GREY AND IS GONE", "REACH THE END INSIDE THE WINDOW"]
+        case .escape:   lines = ["STAY AHEAD OF THE PURSUER  //  CAUGHT AT 4 M", "BOOST DRAINS THE SAME BAR AS THE HULL", "REACH THE END INSIDE THE WINDOW"]
+        case .duel:     lines = ["THE GRID  //  LIGHT CYCLES", "DEREZ THE RIVAL INTO A TRAIL OR A WALL  //  FIRST TO \(max(1, m.duelTarget))", "PADS CHARGE THE BOOST  //  THE SUMO ZONE CLOSES IN"]
+        case .salvage:  lines = ["DESTROY \(m.killsRequired) TARGETS WITH THE PHOTONS", "REACH THE END INSIDE THE WINDOW"]
+        case .dive:     lines = ["NO WEAPONS  //  THREAD THE OBSTACLES", "HITS BRUISE THE HULL TWICE AS HARD", "REACH THE END INSIDE THE WINDOW"]
+        }
+        return VStack(alignment: .leading, spacing: 2) {
+            Text("OBJECTIVES").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(.white.opacity(0.45)).padding(.top, 2)
+            ForEach(lines, id: \.self) { l in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Rectangle().fill(accent).frame(width: 5, height: 5).offset(y: -1)
+                    Text(l).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.8).foregroundStyle(.white.opacity(0.85))
+                }
+            }
+            Text(controlsLine).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.45)).padding(.top, 3)
+        }
+    }
+
+    /// One line of controls for the current vehicle and world.
+    private var controlsLine: String {
+        if isArena { return glyphs.connected ? "STICK STEER  //  UP JUMP  //  R2 BOOST  //  A USE  //  MENU PAUSE" : "TOUCH: LEFT / RIGHT STEER  //  TOP JUMP  //  TAP USE" }
+        var l = glyphs.connected ? "STICK STEER + CLIMB  //  R2 BOOST  //  A OR L1 FIRE" : "TOUCH: POSITION STEERS  //  TWO FINGERS BOOST  //  TAP FIRE"
+        if controller.onBoard && glyphs.connected { l += "  //  X 360  //  Y BARREL ROLL" }
+        return l
+    }
+
+    /// Free play: the world, what counts, and the controls; A / fire / tap starts the run.
+    private var runCard: some View {
+        let world = theme.displayName
+        let lines: [String] = isArena
+            ? ["LIGHT CYCLES AGAINST A RIVAL  //  FIRST TO THREE ROUNDS", "DEREZ THEM INTO A TRAIL OR A WALL  //  BOXING YOURSELF LOSES THE ROUND", "PADS CHARGE THE BOOST  //  THE MATCH PAYS CREDITS"]
+            : ["ENDLESS RUN  //  NO JOB, NO CLOCK", "FLY CLEAN: HITS AND SCRAPES DRAIN THE HULL", "SHOOT THE LIME TARGETS  //  TAKE THE FORK YOU LIKE"]
+        return card(footer: "RIDE") {
+            HStack(alignment: .firstTextBaseline) {
+                Text("FREE PLAY").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                Spacer()
+                Text(controller.rider.name).font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(accent)
+            }
+            Text(world).font(HUDStyle.display(HUDStyle.titleSize)).tracking(2).foregroundStyle(accent)
+            Text(controller.onBoard ? "ON THE KERBIE ASTRO" : "ON THE SPEEDER").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(.white.opacity(0.7))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("THE RUN").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(.white.opacity(0.45)).padding(.top, 4)
+                ForEach(lines, id: \.self) { l in
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Rectangle().fill(accent).frame(width: 5, height: 5).offset(y: -1)
+                        Text(l).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.8).foregroundStyle(.white.opacity(0.85))
+                    }
+                }
+            }
+            Text(controlsLine).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.5)).padding(.top, 4)
+        }
+    }
+
     private func rankColor(_ r: Mission.Rank) -> Color {
         switch r {
         case .gold: return Color(red: 1.0, green: 0.85, blue: 0.3)
@@ -986,6 +1049,8 @@ struct HUDView: View {
                 hintItem(glyphs.stick, isArena ? "STEER, UP JUMP, DOWN BRAKE" : "STEER + CLIMB")
                 hintItem(glyphs.boost, "BOOST")
                 hintItem(glyphs.a, isArena ? "PICKUP" : "FIRE")
+                if !isArena { hintItem(glyphs.l1, "FIRE") }
+                if controller.onBoard && !isArena { hintItem(glyphs.x, "360"); hintItem(glyphs.y, "ROLL") }
                 hintItem(glyphs.menu, "PAUSE")
             }
         }

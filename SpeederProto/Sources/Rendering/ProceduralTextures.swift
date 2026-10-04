@@ -610,14 +610,25 @@ enum ProceduralTextures {
 
     /// Arena floor tile: near-black base with a cyan grid in the emissive map. One tile covers
     /// 4 x 4 cells; the material repeats it, so the major line lands every tile edge.
+    private static func fract(_ x: Float) -> Float { x - floor(x) }
+
     static func gridFloor(size: Int = 512, accent: SIMD3<Float> = SIMD3(0.28, 0.82, 1.0)) -> (base: CGImage, emissive: CGImage) {
         let cells = 4
-        let tint = SIMD3<Float>(0.7, 0.7, 0.7) + accent * 0.5
+        let tint = SIMD3<Float>(0.78, 0.84, 0.86) + accent * 0.15     // charcoal with a blue-green cast, not accent-blue
         let base = makeImage(width: size, height: size) { x, y in
             let u = Float(x) / Float(size), v = Float(y) / Float(size)
+            // polished dark composite: charcoal with a blue-green cast, each cell split into 2 x 2 plates with
+            // a dark seam and a slightly different shade, a brushed grain across them (3 Oct 2026)
             let n = fbm(u * 6, v * 6, octaves: 3, seed: 71, wrap: 6)
-            let c: Float = 0.012 + n * 0.014
-            return SIMD4<Float>(c * tint.x, c * tint.y, c * tint.z, 1)
+            let grain = fbm(u * 90, v * 3, octaves: 2, seed: 19, wrap: 90) * 0.35
+            let plates = Float(cells * 2)
+            let pu = u * plates, pv = v * plates
+            let plateId = floor(pu) + floor(pv) * plates
+            let shade = 0.85 + 0.3 * fract(sin(plateId * 12.9898) * 43758.5453)
+            let seam = min(abs(pu - pu.rounded()), abs(pv - pv.rounded())) * Float(size) / plates
+            let seamDark: Float = seam < 1.2 ? 0.45 : 1.0
+            let c: Float = (0.030 + n * 0.022 + grain * 0.01) * shade * seamDark
+            return SIMD4<Float>(c * tint.x * 0.9, c * tint.y, c * tint.z * 1.05, 1)
         }
         let emissive = makeImage(width: size, height: size) { x, y in
             let fx = Float(x) + 0.5, fy = Float(y) + 0.5
@@ -630,7 +641,7 @@ enum ProceduralTextures {
             // tile edge is the major line (thicker, brighter)
             let dxEdge = min(fx, Float(size) - fx), dyEdge = min(fy, Float(size) - fy)
             let major = clamp01(1 - min(dxEdge, dyEdge) / 3.2)
-            let l = max(minor * 0.55, major)
+            let l = max(minor * 0.38, major * 0.85)
             let col = accent * l
             return SIMD4<Float>(col.x, col.y, col.z, 1)
         }
@@ -642,8 +653,16 @@ enum ProceduralTextures {
         let tint = SIMD3<Float>(0.7, 0.7, 0.7) + accent * 0.5
         let base = makeImage(width: width, height: height) { x, y in
             let u = Float(x) / Float(width)
-            let panel = abs(u - 0.5) < 0.36 ? Float(0.035) : Float(0.018)
-            return SIMD4<Float>(panel * tint.x, panel * tint.y, panel * tint.z, 1)
+            let v = Float(y) / Float(height)
+            // the recessed panel is the darker part; the frame around it is the lighter structure, with a
+            // brushed grain so the slab is not a flat black
+            let inner = abs(u - 0.5) < 0.36
+            let grain = fbm(u * 4, v * 40, octaves: 2, seed: 23, wrap: 4) * 0.012
+            // against a black sky a near-black slab vanishes: the frame reads as a lit grey-teal structure, the
+            // recessed panel darker, a vertical gradient so the wall has a top and a bottom
+            let lift = 0.75 + 0.5 * (1 - v)
+            let panel = ((inner ? Float(0.075) : Float(0.14)) + grain * 3) * lift
+            return SIMD4<Float>(panel * tint.x * 0.9, panel * tint.y, panel * tint.z * 1.05, 1)
         }
         let emissive = makeImage(width: width, height: height) { x, y in
             let u = Float(x) / Float(width), v = Float(y) / Float(height)
@@ -653,10 +672,11 @@ enum ProceduralTextures {
             if inner {
                 // panel glows from the bottom, fading upward, with faint horizontal data bands
                 let bands = 0.85 + 0.15 * sin(v * 90)
-                l = (0.20 + 0.55 * pow(1 - v, 1.8)) * bands
+                l = (0.06 + 0.30 * pow(1 - v, 2.2)) * bands           // a low glow from the floor, not a lit panel
+                if abs(v - 0.62) < 0.006 { l = 0.9 }                   // one horizontal trim line
             }
-            if frame { l = 1.0 }
-            if v < 0.03 { l = 1.0 }       // top rail (v = 0 is the top of the image)
+            if frame { l = 0.9 }
+            if v < 0.02 { l = 1.0 }       // top rail (v = 0 is the top of the image)
             let col = accent * l
             return SIMD4<Float>(col.x, col.y, col.z, 1)
         }
@@ -704,15 +724,15 @@ enum ProceduralTextures {
             var c = SIMD3<Float>(0.002, 0.003, 0.006)
             if elev >= 0 {
                 let t = pow(clamp01(1 - elev / (Float.pi / 2)), 4.0)
-                c += accent * 0.1 * t
+                c += accent * 0.04 * t                                   // the zenith wash was tinting the floor navy
             } else {
-                c = SIMD3<Float>(0.004, 0.008, 0.014)
+                c = SIMD3<Float>(0.003, 0.005, 0.008)
             }
             c += SIMD3<Float>(0.5, 0.8, 1.0) * stars(u: u, v: v, elev: elev, density: 0.07, seed: 19) * 0.5
-            let band = exp(-pow((elev - 0.01) / 0.03, 2)) * 0.7 + exp(-pow((elev - 0.02) / 0.12, 2)) * 0.18
+            let band = exp(-pow((elev - 0.01) / 0.03, 2)) * 0.35 + exp(-pow((elev - 0.02) / 0.12, 2)) * 0.08
             let pulse = 0.85 + 0.15 * sin(u * Float.pi * 2 * 6)
             c += accent * band * pulse
-            if elev < 0 { c += accent * 0.85 * exp(-pow((elev + 0.03) / 0.06, 2)) * 0.15 }
+            if elev < 0 { c += accent * 0.85 * exp(-pow((elev + 0.03) / 0.06, 2)) * 0.06 }
             return SIMD4<Float>(c.x, c.y, c.z, 1)
         }
     }

@@ -255,6 +255,18 @@ final class MissionRunner {
         defaults.removeObject(forKey: MessageLog.key); defaults.removeObject(forKey: MessageLog.readKey)
     }
 
+    /// After `SaveSlot.load`: read the stored progress back, as `init` does, and park on the loaded job's briefing.
+    func reloadFromDefaults() {
+        credits = defaults.integer(forKey: "credits")
+        upgrades = Upgrades.load(defaults)
+        player = Player.load(defaults)
+        log = MessageLog(defaults)
+        index = abs(defaults.integer(forKey: "missionIndex")) % max(1, missions.count)
+        previewIndex = index; activeOffer = nil; previewOffer = nil
+        phase = needsChapterCard(index) ? .chapter : .briefing
+        shopSelection = 0; shopNote = ""; autoStart = false
+    }
+
     /// The settings screen's RESET PROGRESS: back to the first job's briefing with an empty purse.
     func resetProgress() {
         Self.clearStoredProgress(defaults, missions: missions)
