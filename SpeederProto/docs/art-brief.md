@@ -177,6 +177,50 @@ Use the first bracket value for far, the second for mid, the third for near.
 > "3 - 1", in a squared-off display face, white with a cyan glow. No photographs, no cyan
 > gradients bleeding to the edges, no other colour. Style: Tron-like, clean, game texture.
 
+
+### 11. Arena wall module (3 images, `grid-wall-01..03.png`, 1024 x 1024, tiles horizontally; added 3 Oct 2026)
+
+Reference: `docs/reference/grid-arena-breakdown.png`, the "WALL MODULES" panel. The game maps one image onto a
+4 m wide by 16 m tall slab and repeats it along each side, with its own 3D buttress column between repeats.
+The image is the slab face only: no column, no floor, no sky.
+
+> A straight-on, flat view of one section of a heavy futuristic arena wall, filling the whole frame:
+> dark blue-black structural panels (#0F2140 to #183358), a recessed central panel with a thin bevelled
+> border and faint panel seams, a thick upper cap with a recessed horizontal light channel glowing cyan
+> (#59D9FF) along the top edge, a projecting lower plinth with a thinner cyan channel along the bottom,
+> one thin horizontal cyan trim line at about 40 percent of the height, brushed dark composite surface
+> with subtle wear. Even flat lighting, no shadows cast from outside the frame, no glow halos (the game
+> adds bloom), no perspective, no text. The left edge must continue seamlessly into the right edge.
+> Style: Tron-like, clean hard-surface, game texture.
+
+Also deliver a second version of each with every cyan element pure black (`grid-wall-01-dark.png` etc.):
+the game uses the pair as base colour and emissive mask, so the glow colour can follow the rival's
+palette.
+
+### 12. Arena floor plate (2 images, `grid-floor-01.png`, `-02.png`, 1024 x 1024, tiles both ways)
+
+Reference: the "FLOOR MATERIAL DETAIL" panel. The grid lines are NOT in this image; the game draws them.
+
+> A straight-down, flat view of a dark polished architectural composite floor, filling the frame and
+> tiling seamlessly on all four edges: very dark blue-black (#0B1A33 to #102647), divided into four
+> large square plates by thin dark seams with a slight bevel, subtle surface variation and a faint
+> brushed grain, a few hairline scratches and faint lighter patches as if lightly worn, no grid lines,
+> no cyan, no reflections painted in, no text, even flat lighting. Style: clean hard-surface, game texture.
+
+Also deliver a greyscale roughness map for each (`grid-floor-01-rough.png`): white where the surface is
+matte (seams, scratches, worn patches), near-black where it is polished.
+
+### 13. Arena skyline strip with the spire (1 image, `grid-skyline.png`, 4096 x 1024, edges wrap, transparent above)
+
+Reference: the "CITY BACKGROUND" panel. Replaces the far data towers.
+
+> A wide panoramic skyline of a dark futuristic city at night seen from ground level, silhouettes only in
+> deep blue-black (#0A1C38), with thin vertical cyan (#59D9FF) light strips on the taller towers and a few
+> cyan beams rising into the sky; one dominant central spire about twice the height of the rest, a thin
+> glowing halo ring around it at two thirds of its height; everything above the skyline fully transparent
+> (alpha), no clouds, no ground, no text, no lens flare, even lighting. The left edge must continue
+> seamlessly into the right edge. Style: Tron-like, clean hard-surface, game texture.
+
 ## What the code does with each
 
 | Asset | Where it lands |
