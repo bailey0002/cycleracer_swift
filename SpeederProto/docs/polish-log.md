@@ -728,3 +728,8 @@ windows?" as a modal after any crash, which blocks the main thread in a headless
 `-ApplePersistenceIgnoreState YES`); and RealityKit stops rendering, so no scene updates and no frames, when the
 display sleeps (the script wraps the run in `caffeinate -d -u`). `SPEEDER_CHECK_NAN=1` walks the world for
 NaN transforms and traces the frame loop once a second, the aid that separated the two.
+
+Follow-up (4 Oct 2026): the arena chase camera now holds the round-start framing Mark picked from
+`p18/ramp/frame-1.6`: 9.6 m back and 4.3 m up (was 6.4 / 2.7), the look target 7 m ahead (was 5), lens 62
+(was 60), same speed and kick terms. The rival, the ramps and the walls stay in frame around the rider
+(`p18/cam/frame-3`, `frame-5`).
