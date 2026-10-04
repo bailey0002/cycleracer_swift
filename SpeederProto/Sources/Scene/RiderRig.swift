@@ -113,6 +113,27 @@ final class RiderRig {
         return l > 1e-5 ? v / l : fallback
     }
 
+    /// The Grid lights nothing but its own lines, so a PBR rider goes black there. Light the rider from
+    /// within: the base colour texture doubles as the emissive map (the Tron suit look). 0 restores the
+    /// plain materials.
+    func selfLight(_ intensity: Float) {
+        guard var m = model.model else { return }
+        var out: [any Material] = []
+        for mat in m.materials {
+            guard var pbm = mat as? PhysicallyBasedMaterial else { out.append(mat); continue }
+            if intensity > 0, let tex = pbm.baseColor.texture {
+                pbm.emissiveColor = .init(color: .black, texture: tex)       // .black: the colour would add to the texture
+                pbm.emissiveIntensity = intensity
+            } else {
+                pbm.emissiveColor = .init(color: .black)
+                pbm.emissiveIntensity = 0
+            }
+            out.append(pbm)
+        }
+        m.materials = out
+        model.model = m
+    }
+
     // MARK: - Pose authoring
 
     func beginPose() {

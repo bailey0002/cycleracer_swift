@@ -25,6 +25,8 @@ final class SpeederController {
     var cameraLift: SIMD2<Float> = .zero
     /// The rider's handling multipliers (steer, climb, boost, hull); neutral for the speeder.
     private(set) var handling = RiderHandling.neutral
+    /// A soft light at the rider's chest for worlds with no ambient (The Grid); off elsewhere.
+    private let riderLight = PointLight()
     let engineLight = PointLight()
     let underLight = PointLight()
     private let holder = Entity()
@@ -61,7 +63,8 @@ final class SpeederController {
     let restHeight: Float = 1.05
     let scale: Float = 2.0
 
-    static func load(materials: SceneMaterials, kind: VehicleKind = .current) async throws -> SpeederController {
+    /// `rider` overrides the chosen rider (the arena rival rides a board with another face).
+    static func load(materials: SceneMaterials, kind: VehicleKind = .current, rider override: RiderProfile? = nil) async throws -> SpeederController {
         func entity(_ name: String) async throws -> Entity {
             guard let url = Bundle.main.url(forResource: name, withExtension: "usdz") else {
                 throw NSError(domain: "Speeder", code: 1, userInfo: [NSLocalizedDescriptionKey: "\(name).usdz missing from bundle"])
@@ -72,7 +75,7 @@ final class SpeederController {
         case .speeder:
             return SpeederController(model: try await entity("Speeder"), materials: materials)
         case .board:
-            let profile = Roster.current()
+            let profile = override ?? Roster.current()
             let c = SpeederController(board: try await entity("Board"), rider: try await entity(profile.asset), materials: materials)
             c.handling = profile.handling
             print("Board: rider \(profile.name) (\(profile.asset))")
@@ -206,6 +209,12 @@ final class SpeederController {
         rearZ = boardLength * 0.5 * big
         let deckWidth = b2.extents.x * big, deckThickness = b2.extents.y * big
 
+        riderLight.light.color = .rgb(SIMD3(0.75, 0.95, 1.0))
+        riderLight.light.intensity = 5000
+        riderLight.light.attenuationRadius = 3.2
+        riderLight.position = [0.3, -deckDrop + 1.4, 0]
+        riderLight.isEnabled = false
+        root.addChild(riderLight)
         if let rig = RiderRig(entity: riderModel) {
             let target: Float = 1.75
             if rig.height > 0.5 { rig.root.scale = SIMD3<Float>(repeating: target / rig.height) }
@@ -311,6 +320,12 @@ final class SpeederController {
         if p >= 1 { trick = nil; trickLandedNow = true }
         let rot = t == .spin ? simd_quatf(angle: angle, axis: [0, 1, 0]) : simd_quatf(angle: angle, axis: [0, 0, 1])
         return (rot, air * (t == .spin ? 0.9 : 1.2), air)
+    }
+
+    /// The Grid: a self-lit suit and a chest light so the rider reads against the black arena.
+    func setArenaLook(_ on: Bool) {
+        rider?.selfLight(on ? 0.85 : 0)
+        riderLight.isEnabled = on && rider != nil
     }
 
     func setParticles(_ on: Bool) { trail?.isEnabled = on }

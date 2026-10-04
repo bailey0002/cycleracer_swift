@@ -390,8 +390,12 @@ final class GameController: ObservableObject {
                 arena.rumble = { [weak self] i, s in self?.gamepad.rumble(intensity: i, sharpness: s) }
                 worldAnchor.addChild(arena.root)
                 self.arena = arena
-                let rival = try await SpeederController.load(materials: materials, kind: .speeder)   // the rival rides a cycle whatever the player picked
+                // the rival is one of the other riders on a board (KADE Jonah, ORIN Dominic, SABLE Mira, VESS Cal), never the player's face
+                let rivalName = missionActive ? (missions.current.rival?.name ?? arena.rival.name) : arena.rival.name
+                let rival = try await SpeederController.load(materials: materials, kind: .board, rider: Self.rivalRider(for: rivalName))
                 arena.attachOpponent(rival)
+                speeder.setArenaLook(true)
+                rival.setArenaLook(true)
             } else {
                 let program = missionActive ? TrackProgram(blocks: missions.current.blocks) : TrackProgram()
                 let world = WorldScroller(materials: materials, settings: settings, program: program)
@@ -1140,6 +1144,14 @@ final class GameController: ObservableObject {
     }
 
     /// Accept the briefing or continue past a result (also called by the HUD tap).
+    /// The rider a Grid rival wears: by name, skipping the player's own.
+    static func rivalRider(for name: String) -> RiderProfile {
+        let map = ["KADE": "dude1", "ORIN": "dude2", "SABLE": "girl1", "VESS": "cal"]
+        let mine = Roster.current().id
+        if let id = map[name], id != mine, let r = Roster.all.first(where: { $0.id == id }) { return r }
+        return Roster.all.first { $0.id != mine } ?? Roster.all[0]
+    }
+
     /// The free-play run card is done: the road moves (the corridor) or the match starts (The Grid).
     func dismissRunCard() {
         guard runCardUp else { return }

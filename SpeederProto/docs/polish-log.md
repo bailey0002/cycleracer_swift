@@ -652,3 +652,28 @@ in a 0.38 m cyan sheath with a 0.32 m head sphere, a 2.6 m halo, a denser trail 
 Late Too Late, Too Long; kerb's AAC conversions) join First Place and Too Late in the run playlist, which is
 shuffled at launch and reshuffled each time it wraps (never opening with the song that just ended). Hideaway stays
 the menu bed. Seven tracks, 30 MB.
+
+## The Grid: rider visibility, board rivals, a first depth pass, then a stop (3 Oct 2026)
+
+Mark's three items against his ChatGPT art-direction target (`docs/reference/grid-arena-target.png`, the
+component breakdown `grid-arena-breakdown.png`). Captures in `Captures/polish/p17/`.
+- **The rider was black in The Grid**: the arena has no ambient light beyond its own lines, so a PBR rider
+  went to silhouette. `RiderRig.selfLight(_:)` uses the base-colour texture as the emissive map (the Tron suit
+  look) and `SpeederController.setArenaLook` adds a soft chest light; both on for the player and the rival in
+  the arena only (`p17/chase3/frame-2.2`: Cal reads against the floor).
+- **The rival rides a board** with another rider's face (`GameController.rivalRider(for:)`: KADE Jonah, ORIN
+  Dominic, SABLE Mira, VESS Cal; never the player's own), through `SpeederController.load(..., rider:)`.
+- **Depth, first pass**: charcoal floor plates with seams and grain in the base map, lines at 0.38 / 0.85,
+  roughness 0.42 and near-zero metallic (a metallic floor mirrored the horizon band and went navy), walls to
+  16 m and 3 m thick with buttress columns every 12 m (dark face, vertical strip, cap) and a mid trim line, a
+  lifted grey-teal frame tone on the slab so it has a top and a bottom, a nearer ring of low blocks for mid
+  depth, a landmark spire past the north wall (three tiers, lit core, halo ring, beam), bloom to level 0, the
+  environment map's zenith wash and horizon band cut to a third, fog max 0.55, haze colour darker.
+
+**Stopped here on Mark's direction** (relayed from chat): the result captures the concept, not the material
+quality. The gap is at the component level, not the arena: a flat plane with an emissive grid and box walls
+cannot reach the reference's panel seams, bevels, recessed channels and rough reflections. Next is a
+component test (one 4 m wall module + a 20 x 20 m floor stage, camera at 1.2 m, three-quarter view, black
+environment) with the geometry from Blender (a deterministic Python script -> USDZ, as the riders already
+are), Swift keeping the grid shader, placement, trails and gameplay. Mark offered isolated reference sheets
+for the wall and the floor; the stage waits for them.

@@ -9,7 +9,7 @@ import simd
 final class ArenaWorld {
     let root = Entity()
     let halfSize: Float
-    let wallHeight: Float = 11
+    let wallHeight: Float = 16        // heavy architecture: was 11 (3 Oct 2026)
     private var reflections: [Entity] = []
     private let towerGroup = Entity()
     let terrain: ArenaTerrain
@@ -49,16 +49,37 @@ final class ArenaWorld {
             holder.orientation = simd_quatf(angle: Float(side) * .pi / 2, axis: [0, 1, 0])
             var wallMat = materials.gridWall ?? materials.barrier
             wallMat.textureCoordinateTransform = .init(offset: .zero, scale: SIMD2(size / 6, 1), rotation: 0)
-            let slab = ModelEntity(mesh: .generateBox(width: size + 2, height: wallHeight, depth: 1.0), materials: [wallMat])
-            slab.position = [0, wallHeight / 2, -halfSize - 0.5]
+            let slab = ModelEntity(mesh: .generateBox(width: size + 4, height: wallHeight, depth: 3.0), materials: [wallMat])
+            slab.position = [0, wallHeight / 2, -halfSize - 1.5]
             holder.addChild(slab)
-            let rail = ModelEntity(mesh: .generateBox(size: [size + 2, 0.18, 1.1]), materials: [railMat])
-            rail.position = [0, wallHeight + 0.09, -halfSize - 0.5]
+            let rail = ModelEntity(mesh: .generateBox(size: [size + 4, 0.22, 3.2]), materials: [railMat])
+            rail.position = [0, wallHeight + 0.11, -halfSize - 1.5]
             holder.addChild(rail)
             let base = ModelEntity(mesh: .generateBox(size: [size + 2, 0.08, 0.14]), materials: [baseMat])
             base.position = [0, 0.04, -halfSize + 0.07]
             holder.addChild(base)
-            let refl = ModelEntity(mesh: .generatePlane(width: size, depth: 7), materials: [materials.reflection(accent, opacity: 0.30)])
+            // heavy architecture (3 Oct 2026): buttress columns every 12 m, each with a recessed dark face, a
+            // vertical emissive strip and a cap; a mid-height trim line runs the wall between them
+            let colMat = materials.barrier
+            let stripMat = materials.neon(lit(0.1), intensity: 3.2)
+            let trimMat = materials.neon(accent * 0.8, intensity: 2.4)
+            let columns = Int(size / 12)
+            for c in 0...columns {
+                let x = -halfSize + Float(c) * (size / Float(columns))
+                let col = ModelEntity(mesh: .generateBox(size: [2.4, wallHeight + 1.6, 1.6]), materials: [wallMat])
+                col.position = [x, (wallHeight + 1.6) / 2, -halfSize + 0.3]
+                holder.addChild(col)
+                let strip = ModelEntity(mesh: .generateBox(size: [0.14, wallHeight + 1.2, 0.08]), materials: [stripMat])
+                strip.position = [x, (wallHeight + 1.2) / 2, -halfSize + 1.12]
+                holder.addChild(strip)
+                let cap = ModelEntity(mesh: .generateBox(size: [2.2, 0.3, 2.0]), materials: [stripMat])
+                cap.position = [x, wallHeight + 1.75, -halfSize + 0.3]
+                holder.addChild(cap)
+            }
+            let trim = ModelEntity(mesh: .generateBox(size: [size + 2, 0.06, 0.1]), materials: [trimMat])
+            trim.position = [0, wallHeight * 0.38, -halfSize + 0.06]
+            holder.addChild(trim)
+            let refl = ModelEntity(mesh: .generatePlane(width: size, depth: 7), materials: [materials.reflection(accent, opacity: 0.22)])
             refl.position = [0, 0.02, -halfSize + 3.6]
             refl.orientation = simd_quatf(angle: .pi / 2, axis: [0, 1, 0])
             holder.addChild(refl)
@@ -93,6 +114,43 @@ final class ArenaWorld {
             let e = ModelEntity(mesh: .generateBox(size: [0.8, h, 0.8]), materials: [edgeMat])
             e.position = [w / 2, 0, w / 2]
             t.addChild(e)
+        }
+        // a nearer ring of lower blocks for mid-depth (the far towers alone read as a flat backdrop)
+        for i in 0..<16 {
+            let a = Float(i) / 16 * 2 * .pi + 0.1 + rng.float(-0.1, 0.1)
+            let r = halfSize + rng.float(40, 95)
+            let w = rng.float(8, 20), h = rng.float(14, 46)
+            let t = ModelEntity(mesh: .generateBox(width: w, height: h, depth: w), materials: [materials.barrier])
+            t.position = [cos(a) * r, h / 2, sin(a) * r]
+            towerGroup.addChild(t)
+            let e = ModelEntity(mesh: .generateBox(size: [0.5, h * 0.9, 0.5]), materials: [edgeMat])
+            e.position = [-w / 2, 0, w / 2]
+            t.addChild(e)
+        }
+        // the landmark: one spire past the north wall with a lit core, a halo ring at two thirds and a beam
+        do {
+            let spireMat = materials.barrier
+            let coreMat = materials.neon(lit(0.2), intensity: 3.0)
+            let spire = Entity()
+            spire.position = [20, 0, -(halfSize + 300)]
+            for (w, h) in [(Float(34), Float(120)), (22, 210), (12, 290)] {
+                let seg = ModelEntity(mesh: .generateBox(width: w, height: h, depth: w), materials: [spireMat])
+                seg.position = [0, h / 2, 0]
+                spire.addChild(seg)
+            }
+            let core = ModelEntity(mesh: .generateBox(size: [1.6, 300, 1.6]), materials: [coreMat])
+            core.position = [6.5, 150, 6.5]
+            spire.addChild(core)
+            if let ring = try? Meshes.tube(radius: 48, length: 3.0, segments: 64, uRepeat: 1, vRepeat: 1) {
+                let halo = ModelEntity(mesh: ring, materials: [coreMat])
+                halo.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
+                halo.position = [0, 196, 0]
+                spire.addChild(halo)
+            }
+            let beam = ModelEntity(mesh: .generateBox(size: [0.6, 400, 0.6]), materials: [materials.glow(lit(0.3), opacity: 0.35)])
+            beam.position = [0, 290 + 200, 0]
+            spire.addChild(beam)
+            towerGroup.addChild(spire)
         }
         root.addChild(towerGroup)
         if let bowl = materials.artBowl {
