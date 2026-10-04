@@ -692,3 +692,14 @@ on four planes 170 m past the walls, replacing the far 3D towers and spire. Fram
 lacks them (the first run loaded nothing). Owed: the full 1024 px panels Mark requested (drop-in, same
 names), a `grid-floor-01-rough.png` if GPT delivers one, a crowd strip, and the bloom / haze pass over the
 new materials on the phone.
+
+Follow-up (3 Oct 2026, night): the second level as dark glass. The lime decks, ramps and hazard walls were the
+loudest thing left once the arena went teal. The static hazard trail (rails, ramp sides, hazards, column
+collars) now renders as smoked glass in `trailSurface` (Shaders.metal, `isStatic` when the custom parameter's
+head is the 1e6 marker): a near-black translucent body, the strand's colour only as a crisp rim along the top
+edge and a faint base line, the glow hugging the rim. The deck and ramp surfaces are a translucent dark PBR
+(opacity 0.62, roughness 0.12, the floor grid as a faint emissive), the slabs smoked at 0.5, lime edge bands
+thinned to 0.18 m, the under-deck lamps gone (they read through the glass as clutter), columns with one lit
+edge. The deck rose from 9 m to 14 m (`ArenaTerrain.garage`), the ramps from 40 m to 62 m to keep the slope.
+Frames `p17/glass-chase`, `glass-side`, `glass2`. Mark's call pending on the balance: the first pass at 0.42 made
+the ramps read as two lines only.

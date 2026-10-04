@@ -258,17 +258,26 @@ final class ArenaWorld {
     /// Parking-garage levels: deck floors with a dark slab underneath and an edge strip, inclined
     /// ramps in the same grid material, and columns. Rails are drawn by the hazard trail renderer.
     private func buildDecks(materials: SceneMaterials) {
-        let bandMat = materials.neon(Theme.gridAccent, intensity: 3.5)
-        // decks and ramps read as lighter steel slabs with a coarser grid so they separate from the ground
-        var deckMat = materials.gridFloor ?? materials.road
-        deckMat.baseColor = .init(tint: .rgb(0.42, 0.50, 0.60), texture: deckMat.baseColor.texture)
-        deckMat.emissiveIntensity = 1.6
-        deckMat.roughness = .init(floatLiteral: 0.35)
+        // the second level is dark glass (3 Oct 2026): translucent deck and ramp surfaces with a faint grid, a
+        // thin smoked slab, and a lime edge band; the main floor reads through it
+        let bandMat = materials.neon(ArenaController.hazardColor, intensity: 2.4)
+        var deckMat = PhysicallyBasedMaterial()
+        deckMat.baseColor = .init(tint: .rgb(0.05, 0.09, 0.12))
+        if let fe = materials.gridFloor?.emissiveColor.texture {
+            deckMat.emissiveColor = .init(color: .black, texture: fe)
+            deckMat.emissiveIntensity = 1.1
+        }
+        deckMat.roughness = .init(floatLiteral: 0.12)
+        deckMat.metallic = .init(floatLiteral: 0.0)
+        deckMat.specular = .init(floatLiteral: 1.0)
+        deckMat.blending = .transparent(opacity: .init(floatLiteral: 0.62))
+        deckMat.faceCulling = .none
         var slabMat = PhysicallyBasedMaterial()
-        slabMat.baseColor = .init(tint: .rgb(0.16, 0.20, 0.26))
-        slabMat.roughness = .init(floatLiteral: 0.6)
-        slabMat.metallic = .init(floatLiteral: 0.3)
-        let thick: Float = 1.2
+        slabMat.baseColor = .init(tint: .rgb(0.02, 0.04, 0.06))
+        slabMat.roughness = .init(floatLiteral: 0.2)
+        slabMat.metallic = .init(floatLiteral: 0.0)
+        slabMat.blending = .transparent(opacity: .init(floatLiteral: 0.5))
+        let thick: Float = 0.5
         for d in terrain.decks {
             let w = d.max.x - d.min.x, l = d.max.y - d.min.y
             let c = (d.min + d.max) / 2
@@ -282,13 +291,13 @@ final class ArenaWorld {
             root.addChild(slab)
             // bright band around the slab face
             for (sx, sz, ex, ez) in [(0, -1, w, 0.2), (0, 1, w, 0.2), (-1, 0, 0.2, l), (1, 0, 0.2, l)] as [(Float, Float, Float, Float)] {
-                let e = ModelEntity(mesh: .generateBox(size: [ex + 0.2, 0.45, ez + 0.2]), materials: [bandMat])
-                e.position = [c.x + sx * w / 2, d.height - 0.35, c.y + sz * l / 2]
+                let e = ModelEntity(mesh: .generateBox(size: [ex + 0.2, 0.18, ez + 0.2]), materials: [bandMat])
+                e.position = [c.x + sx * w / 2, d.height - 0.2, c.y + sz * l / 2]
                 root.addChild(e)
             }
             // ceiling lights under the deck
             let lampMat = materials.neon(Theme.gridAccent * 0.5 + SIMD3(repeating: 0.5), intensity: 2.2)
-            for k in stride(from: d.min.y + 10, to: d.max.y, by: 20) {
+            for k in stride(from: d.min.y + 10, to: d.max.y, by: 20) where false {
                 let lamp = ModelEntity(mesh: .generateBox(size: [w * 0.9, 0.12, 0.3]), materials: [lampMat])
                 lamp.position = [c.x, d.height - thick - 0.1, k]
                 root.addChild(lamp)
@@ -313,8 +322,8 @@ final class ArenaWorld {
             slab.position = [0, -thick / 2, 0]
             holder.addChild(slab)
             for x in [-w / 2, w / 2] {
-                let e = ModelEntity(mesh: .generateBox(size: [0.2, 0.45, hyp]), materials: [bandMat])
-                e.position = [x, -0.35, 0]
+                let e = ModelEntity(mesh: .generateBox(size: [0.2, 0.18, hyp]), materials: [bandMat])
+                e.position = [x, -0.2, 0]
                 holder.addChild(e)
             }
             root.addChild(holder)
@@ -323,6 +332,10 @@ final class ArenaWorld {
             let col = ModelEntity(mesh: .generateBox(size: [1.6, h, 1.6]), materials: [slabMat])
             col.position = [p.x, h / 2, p.y]
             root.addChild(col)
+            // one lit edge so the column reads
+            let edge = ModelEntity(mesh: .generateBox(size: [0.12, h, 0.12]), materials: [bandMat])
+            edge.position = [p.x + 0.8, h / 2, p.y + 0.8]
+            root.addChild(edge)
         }
     }
 
