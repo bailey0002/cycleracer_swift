@@ -13,20 +13,45 @@ struct ArenaTerrain {
         var name: String
         func contains(_ p: SIMD2<Float>) -> Bool { p.x >= min.x && p.x <= max.x && p.y >= min.y && p.y <= max.y }
     }
-    /// Rectangle whose height varies linearly along z from `z0` (height `h0`) to `z1` (height `h1`).
+    /// A curved ramp (4 Oct 2026): a lane of width `width` along a circular arc about `centre` with
+    /// centreline radius `radius`, from `a0` to `a1` (radians, signed sweep), rising linearly from
+    /// `h0` to `h1` along the sweep. Parking-garage helix quarter / half turns.
     struct Ramp {
-        var xMin: Float
-        var xMax: Float
-        var z0: Float
+        var centre: SIMD2<Float>
+        var radius: Float
+        var width: Float
+        var a0: Float
+        var a1: Float
         var h0: Float
-        var z1: Float
         var h1: Float
-        func contains(_ p: SIMD2<Float>) -> Bool {
-            p.x >= xMin && p.x <= xMax && p.y >= Swift.min(z0, z1) && p.y <= Swift.max(z0, z1)
+        /// 0 ... 1 along the sweep, or nil when the point is off the lane.
+        func fraction(_ p: SIMD2<Float>) -> Float? {
+            let d = p - centre
+            let r = simd_length(d)
+            guard abs(r - radius) <= width / 2 + 0.3 else { return nil }
+            var a = atan2(d.y, d.x)
+            // unwrap into the sweep's direction
+            let sweep = a1 - a0
+            var rel = a - a0
+            while rel > .pi { rel -= 2 * .pi }
+            while rel < -.pi { rel += 2 * .pi }
+            if sweep >= 0 { if rel < -0.02 { rel += 2 * .pi } } else { if rel > 0.02 { rel -= 2 * .pi } }
+            let t = rel / sweep
+            a = 0
+            guard t >= -0.01, t <= 1.01 else { return nil }
+            return max(0, min(1, t))
         }
-        func height(atZ z: Float) -> Float { h0 + (h1 - h0) * (z - z0) / (z1 - z0) }
-        var length: Float { abs(z1 - z0) }
+        func contains(_ p: SIMD2<Float>) -> Bool { fraction(p) != nil }
+        func height(at p: SIMD2<Float>) -> Float { h0 + (h1 - h0) * (fraction(p) ?? 0) }
+        func point(_ t: Float, offset: Float = 0) -> SIMD3<Float> {
+            let a = a0 + (a1 - a0) * t
+            let r = radius + offset
+            return SIMD3(centre.x + cos(a) * r, h0 + (h1 - h0) * t, centre.y + sin(a) * r)
+        }
+        var length: Float { abs(a1 - a0) * radius }
         var rise: Float { h1 - h0 }
+        var bottom: SIMD3<Float> { point(0) }
+        var top: SIMD3<Float> { point(1) }
     }
     /// A lime wall strand: points with heights, the wall height above them, and whether it is a
     /// low rail (deck edge) or a full hazard wall.
@@ -48,64 +73,62 @@ struct ArenaTerrain {
         var h: Float = 0
         for d in decks where d.contains(p) && d.height <= limit { h = max(h, d.height) }
         for r in ramps where r.contains(p) {
-            let rh = r.height(atZ: p.y)
+            let rh = r.height(at: p)
             if rh <= limit { h = max(h, rh) }
         }
         return h
     }
 
     func deckName(at p: SIMD2<Float>, y: Float) -> String {
-        for r in ramps where r.contains(p) && abs(r.height(atZ: p.y) - y) < 1.5 { return "ramp" }
+        for r in ramps where r.contains(p) && abs(r.height(at: p) - y) < 1.5 { return "ramp" }
         for d in decks where d.contains(p) && abs(d.height - y) < 1.5 { return d.name }
         return "ground"
     }
 
     // MARK: - Layout
 
-    /// Two levels like a parking garage: an upper deck over the north half of the arena with an
-    /// on-ramp and an off-ramp on its south edge, rails everywhere a bike could drop off, columns
-    /// under the deck, and the four lime hazard walls on the ground.
+    /// The garage (4 Oct 2026): a wide open floor, one deck high along the north wall on two corner
+    /// columns, and two half-turn ramps that start on the west and east walls and curve up onto the
+    /// deck's ends, so nothing crowds the floor. Four red hazard walls stay on the ground.
     static func garage(halfSize: Float) -> ArenaTerrain {
         var t = ArenaTerrain()
-        let deckH: Float = 14                     // raised from 9 (3 Oct 2026): the second level clears the sightline
-        let deckMin = SIMD2<Float>(-60, -90), deckMax = SIMD2<Float>(60, -10)
+        let deckH: Float = 22
+        let deckMin = SIMD2<Float>(-96, -halfSize + 10), deckMax = SIMD2<Float>(96, -78)
         t.decks = [Deck(min: deckMin, max: deckMax, height: deckH, name: "upper deck")]
-        let rampLen: Float = 62                   // same slope as before
-        let west = Ramp(xMin: -60, xMax: -44, z0: deckMax.y + rampLen, h0: 0, z1: deckMax.y, h1: deckH)
-        let east = Ramp(xMin: 44, xMax: 60, z0: deckMax.y + rampLen, h0: 0, z1: deckMax.y, h1: deckH)
+        let laneW: Float = 16, R: Float = 44
+        // west: along the west wall heading north, curving east onto the deck's west edge
+        let west = Ramp(centre: SIMD2(deckMin.x, -60), radius: R, width: laneW, a0: .pi, a1: .pi * 1.5, h0: 0, h1: deckH)
+        // east: mirror, heading north along the east wall, curving west
+        let east = Ramp(centre: SIMD2(deckMax.x, -60), radius: R, width: laneW, a0: 0, a1: -.pi * 0.5, h0: 0, h1: deckH)
         t.ramps = [west, east]
         let rail: Float = 1.3
         func pt(_ x: Float, _ z: Float, _ y: Float) -> SIMD3<Float> { SIMD3(x, y, z) }
-        // deck edges (south edge only between the ramps)
-        t.strands.append(Strand(points: [pt(-44, deckMax.y, deckH), pt(44, deckMax.y, deckH)], wallHeight: rail))
+        // deck edges: south and north full length; west and east except where the ramps land
+        let landZ = -60 - R      // the ramps' top at angle 270 deg: z = centre.y - R
+        t.strands.append(Strand(points: [pt(deckMin.x, deckMax.y, deckH), pt(deckMax.x, deckMax.y, deckH)], wallHeight: rail))
         t.strands.append(Strand(points: [pt(deckMin.x, deckMin.y, deckH), pt(deckMax.x, deckMin.y, deckH)], wallHeight: rail))
-        t.strands.append(Strand(points: [pt(deckMin.x, deckMin.y, deckH), pt(deckMin.x, deckMax.y, deckH)], wallHeight: rail))
-        t.strands.append(Strand(points: [pt(deckMax.x, deckMin.y, deckH), pt(deckMax.x, deckMax.y, deckH)], wallHeight: rail))
-        // ramp sides, split so each segment's vertical band stays tight
+        for x in [deckMin.x, deckMax.x] {
+            t.strands.append(Strand(points: [pt(x, deckMin.y, deckH), pt(x, landZ - laneW / 2, deckH)], wallHeight: rail))
+            t.strands.append(Strand(points: [pt(x, landZ + laneW / 2, deckH), pt(x, deckMax.y, deckH)], wallHeight: rail))
+        }
+        // ramp sides: sampled arcs, inner and outer edge, as polylines with heights
         for r in t.ramps {
-            for x in [r.xMin, r.xMax] {
+            for side in [-laneW / 2, laneW / 2] {
                 var pts: [SIMD3<Float>] = []
-                for i in 0...5 {
-                    let z = r.z0 + (r.z1 - r.z0) * Float(i) / 5
-                    pts.append(pt(x, z, r.height(atZ: z)))
-                }
+                for i in 0...16 { pts.append(r.point(Float(i) / 16, offset: side)) }
                 t.strands.append(Strand(points: pts, wallHeight: rail))
             }
         }
-        // ground hazards (as before)
-        let q = halfSize * 0.42
-        t.strands.append(Strand(points: [pt(-q, -q * 0.3, 0), pt(-q, q * 0.3, 0)], wallHeight: 3))
-        t.strands.append(Strand(points: [pt(q, -q * 0.3, 0), pt(q, q * 0.3, 0)], wallHeight: 3))
+        // ground hazards
+        let q = halfSize * 0.38
+        t.strands.append(Strand(points: [pt(-q, -q * 0.3 + 20, 0), pt(-q, q * 0.3 + 20, 0)], wallHeight: 3))
+        t.strands.append(Strand(points: [pt(q, -q * 0.3 + 20, 0), pt(q, q * 0.3 + 20, 0)], wallHeight: 3))
         t.strands.append(Strand(points: [pt(-q * 0.3, q, 0), pt(q * 0.3, q, 0)], wallHeight: 3))
-        t.strands.append(Strand(points: [pt(-q * 0.3, -q, 0), pt(q * 0.3, -q, 0)], wallHeight: 3))
-        // columns under the deck: a grid, skipping the ramp lanes
-        for x in stride(from: Float(-60), through: 60, by: 40) {
-            for z in stride(from: Float(-90), through: -10, by: 40) {
-                t.columns.append((SIMD2(x, z), deckH))
-            }
-        }
+        t.strands.append(Strand(points: [pt(-q * 0.3, -q * 0.35, 0), pt(q * 0.3, -q * 0.35, 0)], wallHeight: 3))
+        // two support columns at the deck's back corners
+        for x in [deckMin.x + 4, deckMax.x - 4] { t.columns.append((SIMD2(x, deckMin.y + 4), deckH)) }
         for c in t.columns {
-            let s: Float = 0.8
+            let s: Float = 1.6
             t.strands.append(Strand(points: [pt(c.0.x - s, c.0.y - s, 0), pt(c.0.x + s, c.0.y - s, 0), pt(c.0.x + s, c.0.y + s, 0), pt(c.0.x - s, c.0.y + s, 0), pt(c.0.x - s, c.0.y - s, 0)], wallHeight: c.1))
         }
         return t

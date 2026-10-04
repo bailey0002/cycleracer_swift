@@ -52,9 +52,11 @@ void trailSurface(realitykit::surface_parameters params)
         if (part < 0.5) {
             float rim = smoothstep(0.90, 1.0, v);
             float base = smoothstep(0.10, 0.0, v) * 0.35;
-            float3 glass = col * 0.10 + float3(0.015, 0.035, 0.045);
+            // solid smoked panel: a dark body you cannot see through much, a faint horizontal seam, the colour at the rim
+            float seam = 0.85 + 0.15 * smoothstep(0.0, 0.06, abs(v - 0.5));
+            float3 glass = (col * 0.14 + float3(0.02, 0.045, 0.06)) * seam;
             float3 c = mix(glass, col, rim + base);
-            float a = 0.42 + rim * 0.58 + base * 0.3;
+            float a = 0.84 + rim * 0.16;
             params.surface().set_emissive_color(half3(c * (0.9 + rim * 2.6 + base * 0.8)));
             params.surface().set_base_color(half3(0.0));
             params.surface().set_opacity(half(a));

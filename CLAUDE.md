@@ -143,6 +143,10 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   the ring switch); the soundtrack has its own timer so Hideaway starts under the splash. PR #5 merged 1 Oct 2026
   (master has the hoverboard + KERB: GALACTIC frame); audio + a three-agent review pass on branch `claude/audio`, PR #6
   (`docs/polish-log.md` "Follow-ups (2 Oct 2026)" lists the fixes: camera lift, rebuild re-queue, duel lines, etc.).
+- Garage relaid 4 Oct 2026 (branch `claude/garage`, `docs/polish-log.md` "The garage relaid", `Captures/polish/p18/`):
+  `ArenaTerrain.Ramp` is a circular arc (centre, radius, width, sweep, rise); the arena is 150 m half-size with a
+  22 m deck on two back-corner columns and two helix ramps from the west / east walls; static trail strands render
+  as solid smoked panels with a red rim; ramp pieces are glass tops over solid slabs with outer skirts.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
@@ -229,6 +233,11 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   and `SIMCTL_CHILD_<VAR>` passes env vars to `simctl launch`. `Captures/polish/simshot.sh` wraps
   that (delays from launch); the simulator covers ~25 m of track per wall second and scene time
   starts ~14 s after launch, later when the Mac is busy, so take several delays per scene.
+- Headless captures die silently in two ways, both handled by `capture.sh` since 4 Oct 2026: after any crash
+  macOS shows the "restore windows?" modal, which blocks the main thread (the script passes
+  `-ApplePersistenceIgnoreState YES`); and when the display sleeps RealityKit stops rendering, so no scene updates
+  and no frames (the script runs under `caffeinate -d -u`). `SPEEDER_CHECK_NAN=1` traces the frame loop and
+  checks every transform for NaN.
 - Captures run in parallel share the GPU: four Mac instances at once drop to 15-25 fps and scene
   time (fixed 60 Hz step) falls to a quarter of wall clock, so late capture times are missed. Run
   long arena logs one at a time.

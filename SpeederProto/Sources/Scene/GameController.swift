@@ -481,6 +481,18 @@ final class GameController: ObservableObject {
             curtainTarget = 0
             builtForJobs = missionActive
             worldReady = true
+            if ProcessInfo.processInfo.environment["SPEEDER_CHECK_NAN"] == "1" {
+                // capture aid: a NaN transform anywhere in the world stalls RealityKit's update loop silently
+                var bad = 0
+                func walk(_ e: Entity, _ path: String) {
+                    let t = e.transform
+                    let vals = [t.translation.x, t.translation.y, t.translation.z, t.scale.x, t.scale.y, t.scale.z, t.rotation.vector.x, t.rotation.vector.y, t.rotation.vector.z, t.rotation.vector.w]
+                    if vals.contains(where: { $0.isNaN || $0.isInfinite }) { bad += 1; if bad < 6 { print("NaN transform at \(path)/\(e.name): \(t)") } }
+                    for c in e.children { walk(c, path + "/" + e.name) }
+                }
+                walk(worldAnchor, "")
+                print("NaN check: \(bad) bad transforms")
+            }
             updateSub = arView.scene.subscribe(to: SceneEvents.Update.self) { [weak self] ev in
                 self?.update(dt: Float(ev.deltaTime))
             }
@@ -571,7 +583,9 @@ final class GameController: ObservableObject {
 
     // MARK: - Frame update
 
+    private var traceTicks = 0
     private func update(dt rawDt: Float) {
+        if ProcessInfo.processInfo.environment["SPEEDER_CHECK_NAN"] == "1" { traceTicks += 1; if traceTicks % 60 == 1 { print("trace: update tick \(traceTicks) speeder=\(speeder != nil) cam=\(cameraRig != nil) arena=\(arena != nil) screen=\(screen)") } }
         // the soundtrack runs on its own clock; the loop only steers it (before any early return, so The Grid gets it too)
         soundtrack.mood = screen == .game && !(missionActive && !missions.allowsMotion) ? .run : .menu
         soundtrack.held = simFrozen
@@ -1233,6 +1247,7 @@ final class GameController: ObservableObject {
     /// Arena frame: map input to cycle commands (with edge detection), run the arena,
     /// drive the spring camera, post uniforms and stats.
     private func updateArena(_ arena: ArenaController, dt: Float, rawDt: Float, input: InputState, cameraRig: CameraRig) {
+        if ProcessInfo.processInfo.environment["SPEEDER_CHECK_NAN"] == "1", traceTicks % 60 == 1 { print("trace: arena tick paused=\(arena.paused) state=\(arena.stateText) time=\(time)") }
         var cmd = CycleInput()
         var aiCmd: CycleInput? = nil
         if demoMode {
