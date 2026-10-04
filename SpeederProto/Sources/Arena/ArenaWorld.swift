@@ -135,11 +135,13 @@ final class ArenaWorld {
             // clears the walls (the far 3D towers and spire stay off when the strip is in)
             let dist = halfSize + 170, width = 2 * dist + 120
             let height = width / materials.gridSkylineAspect
+            // the city's base sits well above the wall line (a band of open sky between them reads as distance)
+            let lift = wallHeight + 14
             for i in 0..<4 {
                 let plane = ModelEntity(mesh: .generateBox(width: width, height: height, depth: 0.5), materials: [sky])
                 let holder = Entity()
                 holder.orientation = simd_quatf(angle: Float(i) * .pi / 2, axis: [0, 1, 0])
-                plane.position = [0, height * 0.46, -dist]
+                plane.position = [0, lift + height * 0.5, -dist]
                 holder.addChild(plane)
                 root.addChild(holder)
             }

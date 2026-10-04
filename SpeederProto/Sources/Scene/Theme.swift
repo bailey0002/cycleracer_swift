@@ -63,7 +63,7 @@ enum Theme: Int, CaseIterable {
         case 1: return SIMD3(1.0, 0.22, 0.26)
         case 2: return SIMD3(1.0, 0.64, 0.16)
         case 3: return SIMD3(0.66, 0.36, 1.0)
-        default: return SIMD3(0.28, 0.82, 1.0)
+        default: return SIMD3(0.16, 0.86, 0.78)      // deeper teal-green (was sky cyan 0.28, 0.82, 1.0; 3 Oct 2026)
         }
     }
     var fogDensityScale: Float { self == .sunsetCanyon ? 0.5 : 1.0 }

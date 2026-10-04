@@ -111,7 +111,9 @@ final class SceneMaterials {
             gridWall = wm
             if let sky = Art.image("grid-skyline") {
                 // the strip is on a black sky: key it out and lift the darks so the towers survive the haze
-                let tex = try Self.texture(Art.keyedBlack(sky, floor: 0.03, ramp: 0.08, lift: 2.5), .color)
+                // keyed off the black sky, and the bottom (the city's own ground reflection) faded out so the
+                // strip sits on open sky above the walls instead of floating with a water line
+                let tex = try Self.texture(Art.faded(Art.keyedBlack(sky, floor: 0.03, ramp: 0.08, lift: 2.5), top: 0.0, bottom: 0.88, fade: 0.14), .color)
                 gridSkylineAspect = Float(sky.width) / Float(sky.height)
                 var m = UnlitMaterial()
                 m.color = .init(tint: .rgb(SIMD3(0.7, 0.78, 0.84)), texture: .init(tex))
