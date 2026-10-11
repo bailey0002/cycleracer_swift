@@ -43,8 +43,10 @@ final class ArenaController {
 
     // colour roles: player cyan/white family, opponent orange/amber family, hazards lime
     /// The player's trail and derez colour: the livery (set by the game controller before a build).
-    nonisolated(unsafe) static var playerColor = SIMD3<Float>(0.12, 0.72, 1.0)
-    static let opponentColor = SIMD3<Float>(1.0, 0.42, 0.06)
+    // the two trails in the Grid's own hue family (Mark, 4 Oct 2026): the player a rich aqua, the rival a deep
+    // electric blue; both cool, both read as the same material as the arena, the hazards stay the red
+    nonisolated(unsafe) static var playerColor = SIMD3<Float>(0.30, 1.0, 0.82)
+    static let opponentColor = SIMD3<Float>(0.18, 0.50, 1.0)
     static let hazardColor = SIMD3<Float>(1.0, 0.18, 0.22)      // red (was lime; 3 Oct 2026: lime fought the teal arena)
     static let pickupColor = SIMD3<Float>(0.85, 0.7, 1.0)
 
@@ -152,7 +154,7 @@ final class ArenaController {
         self.materials = materials
         self.settings = settings
         playerVehicle = vehicle
-        world = ArenaWorld(materials: materials, halfSize: 110)
+        world = ArenaWorld(materials: materials, halfSize: Float(ProcessInfo.processInfo.environment["SPEEDER_ARENA_HALF"] ?? "") ?? 150)      // was 110 (4 Oct 2026: room for the helix ramps)
         root.addChild(world.root)
         trails = TrailSystem(halfSize: world.halfSize)
         let hazards = trails.addTrail(color: Self.hazardColor)
@@ -267,10 +269,11 @@ final class ArenaController {
         apply(settings)
         ai.pads = world.pads.filter { $0.boost }.map { $0.entity.position }
         ai.ramps = world.terrain.ramps.map { r in
-            let cx = (r.xMin + r.xMax) / 2
-            let (bz, tz) = r.h0 < r.h1 ? (r.z0, r.z1) : (r.z1, r.z0)
-            let dir: Float = tz > bz ? 1 : -1
-            return (bottom: SIMD3<Float>(cx, min(r.h0, r.h1), bz - dir * 6), top: SIMD3<Float>(cx, max(r.h0, r.h1), tz + dir * 8))
+            // approach a few metres before the arc's foot, aim a few metres past its top onto the deck
+            let b = r.point(0), tp = r.point(1)
+            let inDir = simd_normalize(SIMD2(r.point(0.05).x, r.point(0.05).z) - SIMD2(b.x, b.z))
+            let outDir = simd_normalize(SIMD2(tp.x, tp.z) - SIMD2(r.point(0.95).x, r.point(0.95).z))
+            return (bottom: SIMD3<Float>(b.x - inDir.x * 6, b.y, b.z - inDir.y * 6), top: SIMD3<Float>(tp.x + outDir.x * 8, tp.y, tp.z + outDir.y * 8))
         }
         if let name = ProcessInfo.processInfo.environment["SPEEDER_ARENA_RIVAL"], let r = Rival.named(name.uppercased()) { rival = r }
         applyRival()

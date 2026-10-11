@@ -114,7 +114,7 @@ struct MissionState: Equatable {
     // identity
     var callsign = Player.defaultCallsign
     var playerTitle = "ROOKIE"
-    var liveryName = "CYAN"
+    var liveryName = "AQUA"
     var liveryColor = SIMD3<Float>(0.12, 0.72, 1.0)
     /// The job's total distance (for the comms triggers).
     var distanceTotal: Float = 0

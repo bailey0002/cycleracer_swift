@@ -6,3 +6,33 @@ SpeederProto/build-*/
 .DS_Store
 SpeederProto/Captures/**/log.txt
 new_images_per_Art_Brief_*/
+
+# --- Workspace conventions (GS - GamenCtr, 2026-10-11) ---
+build/
+build-*/
+DerivedData/
+.build/
+xcuserdata/
+node_modules/
+.claude/settings.local.json
+
+# --- GOVERNANCE §5.8 baseline (templates/gitignore.template, v1.3) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*_secret_key
+.webui_secret_key
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+dist/
+.next/
+Intermediate/
+Saved/
+Thumbs.db
+desktop.ini
+~$*
