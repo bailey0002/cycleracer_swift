@@ -6,3 +6,12 @@ SpeederProto/build-*/
 .DS_Store
 SpeederProto/Captures/**/log.txt
 new_images_per_Art_Brief_*/
+
+# --- Workspace conventions (GS - GamenCtr, 2026-10-11) ---
+build/
+build-*/
+DerivedData/
+.build/
+xcuserdata/
+node_modules/
+.claude/settings.local.json

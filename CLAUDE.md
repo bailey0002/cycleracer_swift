@@ -257,3 +257,8 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Proceed at discretion, push builds to the phone, show captured frames, keep the README current.
 - Compare looks with aligned A/B frames (the variant sweep + `Captures/variants/` page pattern).
 - Standardise colours by role; obstacles are lime, rings red, road cyan, city warm (Neon City).
+
+## Workspace conventions (GS - GamenCtr, 2026-10-11)
+- `STATUS.md` (repo root) records this project's tier and where every file lives (GitHub, local-only, iCloud Dev-Cold). Update it whenever you add large git-ignored assets or move files out of the repo.
+- Build output goes only in `build/`, `build-device/`, or — when a running binary must not be replaced — `build-alt/`. Reuse them; do not create other `build-*` or `DerivedData` folders. Build folders are git-ignored and deleted by routine clean-up, so never keep anything you need inside one.
+- Do not rename or move this project folder: Claude's memory and session history are keyed to its absolute path. Workspace index and rules: `../_admin/INDEX.md`, `../_admin/WORKSPACE_PLAN.md`.
