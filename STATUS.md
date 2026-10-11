@@ -184,4 +184,4 @@ repo: https://github.com/bailey0002/cycleracer_swift
 - Home of the LightCycle/GridRunner line (both archived 2026-10-11).
 - `SpeederProto/Captures/` (~1.1 GB) is committed; keep new captures out of git or prune them — repo is ~1.3 GB (GitHub recommends < 1 GB).
 - Simulator pin: iPhone 16e CC7815D7-… on iOS 26.2 (CLAUDE.md, Captures/polish/simshot.sh). Keep that runtime until pins are migrated with the Xcode 27 release switch.
-- Workspace rules: ../_admin/WORKSPACE_PLAN.md · index: ../_admin/INDEX.md
+- Governance: grey-stratum-ops `GOVERNANCE.md` (v1.3+) · Mac inventory: grey-stratum-ops `docs/inventory/macbook-air.md`
