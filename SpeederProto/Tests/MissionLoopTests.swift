@@ -364,6 +364,33 @@ final class MissionLoopTests: XCTestCase {
 
     // MARK: - Balance (the table goes into docs/polish-log.md)
 
+    /// The narrative file is the source of every line: the first brief names the disc, the ending names the I/O Line,
+    /// the contacts' tables come through with their placeholders filled, and a missing key falls back to Swift.
+    func testNarrativeFileCarriesTheLines() {
+        XCTAssertNotNil(Narrative.file, "narrative.json must be in the bundle (xcodegen generate after adding resources)")
+        XCTAssertTrue(Mission.deliveries[0].brief.contains("disc"), "RELAY 01's brief names the disc")
+        XCTAssertTrue(Mission.deliveries[17].brief.contains("I/O Line"), "DUEL 04's brief names the I/O Line")
+        XCTAssertTrue(Mission.chapterIntro(3).contains("every route is owned"), "the chapter 3 card names the broken rule")
+        XCTAssertEqual(Mission.offers[0].line, Narrative.offerLine(0))
+        XCTAssertEqual(Mission.comms(contact: "VESS", kind: .delivery, trigger: .sectionAhead, section: "CONDUIT"), "CONDUIT ahead. Hold your line.")
+        XCTAssertEqual(Mission.comms(contact: "KADE", kind: .search, trigger: .midway), "Beacons count. Take the branch.")
+        let d = UserDefaults(suiteName: "narrative-test")!; d.removePersistentDomain(forName: "narrative-test")
+        var o = Debrief.Outcome(kind: .delivery); o.hits = 5
+        XCTAssertTrue(Debrief.reactive(contact: "VESS", outcome: o, defaults: d).contains("5"), "{hits} is filled")
+        XCTAssertEqual(Debrief.failure(contact: "ORIN", reason: "CAUGHT"), "Caught. Vess's drones do not miss twice.")
+        XCTAssertEqual(Debrief.rivalLine(rival: "KADE", event: .lostRoundBoxed, record: (0, 0), wins: 0, losses: 1), "Your own wall. I did not even turn.")
+        XCTAssertEqual(Debrief.role("SABLE"), "THE BUYER")
+        XCTAssertEqual(Debrief.role("NOBODY"), "CONTACT", "an unknown contact takes the * default")
+        XCTAssertFalse(Narrative.riderLines("girl1", "trick").isEmpty)
+        XCTAssertFalse(Narrative.boardLines("hit").isEmpty)
+        XCTAssertEqual(Mission.interlude(2).count, 3, "three lines from the shop between chapters")
+        // the interludes reach the log when a chapter opens
+        let runner = MissionRunner(defaults: d)
+        XCTAssertEqual(runner.phase, .chapter)
+        _ = runner.accept()
+        XCTAssertEqual(runner.messages.filter { $0.sender == Mission.interludeSender }.count, 3)
+    }
+
     func testArcBalanceTable() {
         var garage = Upgrades(); var garageCost = garage.items.map(\.price).reduce(0, +)
         garage.hull = 1; garage.boost = 1

@@ -703,3 +703,34 @@ thinned to 0.18 m, the under-deck lamps gone (they read through the glass as clu
 edge. The deck rose from 9 m to 14 m (`ArenaTerrain.garage`), the ramps from 40 m to 62 m to keep the slope.
 Frames `p17/glass-chase`, `glass-side`, `glass2`. Mark's call pending on the balance: the first pass at 0.42 made
 the ramps read as two lines only.
+
+## Step 1 of the R&D plan: the three nouns and the narrative file (17 Oct 2026, late)
+
+`assessment-2026-10-17-rd.md` §8 step 1, branch `claude/narrative`. Captures in `Captures/polish/p19/`.
+- **`Resources/narrative.json`** holds every line of story text: the 18 briefs and debriefs, the three side offers,
+  the chapter intros and the unseen sender, the contacts' comms (with `{section}`), the reactive lines (`{hits}`,
+  `{wins}`, `{losses}`), the branch acknowledgements, the failure lines, the taunts, the round lines, the roles, the
+  board's lines and the riders' lines. `Missions/Narrative.swift` loads it (`Narrative.file`) and every lookup
+  returns nil when a key is missing, so the Swift tables in `Mission.swift`, `Debrief.swift` and `MessageLog.swift`
+  stay as the fallback and the headless tests run either way. `SPEEDER_NARRATIVE=0` ignores the file (A / B).
+  New files in `Resources/` need `xcodegen generate`, as before.
+- **The three nouns** (report A's recipe: two props and one taboo). The packet is a **disc** ("a rider's route,
+  sealed: name, memory, the right to ride"; RELAY 01 is now FIRST DISC, every "packet" in the briefs, debriefs,
+  comms and failure lines follows). The finale rides the **I/O Line** ("the one route nobody owns", DUEL 04's brief,
+  the chapter 3 card, the ledger sweep's last beacon, the unseen sender's last lines). The villains' crime is the
+  **broken rule** ("every program rides a route" became "every route is owned", the chapter 3 card; ORIN's last
+  debrief restores it). SALVAGE 01's debrief seeds the Donny ("one of them is old and gold, sold twice"), DUEL 03's
+  brief says SABLE rides it. Two promises the code cannot keep yet were cut from the cards (a livery stake on DUEL 01,
+  "no pads, no pickups" on DUEL 04): they return with step 4's `MatchRules`.
+- **The board and the riders speak.** The Kerbie Astro (`ASTRO`) has lines for hit, boost, respawn; each rider has
+  lines for launch, trick and derez, in KERB's voice per rider. `GameController.say(_:delay:)` queues them behind
+  the contact's and the rival's lines (`sideComms`, one at a time, never over a stamp), rate-limited per event by
+  `LinePicker` (hit 14 s / 2 per run, trick 10 s / 3, the rest once), shown on the comms lane in the livery colour.
+  The speeder has no board voice, so only the rider's launch and derez fire there. Demo log
+  (`p19/board-lines/log.txt`): `comms: MIRA: LONG BOOST. WATCH. at 8.6 s`, `comms: ASTRO: FELT THAT IN THE TRUCKS. at 11.0 s`.
+- **The owner's interludes**: three lines from GRIPTAP & CO per chapter (and three after the arc), posted to the
+  message log as the chapter opens (`MissionRunner.postInterlude`), the shop as the cover body left behind.
+- Verified: 15 headless tests (`testNarrativeFileCarriesTheLines` checks the nouns, the placeholders, the `*`
+  defaults and the interludes in the log); simulator sheets `p19/sim-relay01-24` (the disc on the first card),
+  `p19/sim-ch3-24` (the rule and the I/O Line on the chapter card), `p19/sim-duel04-24`. Release build installed on
+  the iPhone 16e (the iPhone 12 was unreachable over Wi-Fi tonight); not yet judged on a phone.

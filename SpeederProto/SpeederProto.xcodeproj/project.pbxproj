@@ -45,10 +45,12 @@
 		2041480EF5DFBBCE490E6797 /* ChakraPetch-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */; };
 		21D4C1613ADD6523B9E745F7 /* LICENSE-kenney-scifi.txt in Resources */ = {isa = PBXBuildFile; fileRef = 694AEFD902D6B70165AC202A /* LICENSE-kenney-scifi.txt */; };
 		2293AD48D2A1769E8E7CE2FC /* FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1DD4B6D24207A761FEC0499 /* FrameCapture.swift */; };
+		22A9AE345D4F5D1E782685C7 /* narrative.json in Resources */ = {isa = PBXBuildFile; fileRef = 13DAC14D5AEAB876E628938F /* narrative.json */; };
 		26D1C9D8BC755EE62E5181DD /* vo_final_round.wav in Resources */ = {isa = PBXBuildFile; fileRef = B7BE5C46FB27910F82D5F86C /* vo_final_round.wav */; };
 		27D79785DB801BBFF5FA7481 /* ProceduralTextures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E8C069EA2AEF461EDA907E /* ProceduralTextures.swift */; };
 		287208EECD1696CB5CBDDFA6 /* rider_dude1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 00808F59DC25A18E38359447 /* rider_dude1.jpg */; };
 		2A8A93F04FE7BBA45595F345 /* TrackProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EC8E7CD387377F03E68669 /* TrackProgram.swift */; };
+		2BEA8F283CC889437D4782FF /* Narrative.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4338D4037A2104B25EF97D53 /* Narrative.swift */; };
 		2E3B224CE4754EB3772885CB /* vo_game_over.wav in Resources */ = {isa = PBXBuildFile; fileRef = BA83957C2D037442AF800C86 /* vo_game_over.wav */; };
 		309CB1E16C9BF602D838CA2E /* FrontEndView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D6EAA6259FFC006598A922 /* FrontEndView.swift */; };
 		334C0B267E8BE20B456C3443 /* SaveSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB9CF59ADA578BA2F72B30F /* SaveSlot.swift */; };
@@ -96,6 +98,7 @@
 		59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
 		5B3A358007EC4F94020517ED /* TrackProgram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29EC8E7CD387377F03E68669 /* TrackProgram.swift */; };
 		5BBED984B884E3FC6B059FA0 /* neon-sign-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 6D1B4DBDA31434E0BA32AA40 /* neon-sign-01.png */; };
+		5C7D7BD822E832ED1BA2F04D /* Narrative.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4338D4037A2104B25EF97D53 /* Narrative.swift */; };
 		5CB0B8B926373A57437FFB8D /* PostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AAF1F08AABEDE0DB24EEF6 /* PostProcessor.swift */; };
 		5CB9948783443B875CFE0E4B /* Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B36422554C4AD2CC76BF3BBE /* Avatar.usdz */; };
 		5E2B35048AA4E66F36171C9A /* Rival.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CB4715E79FFE27B9C57F3 /* Rival.swift */; };
@@ -118,6 +121,7 @@
 		697E347CE0476CDC77FE62FE /* Riders.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1620C25D8A01ACD28D8EF9C /* Riders.swift */; };
 		6A570909BE16A233C70F224D /* neon-shop-02.png in Resources */ = {isa = PBXBuildFile; fileRef = F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */; };
 		6A80F9F3360AD1340BF798D3 /* Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830774F78514CA1A5F4B7434 /* Input.swift */; };
+		6AEA43E141F6D4935ECF710C /* narrative.json in Resources */ = {isa = PBXBuildFile; fileRef = 13DAC14D5AEAB876E628938F /* narrative.json */; };
 		6AF2A544D10486D2193FCC54 /* WorldScroller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196B1573C8FB9CC7F731E150 /* WorldScroller.swift */; };
 		6AFE4AE2948BF12FA8344AF9 /* GameMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58455DAE604D8289457A1546 /* GameMode.swift */; };
 		6B3211969CF01549F30853BD /* neon-shop-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 2807BD977559C7CB8250C705 /* neon-shop-01.png */; };
@@ -282,6 +286,7 @@
 		0FFDBBC12E21D0C0357B0B06 /* MaterialFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MaterialFactory.swift; sourceTree = "<group>"; };
 		112A966EAECC2CDFAAB233DD /* sfx_blast.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_blast.wav; sourceTree = "<group>"; };
 		1362513C3D8ABE25AC8315B7 /* Mission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mission.swift; sourceTree = "<group>"; };
+		13DAC14D5AEAB876E628938F /* narrative.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = narrative.json; sourceTree = "<group>"; };
 		196B1573C8FB9CC7F731E150 /* WorldScroller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldScroller.swift; sourceTree = "<group>"; };
 		196E3ABE45D3AF97002D8E62 /* vo_you_lose.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_you_lose.wav; sourceTree = "<group>"; };
 		1DA047080DAC3E48A9C6612C /* sfx_tick.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_tick.wav; sourceTree = "<group>"; };
@@ -295,6 +300,7 @@
 		3073385324BD69D6531D493B /* Debrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debrief.swift; sourceTree = "<group>"; };
 		37A7B277A67AB843AA132612 /* MissionProps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionProps.swift; sourceTree = "<group>"; };
 		37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider_dude2.usdz; sourceTree = "<group>"; };
+		4338D4037A2104B25EF97D53 /* Narrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrative.swift; sourceTree = "<group>"; };
 		44E74DD4583F19C94BE32E39 /* CameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRig.swift; sourceTree = "<group>"; };
 		459CA2CFB0E8ED96B0C304F9 /* sfx_vortex.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_vortex.wav; sourceTree = "<group>"; };
 		4692E36D43C542266B26E80F /* story_4.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = story_4.jpg; sourceTree = "<group>"; };
@@ -541,6 +547,7 @@
 				1362513C3D8ABE25AC8315B7 /* Mission.swift */,
 				37A7B277A67AB843AA132612 /* MissionProps.swift */,
 				E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */,
+				4338D4037A2104B25EF97D53 /* Narrative.swift */,
 				B0A1F6907665CF7ECFD7DDF5 /* Player.swift */,
 				E1620C25D8A01ACD28D8EF9C /* Riders.swift */,
 				EAB9CF59ADA578BA2F72B30F /* SaveSlot.swift */,
@@ -590,6 +597,7 @@
 				581F3F2FFB2CAAC00E963959 /* Assets.xcassets */,
 				B36422554C4AD2CC76BF3BBE /* Avatar.usdz */,
 				2932D1CC89919872F6E2EB71 /* Board.usdz */,
+				13DAC14D5AEAB876E628938F /* narrative.json */,
 				9053514CE8B1F571D4E90C4A /* rider_cal.jpg */,
 				E873C21482E6F4167AF7B221 /* Rider_cal.usdz */,
 				00808F59DC25A18E38359447 /* rider_dude1.jpg */,
@@ -797,6 +805,7 @@
 				B055466367E72700EAD46FE9 /* music_toolate.m4a in Resources */,
 				C74AE7E7E2CC3A9C3A504ABF /* music_toolatetoolate.m4a in Resources */,
 				A51668861252ED415D35FC4A /* music_toolong.m4a in Resources */,
+				22A9AE345D4F5D1E782685C7 /* narrative.json in Resources */,
 				A37EB33B22D9E43B7E1370F7 /* neon-facade-01.png in Resources */,
 				EA4EA13681E94E0ADAF38079 /* neon-facade-02.png in Resources */,
 				43C5E4BCCC197D4225A1A726 /* neon-facade-03.png in Resources */,
@@ -886,6 +895,7 @@
 				030D9FA4B60592711B8A7E08 /* music_toolate.m4a in Resources */,
 				A16A6513EC3242347F998132 /* music_toolatetoolate.m4a in Resources */,
 				9B52A0069746B0F140E38408 /* music_toolong.m4a in Resources */,
+				6AEA43E141F6D4935ECF710C /* narrative.json in Resources */,
 				6477786B4FEC8FD6E79B7681 /* neon-facade-01.png in Resources */,
 				91E7D2FCD69A80425889BA8A /* neon-facade-02.png in Resources */,
 				CEE259DD889694D01531BF49 /* neon-facade-03.png in Resources */,
@@ -983,6 +993,7 @@
 				6373BFD599684FB42ACE19A1 /* Mission.swift in Sources */,
 				6217B1DC87DB3D1206277B17 /* MissionProps.swift in Sources */,
 				077FD038A6003EABA8B6BC90 /* MissionRunner.swift in Sources */,
+				5C7D7BD822E832ED1BA2F04D /* Narrative.swift in Sources */,
 				ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */,
 				AE6B361F8A64298F877C17FC /* Player.swift in Sources */,
 				D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */,
@@ -1035,6 +1046,7 @@
 				EA6E0C0F4AB2DC46D198DA28 /* Mission.swift in Sources */,
 				3EEA9A12F0D52EA687DE3BB7 /* MissionProps.swift in Sources */,
 				B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */,
+				2BEA8F283CC889437D4782FF /* Narrative.swift in Sources */,
 				02D3D56823114D66FCF57FEF /* Platform.swift in Sources */,
 				AFB983264A7AB37663B129A4 /* Player.swift in Sources */,
 				114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */,

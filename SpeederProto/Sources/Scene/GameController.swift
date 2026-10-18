@@ -63,6 +63,9 @@ final class GameController: ObservableObject {
     /// The rival's line in a duel, queued until the derez stamp has cleared (one per round at most).
     private var rivalComms: (speaker: String, text: String, delay: Float)? = nil
     private var rivalCommsRound = -1
+    /// The board's and the rider's lines (narrative.json): queued behind the contact's and the rival's, one at a time.
+    private var sideComms: [(speaker: String, text: String, delay: Float)] = []
+    private let linePicker = LinePicker()
     private var runClock: Float = 0
     /// The rider's identity, published for the HUD.
     @Published var player = Player()
@@ -670,9 +673,11 @@ final class GameController: ObservableObject {
                 flash = 1.0; invulnerable = 1.5
                 gamepad.rumble(intensity: 0.8, sharpness: 0.3)
                 sound.play(.respawn)
+                say("respawn", delay: 1.8)
             }
             let ms = missions.snapshot()
             updateComms(ms, dt: simDt, upcoming: world.upcoming?.label)
+            updateSideComms(dt: simDt)
             if let pursuer {
                 if missions.isRunning { pursuer.update(gap: ms.gap, playerX: speeder.x, time: time) } else { pursuer.hide() }
             }
@@ -814,6 +819,7 @@ final class GameController: ObservableObject {
                     gamepad.rumble(intensity: 1.0, sharpness: 0.4)
                     sound.play(.hit)
                     soundtrack.announce([mission.streak >= 3 ? "vo_combo_breaker" : "vo_wrong"], key: "hit", cooldown: 7, chance: 0.75)
+                    say("hit", delay: 1.2)
                     break
                 }
             }
@@ -822,7 +828,7 @@ final class GameController: ObservableObject {
         if speeder.kind == .board && !parked {
             if input.trickSpin && !trickPrev.spin, let name = speeder.startTrick(.spin) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6); ackTimers.trick = 0.85 }
             if input.trickRoll && !trickPrev.roll, let name = speeder.startTrick(.roll) { stamp(name, seconds: 0.7); sound.play(.section, volume: 0.5); gamepad.rumble(intensity: 0.4, sharpness: 0.6); ackTimers.trick = 0.85 }
-            if speeder.trickLandedNow { soundtrack.announcePool(["vo_combo", "vo_power_up"], key: "trick", cooldown: 8, chance: 0.6) }
+            if speeder.trickLandedNow { soundtrack.announcePool(["vo_combo", "vo_power_up"], key: "trick", cooldown: 8, chance: 0.6); say("trick", delay: 0.5) }
         }
         trickPrev = (input.trickSpin, input.trickRoll)
         // capture hook: SPEEDER_TRICK_AT=<seconds>:<spin|roll>[,<seconds>:<kind>...]
@@ -974,6 +980,35 @@ final class GameController: ObservableObject {
             p.delay = 0
         }
         rivalComms = p
+    }
+
+    /// The board (the Kerbie Astro, on the hoverboard) or the rider speaks: launch, trick and derez are the rider's,
+    /// hit, boost and respawn the board's. Rate-limited per event (`LinePicker`), shown once the lane is free, never
+    /// over the contact or the rival. The speeder has no board voice, so only the rider's events fire there.
+    private func say(_ event: String, delay: Float) {
+        let riderEvents: Set<String> = ["launch", "trick", "derez"]
+        var speaker = "", pool: [String] = []
+        if riderEvents.contains(event) {
+            speaker = String(rider.name.split(separator: " ").first ?? "RIDER")
+            pool = Narrative.riderLines(rider.id, event)
+        } else if speeder?.kind == .board {
+            speaker = Narrative.boardName
+            pool = Narrative.boardLines(event)
+        }
+        guard !pool.isEmpty else { return }
+        let (cooldown, cap): (Float, Int) = event == "hit" ? (14, 2) : (event == "trick" ? (10, 3) : (event == "boost" ? (20, 1) : (1, 1)))
+        guard let text = linePicker.pick(event, from: pool, now: time, cooldown: cooldown, cap: cap) else { return }
+        sideComms.append((speaker, text.uppercased(), delay))
+    }
+    private func updateSideComms(dt: Float) {
+        guard rivalComms == nil, !sideComms.isEmpty else { return }
+        sideComms[0].delay -= dt
+        if sideComms[0].delay <= 0 && ackTimers.stamp <= 0 && commsTimer <= 0 {
+            let p = sideComms.removeFirst()
+            commsSpeaker = p.speaker; commsText = p.text; commsTimer = 2.4
+            if demoMode { print("comms: \(p.speaker): \(p.text) at \(String(format: "%.1f", time)) s") }
+            sound.play(.approach, volume: 0.25, pitch: 1.5)
+        }
     }
 
     /// Comms triggers for a live corridor job: launch, one mid-run event (a section ahead, the pursuer
@@ -1177,6 +1212,8 @@ final class GameController: ObservableObject {
             stamp("GO", seconds: 0.6)
             sound.play(.go)
             soundtrack.announce(["vo_ready", "vo_go"], priority: true)
+            linePicker.startRun(); sideComms = []
+            say("launch", delay: 5.5)      // after the contact's launch line (1.6 s + 2.8 s)
         }
         if rebuild {
             let theme = missions.current.theme
@@ -1298,7 +1335,7 @@ final class GameController: ObservableObject {
         if ev.zoneOpened { stamp("ZONE", seconds: 1.2); sound.play(.zone) }
         // round and match beats: one stamp each, on the frame they happen
         if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2); sound.play(.rivalDerez) }
-        if ev.roundLost { stamp("DEREZZED", seconds: 2.2); sound.play(.derez) }
+        if ev.roundLost { stamp("DEREZZED", seconds: 2.2); sound.play(.derez); say("derez", delay: 5.6) }   // after the rival's line
         // the rival's voice: one line per round, after the attribution has had its frame
         if (ev.roundWon || ev.roundLost) && !ev.matchWon && !ev.matchLost && rivalCommsRound != arena.roundNumber {
             rivalCommsRound = arena.roundNumber
@@ -1311,8 +1348,9 @@ final class GameController: ObservableObject {
             else { rivalSay(arena, .lostRoundOther) }
         }
         if ev.roundStart && arena.roundNumber == 1 && !ev.matchWon && !ev.matchLost { rivalCommsRound = -1; rivalSay(arena, .matchStart, delay: 1.4) }
-        if ev.matchWon || ev.matchLost { rivalComms = nil }
+        if ev.matchWon || ev.matchLost { rivalComms = nil; sideComms = [] }
         updateRivalComms(dt: dt)
+        updateSideComms(dt: dt)
         if ev.voidRound { stamp("VOID ROUND", seconds: 2.2); sound.play(.derez) }
         if ev.matchWon { stamp("MATCH WON  \(arena.wins) - \(arena.losses)", seconds: 3.4); sound.play(.matchWon)
             soundtrack.announce([arena.losses == 0 ? "vo_flawless_victory" : "vo_winner"], priority: true) }

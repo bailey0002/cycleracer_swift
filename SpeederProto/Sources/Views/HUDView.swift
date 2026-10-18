@@ -141,7 +141,7 @@ struct HUDView: View {
                 Text(a.commsSpeaker).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5)
                 Text(a.commsText).font(HUDStyle.label(HUDStyle.labelSize + 2)).tracking(0.6).foregroundStyle(.white)
             }
-            .foregroundStyle(HUDStyle.color(Rival.named(a.commsSpeaker)?.color ?? Rival.vessColor))
+            .foregroundStyle(HUDStyle.color(Rival.named(a.commsSpeaker)?.color ?? (a.commsSpeaker == controller.mission.contact ? Rival.vessColor : controller.mission.liveryColor)))   // the board and the rider speak in the livery
             .padding(.top, 2)
             .id(a.commsText)
             .transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .opacity))

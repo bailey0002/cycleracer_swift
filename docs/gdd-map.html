@@ -676,7 +676,7 @@ footer ul{margin:6px 0 0;padding-left:18px}
 <!-- ============ TECH ============ -->
 <section class="tab" id="t-tech" data-tab="tech">
   <div class="sechead">
-    <div><h2>Architecture</h2><p style="margin-top:8px">Swift 5 mode, SwiftUI over a non-AR <code>ARView</code>, RealityKit for rendering, a Metal post pass, <code>LowLevelMesh</code> trails and <code>CustomMaterial</code> shaders. No packages, no server, no JSON: every constant is Swift.</p></div>
+    <div><h2>Architecture</h2><p style="margin-top:8px">Swift 5 mode, SwiftUI over a non-AR <code>ARView</code>, RealityKit for rendering, a Metal post pass, <code>LowLevelMesh</code> trails and <code>CustomMaterial</code> shaders. No packages, no server; every constant is Swift and every line of story text is in <code>narrative.json</code>.</p></div>
     <span class="gdd">GDD §10, §11</span>
   </div>
   <div class="grid g2">
@@ -804,7 +804,7 @@ function applyFilter(){
 const ELEMENTS=[
  ['Griptap & Co opening comic','story','BUILT PHONE'],['Chapter 1 · Downtown','story','BUILT CAPTURED PHONE'],['Chapter 2 · Outlands','story','BUILT CAPTURED'],['Chapter 3 · The Core','story','BUILT CAPTURED UNJUDGED'],
  ['Chapter cards','story','BUILT CAPTURED'],['Message log + the unseen sender','story','BUILT CAPTURED'],['Side offers (3)','jobs','BUILT CAPTURED'],['The ending (ROUTE-HOLDER, VESS in free play)','story','BUILT UNJUDGED'],
- ['Hub scene, heist, reputation','jobs','DESIGNED'],['Contacts VESS / KADE / ORIN voices','story','BUILT CAPTURED'],['Cabinet announcer (Kenney stand-in)','tech','BUILT PHONE'],['Real voices, recorded cast','tech','DESIGNED'],['Riders\' own lines','riders','GAP'],
+ ['Hub scene, heist, reputation','jobs','DESIGNED'],['Contacts VESS / KADE / ORIN voices','story','BUILT CAPTURED'],['Cabinet announcer (Kenney stand-in)','tech','BUILT PHONE'],['Real voices, recorded cast','tech','DESIGNED'],['Riders\' own lines','riders','BUILT CAPTURED'],['The board speaks (ASTRO)','riders','BUILT CAPTURED'],['narrative.json: every line in one file','story','BUILT CAPTURED'],['The disc, the I/O Line, the broken rule','story','BUILT CAPTURED'],['Shop-owner interludes in the log','story','BUILT CAPTURED'],
  ['Four playable riders + handling on the board','riders','BUILT CAPTURED PHONE'],['Callsign, livery, titles','riders','BUILT PHONE'],['Rivals with tempers, skills, records','grid','BUILT CAPTURED PHONE'],['The cast through CC5 / iClone (D4)','riders','DESIGNED'],
  ['Screens title → result','flow','BUILT PHONE'],['Fresh start + manual save','flow','BUILT PHONE'],['Run cards (OBJECTIVES, free play card)','flow','BUILT PHONE'],['Rule cards, cue lane, hint line','flow','GAP'],['Interludes','flow','DESIGNED'],
  ['Backbone controls (corridor)','controls','BUILT PHONE'],['Grid controls, snap steering','controls','BUILT PHONE'],['Hoverboard tricks X / Y','controls','BUILT PHONE'],['Touch buttons on the phone','controls','BUILT PHONE'],
@@ -1033,7 +1033,7 @@ const VOICES=[
  ['The cabinet','Kenney CC0 announcer, 24 lines','BUILT PHONE','READY · GO · ROUND 2 · WRONG · COMBO · HURRY UP','A stand-in until the real voices are recorded (DESIGNED). 3 s gap, cooldowns 7–12 s.'],
  ['The shop owner','Griptap & Co','BUILT PHONE','Didn\'t you learn your lesson the first time?','The opening comic only.'],
  ['INBOX · GARAGE · ??','the game\'s notices and the unseen sender','BUILT CAPTURED','-- carrier. the packet you hold is not cargo. --','Unlock notices, parts fitted, chapter cards, one static line per chapter.'],
- ['The riders','Cal, Jonah, Dominic, Mira','GAP','—','No lines of their own in this game yet (KERB has bail and combo barks).']];
+ ['The riders','Cal, Jonah, Dominic, Mira','BUILT CAPTURED','Filmed better. Landed this.','Launch, trick and derez lines per rider, on the comms lane in the livery colour (narrative.json).'],['The board','ASTRO, the Kerbie Astro','BUILT CAPTURED','Felt that in the trucks.','Hit, boost and respawn lines on the hoverboard; the speeder has no board voice.']];
 $('#voices').innerHTML=VOICES.map(v=>`<div class="panel voice" data-s="${v[2]}"><div class="row between"><div><h4>${v[0]}</h4><span class="lab">${v[1]}</span></div>${chips(v[2])}</div><blockquote>${v[3]}</blockquote><p class="note">${v[4]}</p></div>`).join('');
 
 /* ---------- RIDERS ---------- */

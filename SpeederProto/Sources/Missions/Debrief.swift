@@ -21,6 +21,7 @@ enum Debrief {
 
     /// The fork acknowledged (assessment 5.5): the contact saw which branch you took.
     private static func branchLine(_ contact: String, tunnel: Bool) -> String {
+        if let s = Narrative.branch(contact, tunnel: tunnel) { return s }
         switch (contact, tunnel) {
         case ("VESS", true): return "The tunnel. Kade saw that."
         case ("VESS", false): return "The skyway. Half the city saw that."
@@ -58,6 +59,10 @@ enum Debrief {
 
     /// One register per contact: VESS clipped, KADE blunt and warm, ORIN sharp.
     private static func lines(_ contact: String, _ k: Key, _ o: Outcome) -> [String] {
+        if let pool = Narrative.reactive(contact, k.rawValue) {
+            let v = ["hits": "\(o.hits)", "wins": "\(o.duelScore.wins)", "losses": "\(o.duelScore.losses)"]
+            return pool.map { Narrative.fill($0, v) }
+        }
         switch (contact, k) {
         case ("VESS", .respawnsTwo): return ["Two respawns. The client noticed. So did I.", "Two cores. The route pays for one."]
         case ("VESS", .respawnsOne): return ["One respawn. Do not make it a habit.", "A core burned. It comes off the fee."]
@@ -114,6 +119,7 @@ enum Debrief {
     /// The failed card's line, per contact and cause.
     static func failure(contact: String, reason: String) -> String {
         let cause = reason.split(separator: " ").first.map(String.init) ?? reason
+        if let s = Narrative.failure(contact, cause: cause) { return s }
         switch (contact, cause) {
         case (_, "TOOK"): return "That was the skyway. The deal was the tunnel. Again."
         case ("VESS", "CAUGHT"): return "Caught. The packet is gone. So is the fee."
@@ -141,6 +147,8 @@ enum Debrief {
         let first = record.wins + record.losses == 0
         let leads = record.losses > record.wins
         let meetings = record.wins + record.losses
+        let key = meetings >= 3 ? (leads ? "thirdLeads" : "thirdTrails") : (first ? "first" : (leads ? "leads" : "trails"))
+        if let s = Narrative.taunt(rival, key) { return Narrative.fill(s, ["wins": "\(record.wins)", "losses": "\(record.losses)"]) }
         if meetings >= 3 {
             switch rival {
             case "KADE": return leads ? "\"Third time. You keep coming back to lose.\"" : "\"Third time, courier. I have been counting.\""
@@ -172,6 +180,18 @@ enum Debrief {
     /// round's outcome and the record, shown as a comms stamp once the derez attribution has cleared.
     enum DuelEvent { case matchStart, wonRound, lostRoundCutOff, lostRoundBoxed, lostRoundOther, playerLeads, rivalLeads, matchPoint }
     static func rivalLine(rival: String, event: DuelEvent, record: (wins: Int, losses: Int), wins: Int, losses: Int) -> String {
+        if event != .matchStart {
+            let key: String
+            switch event {
+            case .wonRound: key = "wonRound"; case .lostRoundCutOff: key = "lostRoundCutOff"; case .lostRoundBoxed: key = "lostRoundBoxed"
+            case .lostRoundOther: key = "lostRoundOther"; case .playerLeads: key = "playerLeads"; case .rivalLeads: key = "rivalLeads"
+            case .matchPoint: key = wins > losses ? "matchPointAhead" : "matchPointBehind"; case .matchStart: key = ""
+            }
+            if let pool = Narrative.roundLine(rival, key), !pool.isEmpty {
+                let i = (event == .wonRound ? wins : losses) % pool.count
+                return Narrative.fill(pool[i], ["wins": "\(wins)", "losses": "\(losses)"])
+            }
+        }
         switch (rival, event) {
         case ("KADE", .wonRound): return ["Lucky wall.", "Fine. Ride.", "I felt that one."][wins % 3]
         case ("KADE", .lostRoundCutOff): return ["Told you not to look back.", "Hunted.", "Your tail is mine."][losses % 3]
@@ -210,6 +230,7 @@ enum Debrief {
 
     /// A one-line role for the contact's card.
     static func role(_ name: String) -> String {
+        if let s = Narrative.role(name) { return s }
         switch name {
         case "VESS": return "DISPATCHER"
         case "KADE": return "OUTLANDS RIDER"

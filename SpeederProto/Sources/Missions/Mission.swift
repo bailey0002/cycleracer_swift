@@ -113,13 +113,18 @@ struct Mission: Identifiable {
         case .duel: return "DUEL"; case .salvage: return "SALVAGE"; case .dive: return "DIVE"
         }
     }
+    /// The kind's key in the narrative file ("search", "escape", ...).
+    static func kindKey(_ k: Kind) -> String { "\(k)" }
 
     /// The voice in the ear (DATA WING, Ghostrunner): at most three lines per job, eight words or fewer,
     /// fired by events and never at the objective. Each contact keeps one register: VESS clipped, KADE
     /// blunt and warm, ORIN sharp.
-    enum CommsTrigger { case launch, sectionAhead, pursuerClose, midway, lastStretch }
+    enum CommsTrigger: String { case launch, sectionAhead, pursuerClose, midway, lastStretch }
     static func comms(contact: String, kind: Kind, trigger: CommsTrigger, section: String = "") -> String {
         let sec = section.isEmpty ? "SECTION" : section
+        // the narrative file first (Narrative.swift); the table below is the fallback
+        if trigger == .midway, let s = Narrative.midway(kindKey(kind)) { return s }
+        if trigger != .midway, let s = Narrative.comms(contact, trigger.rawValue, section: sec) { return s }
         switch (contact, trigger) {
         case ("VESS", .launch): return "Packet is live. Do not stop."
         case ("VESS", .sectionAhead): return "\(sec) ahead. Hold your line."
@@ -172,7 +177,8 @@ struct Mission: Identifiable {
 
     /// Side offers (assessment 5.5): optional jobs in the inbox from the other side of the story, each a
     /// cleared job with one rule changed and a bonus on top, opened by a flag earned on the base job.
-    static let offers: [SideOffer] = [
+    static let offers: [SideOffer] = {
+        let list: [SideOffer] = [
         SideOffer(id: 0, job: 2, sender: "KADE", code: "SIDE 01", title: "THE TUNNEL LINE",
                   line: "Vess sends you over the skyway because Vess is watched there. Ride the split through the tunnel instead and I pay the difference. Nobody counts the tunnel.",
                   debrief: "KADE: The tunnel. Good instinct. Vess will not know that run happened, and I will.",
@@ -185,7 +191,10 @@ struct Mission: Identifiable {
                   line: "You are wrecking my shipments, so let us do business. Sweep Vess's ledger again, all ten beacons this time, and I pay more than Orin does.",
                   debrief: "SABLE: Paid. Now I know what Vess knows. Do not mistake this for friendship.",
                   requires: (job: 13, flag: .gold), modifier: .allBeacons, bonus: 500),
-    ]
+        ]
+        // the narrative file's lines win over the literals above (Narrative.swift)
+        return list.map { o in var m = o; if let l = Narrative.offerLine(o.id) { m.line = l }; if let d = Narrative.offerDebrief(o.id) { m.debrief = d }; return m }
+    }()
     static func offer(_ id: Int) -> SideOffer? { offers.first { $0.id == id } }
 
     /// The job list: three chapters, eighteen jobs, Tron-clean and terse. Every corridor track is
@@ -199,9 +208,9 @@ struct Mission: Identifiable {
     /// last duels make it theirs. Told in briefs, debriefs, comms and the message log (`MessageLog`).
     static let deliveries: [Mission] = {
         let d1: Float = 0.8, d2: Float = 1.0, d3: Float = 1.3
-        return [
+        let list: [Mission] = [
         // --- chapter 1: downtown (VESS)
-        Mission(id: 0, kind: .delivery, code: "RELAY 01", title: "FIRST PACKET", contact: "VESS",
+        Mission(id: 0, kind: .delivery, code: "RELAY 01", title: "FIRST DISC", contact: "VESS",
                 brief: "New rider. Your route is provisional and I hold the licence. Packet for the downtown relay: impacts and boost burn the hull, what is left pays. Ride clean and the route becomes yours.",
                 theme: .neonCity,
                 blocks: track(2400, [.straight(2), .bend, .straight(1), .landmark, .field, .bend, .straight(2), .sBend, .landmark, .straight(1)],
@@ -322,6 +331,8 @@ struct Mission: Identifiable {
                 debrief: "ORIN: The licence is void. The route is yours: every relay from downtown to the canyon. Nobody dispatches you again.",
                 duelTarget: 3, rival: .vess),
         ]
+        // the narrative file's briefs and debriefs win over the literals above (Narrative.swift)
+        return list.map { j in var m = j; if let b = Narrative.brief(j.id) { m.brief = b }; if let d = Narrative.debrief(j.id) { m.debrief = d }; return m }
     }()
 }
 
@@ -345,8 +356,8 @@ struct SideOffer: Equatable {
     let sender: String
     let code: String
     let title: String
-    let line: String             // the brief
-    let debrief: String
+    var line: String             // the brief
+    var debrief: String
     let requires: (job: Int, flag: Mission.Flags)
     let modifier: Modifier
     let bonus: Int
