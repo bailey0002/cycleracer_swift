@@ -798,5 +798,5 @@ the fallback, and every new progress key is in `SaveSlot.prefixes` (`guide.`, `n
   the briefing (`briefingCardShown`).
 - Not done from the kickoff's wish list: a "how to ride" card and a first-hit card (two cards on launch was one too many;
   the briefing's OBJECTIVES and the controls line already carry it), and contact barks (the contact keeps the three-line
-  comms rule; the new barks are the rider's and ASTRO's). The rule cards name pad buttons (A, Y); on touch they still say
-  A. Phone: all of step 2 is `UNJUDGED`.
+  comms rule; the new barks are the rider's and ASTRO's). The rule cards name pad buttons (A, Y): Mark, 18 Oct, assume a
+  controller for now; touch wording waits for a touch pass. Phone: all of step 2 is `UNJUDGED`.
