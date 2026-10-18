@@ -800,3 +800,13 @@ the fallback, and every new progress key is in `SaveSlot.prefixes` (`guide.`, `n
   the briefing's OBJECTIVES and the controls line already carry it), and contact barks (the contact keeps the three-line
   comms rule; the new barks are the rider's and ASTRO's). The rule cards name pad buttons (A, Y): Mark, 18 Oct, assume a
   controller for now; touch wording waits for a touch pass. Phone: all of step 2 is `UNJUDGED`.
+
+## TestFlight prep (18 Oct 2026, later)
+
+PR #12 merged into master first (Mark: testers get master). Branch `claude/testflight`: the iOS bundle id becomes
+`com.greystratum.kerbgalactic` (Mark's call, matching KERB Skate's `com.greystratum.kerbskate`; Mac and tests follow),
+`MARKETING_VERSION` 0.1.0, `ITSAppUsesNonExemptEncryption = NO` in the Info.plist, and the 1024 px icon flattened (it
+had an alpha channel, which the App Store rejects; `render-brand.swift` gained `writeOpaque` so a re-render stays
+opaque). `testflight/ship.sh ... --build-only` archived it with release Xcode 26.6: build 202610182141, 178 MB,
+signing registered the new id. Not uploaded: the App Store Connect record and the upload's API key are Mark's
+(README "TestFlight"). `simshot.sh` and the README's phone command use the new id.

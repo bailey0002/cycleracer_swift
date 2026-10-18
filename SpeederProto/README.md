@@ -29,7 +29,7 @@ The phone gets a **Release** build: the procedural textures are Swift pixel loop
 four times as long to load (the iPhone 12 is ready 3.9 s after launch in Release):
 
 ```bash
-cd "SpeederProto" && export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer && xcodebuild -project SpeederProto.xcodeproj -scheme SpeederProto-iOS -configuration Release -derivedDataPath build-device -destination 'platform=iOS,id=1438FC4B-510E-5302-9AAE-0833BC5A856F' -allowProvisioningUpdates build && xcrun devicectl device install app --device 1438FC4B-510E-5302-9AAE-0833BC5A856F build-device/Build/Products/Release-iphoneos/SpeederProto.app && xcrun devicectl device process launch --device 1438FC4B-510E-5302-9AAE-0833BC5A856F com.markbailey.speeder.ios
+cd "SpeederProto" && export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer && xcodebuild -project SpeederProto.xcodeproj -scheme SpeederProto-iOS -configuration Release -derivedDataPath build-device -destination 'platform=iOS,id=1438FC4B-510E-5302-9AAE-0833BC5A856F' -allowProvisioningUpdates build && xcrun devicectl device install app --device 1438FC4B-510E-5302-9AAE-0833BC5A856F build-device/Build/Products/Release-iphoneos/SpeederProto.app && xcrun devicectl device process launch --device 1438FC4B-510E-5302-9AAE-0833BC5A856F com.greystratum.kerbgalactic
 ```
 
 `--console` on the launch streams the app's stdout (the `load:` lines give the build stages).
@@ -633,6 +633,23 @@ KERB Skate's four systems, ported (`Sources/Missions/Guidance.swift`, `Notebook.
 - Same day: the hoverboard is the default vehicle (the demo still rides the speeder unless `SPEEDER_VEHICLE=board`), and
   the cards default to LIGHT, a muted grey with dark ink (SETTINGS > CARDS for the neon DARK). Contact sheets:
   `swift Tools/contact-sheet.swift <out.png> <columns> <tileWidth> <png ...>`.
+
+## TestFlight (18 Oct 2026)
+
+Ships to the same TestFlight testers as KERB Skate. Bundle id `com.greystratum.kerbgalactic` (was
+`com.markbailey.speeder.ios`; the Mac and test targets follow), version **0.1.0**, `ITSAppUsesNonExemptEncryption = NO`
+in `project.yml`, and an opaque 1024 px icon (`Tools/render-brand.swift` now flattens it: the App Store rejects alpha).
+Archive with the hub script from `SpeederProto/` (release Xcode, the build number is a UTC timestamp):
+
+```bash
+"$HOME/Desktop/GS - GamenCtr/testflight/ship.sh" SpeederProto.xcodeproj SpeederProto-iOS cycleracer_swift
+```
+
+On this Mac Xcode cannot sign in, so the upload (`xcodebuild -exportArchive`) needs an App Store Connect API key passed
+as `-authenticationKeyPath/-authenticationKeyID/-authenticationKeyIssuerID` (KERB Skate's route; the .p8 stays outside
+every repo, store of record Apple Passwords). The App Store Connect record must exist first. TestFlight groups are per
+app: add the KERB testers to this app's own internal / external group. The new bundle id installs as a second app on a
+phone that has the old one (its own save); delete the old `Kerb: Galactic` once the TestFlight build is in.
 
 ## Next steps (brief milestones 7–8)
 
