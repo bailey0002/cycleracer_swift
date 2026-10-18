@@ -159,6 +159,10 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   Same day, Mark's notes: the **hoverboard is the default vehicle** (`PlayerPrefs.vehicle = 1`, a one-time migration
   `prefs.boardDefault`; the demo still rides the speeder unless `SPEEDER_VEHICLE=board`, so reference captures hold),
   and **LIGHT cards** (a muted cool grey, not white: Mark found white too bright; dark ink, deep accents via `HUDView.tone` / `ink` / `cardAccent`; SETTINGS > CARDS for DARK).
+- 18 Oct 2026 (later): PR #12 merged; TestFlight prep on `claude/testflight`: bundle id **`com.greystratum.kerbgalactic`**
+  (Mark's call, matching `com.greystratum.kerbskate`), version 0.1.0, encryption flag, opaque icon. Archive with
+  `testflight/ship.sh SpeederProto.xcodeproj SpeederProto-iOS cycleracer_swift`; the upload needs Mark's App Store
+  Connect API key and the App Store Connect record (README "TestFlight"). Device installs now use the new bundle id.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

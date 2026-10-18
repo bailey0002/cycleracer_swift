@@ -34,6 +34,16 @@ func write(_ image: CGImage, _ url: URL) {
     CGImageDestinationFinalize(dest)
 }
 
+/// The App Store rejects an iOS icon with an alpha channel (ITMS-90717): flatten onto an opaque context.
+func writeOpaque(_ image: CGImage, _ url: URL) {
+    let ctx = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: 0,
+                        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+    ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
+    ctx.fill(CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    ctx.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    write(ctx.makeImage()!, url)
+}
+
 func json(_ obj: Any, _ url: URL) {
     try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     let data = try! JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys])
@@ -260,7 +270,7 @@ func iconGalactic(_ n: Int) -> CGImage {
 if CommandLine.arguments.contains("--logo-only") { exit(0) }
 let iconSet = assets.appendingPathComponent("AppIcon.appiconset")
 var iconImages: [[String: String]] = [["idiom": "universal", "platform": "ios", "size": "1024x1024", "filename": "icon-1024.png"]]
-write(iconGalactic(1024), iconSet.appendingPathComponent("icon-1024.png"))
+writeOpaque(iconGalactic(1024), iconSet.appendingPathComponent("icon-1024.png"))
 for pt in [16, 32, 128, 256, 512] {
     for s in 1...2 {
         let name = "mac-\(pt)@\(s)x.png"
