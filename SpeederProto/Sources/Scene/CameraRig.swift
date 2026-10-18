@@ -146,8 +146,10 @@ final class CameraRig {
             return
         }
         let up = SIMD3<Float>(0, 1, 0)
-        let desired = position - forward * (6.4 + speedNorm * 1.6 + kickEnv * 0.45) + up * (2.7 + speedNorm * 0.35)
-        let desiredTarget = position + forward * 5.0 + up * 1.0
+        // further back and higher than the first pass (Mark, 4 Oct 2026: the round-start framing read better: room
+        // for the rival, the ramps and the walls around the action)
+        let desired = position - forward * (9.6 + speedNorm * 1.6 + kickEnv * 0.45) + up * (4.3 + speedNorm * 0.35)
+        let desiredTarget = position + forward * 7.0 + up * 1.0
         if camPos == nil || snap {
             // round start: begin further back and higher and let the spring zoom in
             camPos = desired - forward * 6 + up * 4; camTarget = desiredTarget; orbitAngle = 0
@@ -160,7 +162,7 @@ final class CameraRig {
         roll = damp(roll, lean * Self.rollGain, Self.rollDamp, dt)
         let upVec = simd_quatf(angle: roll, axis: simd_normalize(camTarget! - camPos!)).act(up)
         root.look(at: camTarget!, from: camPos! + offset, upVector: upVec, relativeTo: nil)
-        fov = damp(fov, 60 + speedNorm * Self.speedFov + kickEnv * 9, Self.fovDamp, dt)
+        fov = damp(fov, 62 + speedNorm * Self.speedFov + kickEnv * 9, Self.fovDamp, dt)
         camera.camera.fieldOfViewInDegrees = fov
     }
 
