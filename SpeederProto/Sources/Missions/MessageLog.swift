@@ -71,6 +71,7 @@ extension Mission {
     /// The chapter card's paragraph: where the route is, who is on your side, who is not (Art of Rally's
     /// era text, Wipeout 2048's seasons). Forty words or fewer.
     static func chapterIntro(_ c: Int) -> String {
+        if let s = Narrative.chapterIntro(c) { return s }
         switch c {
         case 1: return "The downtown grid at night. Every program on it rides a route: its name, its right to ride. Yours is provisional. VESS dispatches, holds the licence, and pays. Ride clean and the route becomes yours."
         case 2: return "Daylight. The canyon road out past the last relay. KADE rides out here and owes you one. ORIN runs the canyon relays for someone in the core. Nobody dispatches you here; nobody watches either."
@@ -91,6 +92,7 @@ extension Mission {
     /// The unseen sender's line for each chapter (Tron 2.0's "Guest": static, cryptic, resolved by the
     /// reveal). It signs nothing until the route is the player's.
     static func staticLine(_ c: Int) -> String {
+        if let s = Narrative.staticLine(c) { return s }
         switch c {
         case 1: return "-- carrier. the packet you hold is not cargo. --"
         case 2: return "-- carrier. it has your name in it. they do not know you can read. --"
@@ -99,5 +101,9 @@ extension Mission {
         }
     }
     /// The last message, from KADE, once the arc is done.
-    static let endingLine = "KADE: Heard the licence is void. The canyon relay is yours whenever you want it. Ride it however you like."
+    static var endingLine: String { Narrative.endingLine ?? "KADE: Heard the licence is void. The canyon relay is yours whenever you want it. Ride it however you like." }
+    /// The shop owner's lines between chapters (the interludes, assessment step 1): posted to the log as the
+    /// chapter opens, and after the arc. "GRIPTAP & CO: " prefixes are stripped by the poster.
+    static let interludeSender = "GRIPTAP & CO"
+    static func interlude(_ c: Int) -> [String] { Narrative.interlude(c) ?? [] }
 }

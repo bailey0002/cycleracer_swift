@@ -243,6 +243,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   `callsign` goes to the rider screen. iOS caches launch screens: reboot the phone if the old one shows.
 - Weather state (`post.rain`, `post.lightning`) is reset in `build()`; it is only written in worlds with
   rain, so without the reset it leaked into the next world.
+- Every line of story text lives in `Resources/narrative.json` (`Missions/Narrative.swift`); the Swift tables are the
+  fallback when a key is missing. `SPEEDER_NARRATIVE=0` ignores the file. The board (`ASTRO`) and the riders speak on
+  the comms lane behind the contact and the rival (`GameController.say`).
 - `SPEEDER_MISSION=<n>` writes `cleared = n` to UserDefaults when n is past the cleared count (the
   inbox lists the chain); use `SPEEDER_RESET_PROGRESS=1` with it for a clean slate.
 

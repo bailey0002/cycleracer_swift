@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "notes": "Every line of story text in one place (assessment-2026-10-17-rd.md step 1). Loaded by Missions/Narrative.swift; the Swift tables stay as the fallback when a key is missing. {hits} {section} {wins} {losses} are filled at runtime. Lists are rotated by the game ([wins % n], no repeats) as the Swift code did.",
+
+  "nouns": {
+    "disc": "A rider's route, sealed: name, memory, the right to ride. The thing you carry and the thing you duel with.",
+    "ioLine": "The one route no program may ride: the line out of the system, past the spire in the core.",
+    "rule": "The rule was: every program rides a route. VESS and SABLE rewrote it: every route is owned."
+  },
+
+  "jobs": {
+    "0": { "brief": "New rider. Your route is provisional and I hold the licence. A disc for the downtown relay: a rider's route, sealed. Impacts and boost burn the hull, what is left pays. Ride clean and the route becomes yours.",
+           "debrief": "VESS: Clean enough. Twenty more like that and the route is yours. Do not ask whose disc that was." },
+    "1": { "brief": "Someone seeded the grid with beacons. Fly through them; some sit high. Five of seven and the map is ours.",
+           "debrief": "VESS: The beacons were Kade's. Now Kade knows your trail colour." },
+    "2": { "brief": "Relay sits past the split. Tunnel or skyway, your call. Heavier traffic this time.",
+           "debrief": "VESS: Delivered. A rider named Kade asked about you at the relay. I said nothing." },
+    "3": { "brief": "You picked up a tail. It is faster than your cruise. Boost opens the gap and burns hull. Reach the relay with it still behind you.",
+           "debrief": "VESS: That was Kade's drone. It will not be a drone next time." },
+    "4": { "brief": "The relay is below the city. Conduit sections: fly the tube, thread the beams. The hull does not like walls.",
+           "debrief": "VESS: Kade has booked the Grid. It wants the disc. Settle it there or lose the route." },
+    "5": { "brief": "Kade wants the disc and will not ask twice. Settle it on the Grid. Light cycles, first to two derezzes. Kade hunts: expect a wheel on your tail.",
+           "debrief": "KADE: You ride clean. Vess does not. That disc you took down the conduit? Come out to the canyon and I will show you whose it was." },
+    "6": { "brief": "Carry it out of the city. Canyon road, long bends, a rock-cut tunnel, a split. Daylight. Nobody is watching out there.",
+           "debrief": "KADE: The relay out here is mine. Every disc Vess sends passes through it. Open one." },
+    "7": { "brief": "Beacons in the canyon, high and low. Six of eight. The bends hide them until late.",
+           "debrief": "KADE: Orin planted those. Orin runs the canyon relays for someone in the core." },
+    "8": { "brief": "A convoy went down on the canyon road. Its drones and crates are still live. Destroy eight before the drop and the cargo is ours.",
+           "debrief": "KADE: Discs in every crate. A rider's route is its right to ride; Sable buys them and derezzes the rider. One of them is old and gold, sold twice. Vess is not delivering these. Vess is selling them." },
+    "9": { "brief": "Orin is behind you and it is not a drone. Keep the gap through the tunnel. The skyway is faster than it looks.",
+           "debrief": "KADE: Orin does not lose tails. Orin will want the Grid. Fly the pipe first; you will need the precision." },
+    "10": { "brief": "The old pipe under the mesa. No weapons, a hull that bruises twice as hard, and a window that does not forgive. Thread it.",
+            "debrief": "KADE: Clean. Now Orin. Orin boxes: it will cut across your line and close the door." },
+    "11": { "brief": "Orin runs the canyon relays and wants them back. Kade owes you one: the Grid is booked. Orin boxes: it will cut across your line and close the door.",
+            "debrief": "ORIN: Fine. You win. But you are working for the wrong dispatcher. Vess sells to Sable, and the last disc you carried downtown had your route in it. Come to the core and I will prove it." },
+    "12": { "brief": "Vess knows you have seen the crates. Your route is on Sable's list now and the drones are on you from the first metre. Boost early, thread the fields, reach the core relay.",
+            "debrief": "ORIN: Still alive. Sable's crates move through the core at night. Let us take them apart." },
+    "13": { "brief": "Sable's shipment runs the core grid tonight: crates and escort drones in every field. Twelve targets before the drop.",
+            "debrief": "ORIN: That was a month of Sable's income. Sable will come to the Grid now. First we take the deep line." },
+    "14": { "brief": "The core's data conduit: three pipes back to back, no weapons, twice the bruise. The fastest riders in the system set their times here.",
+            "debrief": "ORIN: A core time. Vess has hidden its ledger in beacons across the core. Sweep them and we have proof." },
+    "15": { "brief": "Vess's ledger, split across ten beacons in the densest grid in the system. Eight of ten. Some sit high over the fields. The last one is your own line.",
+            "debrief": "ORIN: It is all there. Every route, every buyer. Yours is the last line. Sable has booked the Grid and named you." },
+    "16": { "brief": "Sable does not box and does not hunt. Sable runs: open ground, the pads, the deck, and it will out-speed you if you let it. First to three. It rides the gold route it bought first.",
+            "debrief": "SABLE: Derezzed by a courier I already paid for. Vess sold me a route it could not deliver. Vess is on the Grid. Go and collect." },
+    "17": { "brief": "Vess rides its own cycle tonight, and it rides like Kade taught it: on your tail, grinding your line. First to three. Win and you ride the I/O Line out: the one route nobody owns.",
+            "debrief": "ORIN: The licence is void. The rule is back: every program rides a route. Yours runs from downtown to the canyon to the I/O Line. Nobody dispatches you again." }
+  },
+
+  "offers": {
+    "0": { "line": "Vess sends you over the skyway because Vess is watched there. Ride the split through the tunnel instead and I pay the difference. Nobody counts the tunnel.",
+           "debrief": "KADE: The tunnel. Good instinct. Vess will not know that run happened, and I will." },
+    "1": { "line": "You keep gaps. Now keep a window: the rock pipe again with ten seconds less. Kade pays in favours. I pay in credits.",
+           "debrief": "ORIN: A core time out of a canyon pipe. Kade did not tell me you were that fast." },
+    "2": { "line": "You are wrecking my shipments, so let us do business. Sweep Vess's ledger again, all ten beacons this time, and I pay more than Orin does.",
+           "debrief": "SABLE: Paid. Now I know what Vess knows. Do not mistake this for friendship." }
+  },
+
+  "chapters": {
+    "1": { "intro": "The downtown grid at night. Every program on it rides a route: its name, its right to ride. Yours is provisional. VESS dispatches, holds the licence, and pays. Ride clean and the route becomes yours.",
+           "static": "-- carrier. the disc you hold is not cargo. --",
+           "interlude": ["GRIPTAP & CO: Still at the cabinet. The screen went white and the kid did not come back. Same as last time.",
+                         "GRIPTAP & CO: I can see the score. Somebody in there is riding.",
+                         "GRIPTAP & CO: The Astro's gone off the shelf too. No wheels. Figures."] },
+    "2": { "intro": "Daylight. The canyon road out past the last relay. KADE rides out here and owes you one. ORIN runs the canyon relays for someone in the core. Nobody dispatches you here; nobody watches either.",
+           "static": "-- carrier. it has your name in it. they do not know you can read. --",
+           "interlude": ["GRIPTAP & CO: The screen's gone orange. Desert, looks like. The kid's still riding.",
+                         "GRIPTAP & CO: There's a gold board on the high-score line. I know that board.",
+                         "GRIPTAP & CO: Whoever's in there with the kid, they're not friends."] },
+    "3": { "intro": "The core: the densest grid in the system, where the discs end up. The rule was: every program rides a route. VESS and SABLE rewrote it: every route is owned. SABLE buys routes and derezzes the riders who held them. VESS has been selling. ORIN rides with you. Yours is the last line in the ledger, and past the spire is the I/O Line, the one route out.",
+           "static": "-- carrier. a route remembers who rode it. the line out is past the spire. finish this. --",
+           "interlude": ["GRIPTAP & CO: Rain on the screen now. Can't see the kid for the storm.",
+                         "GRIPTAP & CO: The gold board's name just dropped a line. First time in years.",
+                         "GRIPTAP & CO: One more game. I'm not closing the shop till it's over."] },
+    "end": { "static": "-- route-holder. the I/O Line is open. nobody dispatches you now. this line closes. --",
+             "ending": "KADE: Heard the licence is void. The canyon relay is yours whenever you want it. Ride it however you like.",
+             "interlude": ["GRIPTAP & CO: The screen just went white again. Then the attract mode.",
+                           "GRIPTAP & CO: New name on the high-score line. The gold board's second.",
+                           "GRIPTAP & CO: Kid's back at the counter. Doesn't remember a thing. Wants to play again."] }
+  },
+
+  "comms": {
+    "VESS": { "launch": "Disc is live. Do not stop.", "sectionAhead": "{section} ahead. Hold your line.", "pursuerClose": "It is on you. Burn hull.", "lastStretch": "Drop in sight. Finish clean." },
+    "KADE": { "launch": "Ride it like you stole it.", "sectionAhead": "{section}. Trust the bike.", "pursuerClose": "Boost. Now.", "lastStretch": "Almost home. Keep it tight." },
+    "ORIN": { "launch": "Clock is running. Impress me.", "sectionAhead": "{section}. Try not to scrape.", "pursuerClose": "Behind you. Move.", "lastStretch": "Last stretch. Do not bore me." },
+    "*":    { "launch": "Go.", "sectionAhead": "{section} ahead.", "pursuerClose": "It is closing.", "lastStretch": "Finish it." },
+    "midway": { "search": "Beacons count. Take the branch.", "salvage": "Targets are live. Fire early.", "dive": "No weapons. Precision only.", "escape": "Keep the gap. Boost in windows.", "*": "Halfway. Hull pays." }
+  },
+
+  "reactive": {
+    "VESS": {
+      "respawnsTwo": ["Two respawns. The client noticed. So did I.", "Two cores. The route pays for one."],
+      "respawnsOne": ["One respawn. Do not make it a habit.", "A core burned. It comes off the fee."],
+      "hullLow": ["Hull under a quarter. Riders like that stop being riders.", "You arrived on fumes. Arrive."],
+      "cleanFast": ["Clean and early. Keep that.", "Untouched, ahead of the window. That is the job."],
+      "gold": ["Gold. Do not let it go to your head.", "A gold run. The route noticed."],
+      "newBest": ["Better than last time. That is all I ask.", "A new best. Do it again."],
+      "fast": ["Early. The relay was not ready for you.", "Ahead of the window. Good."],
+      "sloppy": ["You hit {hits} things. None of them were moving.", "{hits} impacts. The disc felt every one."],
+      "clean": ["Not a scratch. Noted.", "Clean. Nothing to say."],
+      "evergreen": ["Delivered. Next.", "The disc is in. That is all I need.", "Acceptable."]
+    },
+    "KADE": {
+      "respawnsTwo": ["Two cores burned. The bike forgives. I count.", "Twice down. Out here that is once too many."],
+      "respawnsOne": ["One core. Happens. Do not let it happen twice.", "Burned a core. The canyon does that."],
+      "hullLow": ["You limped in. Next time boost less and steer more.", "Hull nearly gone. Ride the middle of the road."],
+      "cleanFast": ["Clean and fast. That is how I would have ridden it.", "Not a mark on it and early. Good."],
+      "gold": ["Gold. You ride like you mean it.", "That was a gold run. Vess never paid me for one of those."],
+      "newBest": ["Faster than last time. Keep pushing.", "A better run. The road is learning you."],
+      "fast": ["Early. The window was generous anyway.", "Fast. Now do it clean."],
+      "sloppy": ["{hits} hits. The rocks are not going anywhere; go around them.", "You took {hits}. Ease off the boost in the fields."],
+      "clean": ["Clean. Good.", "Not a scratch. I noticed."],
+      "evergreen": ["Done. Have a drink.", "Delivered. The canyon is yours tonight.", "Job's done."]
+    },
+    "ORIN": {
+      "respawnsTwo": ["Twice. I have seen drones do better.", "Two respawns. Sable would have laughed."],
+      "respawnsOne": ["One respawn. Sloppy, but alive.", "A core down. Sharpen up."],
+      "hullLow": ["Hull in the red. The core does not do mercy.", "You crawled in. Boost is not a plan."],
+      "cleanFast": ["Clean and early. Fine. I am impressed. Do not quote me.", "Untouched and ahead. That is core pace."],
+      "gold": ["Gold. The fastest riders in the system would nod.", "A gold. Sable will hate that."],
+      "newBest": ["Better. Keep it up.", "A new best. Good. Again."],
+      "fast": ["Fast. Now stop hitting things.", "Early. The core likes early."],
+      "sloppy": ["{hits} impacts. The fields were not that dense.", "You hit {hits}. Read the lanes earlier."],
+      "clean": ["Clean. Adequate.", "Not a scratch. Fine."],
+      "evergreen": ["Done. Next job.", "Delivered. The core does not care how.", "Adequate."]
+    },
+    "*": {
+      "duelSweep": ["A sweep. Not one derez. The Grid will remember that.", "Clean sweep. They never got a wall in front of you."],
+      "duelBoxed": ["You won, but you boxed yourself once. Watch your own trail.", "Won. Your own wall nearly cost it."],
+      "duelClose": ["Close. {wins} to {losses}. The next one will be closer.", "{wins} - {losses}. You took the hit and came back. Good."],
+      "evergreen": ["Done."]
+    }
+  },
+
+  "branch": {
+    "VESS": { "tunnel": "The tunnel. Kade saw that.", "skyway": "The skyway. Half the city saw that." },
+    "KADE": { "tunnel": "You took the tunnel. Good instinct.", "skyway": "The skyway. Orin watches the skyway." },
+    "ORIN": { "tunnel": "The tunnel. Quieter.", "skyway": "The skyway. Showy." },
+    "*":    { "tunnel": "The tunnel. As agreed.", "skyway": "The skyway. Not what I paid for." }
+  },
+
+  "failure": {
+    "VESS": { "CAUGHT": "Caught. The disc is gone. So is the fee.", "HULL": "Hull breached. The disc is scrap. Try again.", "TIME": "Late. The relay closed. Ride the window next time.", "DEREZZED": "Derezzed. Kade keeps the route for now. Again.", "*": "Incomplete. The route does not pay for almost." },
+    "KADE": { "CAUGHT": "They got you. Boost in the open, not in the bends.", "HULL": "Hull gone. The canyon wins one. Go again.", "TIME": "Out of time. Cut the corners, not the bike.", "DEREZZED": "Derezzed. Watch the walls, then watch mine.", "*": "Not enough. Once more." },
+    "ORIN": { "CAUGHT": "Caught. Vess's drones do not miss twice.", "HULL": "Breached. The core eats the careless.", "TIME": "Late. In the core, late is dead.", "DEREZZED": "Derezzed. Sable will have watched that. Again.", "*": "Incomplete. Do it properly." },
+    "*":    { "TOOK": "That was the skyway. The deal was the tunnel. Again.", "*": "Run failed. Again." }
+  },
+
+  "taunts": {
+    "KADE":  { "first": "\"Hunter, they call me. Do not look back.\"", "leads": "\"Still riding? I left you in pieces last time.\"", "trails": "\"You got lucky. The Grid does not do luck twice.\"", "thirdLeads": "\"Third time. You keep coming back to lose.\"", "thirdTrails": "\"Third time, courier. I have been counting.\"" },
+    "ORIN":  { "first": "\"I close doors. You will find that out.\"", "leads": "\"Boxed you once. The walls remember.\"", "trails": "\"You cut a good line. Cut it again if you can.\"", "thirdLeads": "\"Again. The door will be where it always is.\"", "thirdTrails": "\"You have read my line. Let us see if you can read a new one.\"" },
+    "SABLE": { "first": "\"A courier. On my Grid. This will be brief.\"", "leads": "\"Slow. Still slow.\"", "trails": "\"You out-ran me once. Once.\"", "thirdLeads": "\"You are becoming a habit. A cheap one.\"", "thirdTrails": "\"Nobody beats me {wins} times. Not for long.\"" },
+    "VESS":  { "first": "\"I taught Kade. Kade taught you. Let us see what is left.\"", "leads": "\"I dispatched better riders than you.\"", "trails": "\"You should have stayed a courier.\"", "thirdLeads": "\"I still hold the licence. Ride for it.\"", "thirdTrails": "\"You want the route so badly? Take it from me again.\"" },
+    "*":     { "first": "\"Let us see.\"", "leads": "\"Again?\"", "trails": "\"Not this time.\"", "thirdLeads": "\"Again?\"", "thirdTrails": "\"Not this time.\"" }
+  },
+
+  "roundLines": {
+    "KADE":  { "wonRound": ["Lucky wall.", "Fine. Ride.", "I felt that one."], "lostRoundCutOff": ["Told you not to look back.", "Hunted.", "Your tail is mine."], "lostRoundBoxed": "Your own wall. I did not even turn.", "lostRoundOther": "Sloppy. Again.", "playerLeads": "Do not get comfortable.", "rivalLeads": "Feel that? That is a hunt.", "matchPointAhead": "One more and I will remember it.", "matchPointBehind": "One more. Then the disc is mine." },
+    "ORIN":  { "wonRound": ["Adequate.", "You cut well. Once.", "Noted."], "lostRoundCutOff": ["Door closed.", "You never saw the wall.", "Boxed."], "lostRoundBoxed": "You did my work for me.", "lostRoundOther": "Careless.", "playerLeads": "Enjoy it.", "rivalLeads": "This is what the canyon relays pay for.", "matchPointAhead": "Close the door then. If you can.", "matchPointBehind": "Last door." },
+    "SABLE": { "wonRound": ["Slow, but lucky.", "A courier. Really.", "Noise."], "lostRoundCutOff": ["Bought and paid for.", "Too slow.", "Derezzed. As purchased."], "lostRoundBoxed": "You are cheaper than I paid.", "lostRoundOther": "Dull.", "playerLeads": "Vess will refund me.", "rivalLeads": "The route is mine already.", "matchPointAhead": "No. Not to a courier.", "matchPointBehind": "Collecting." },
+    "VESS":  { "wonRound": ["I dispatched better.", "Kade taught you that.", "Provisional."], "lostRoundCutOff": ["The licence is mine.", "Ride the window.", "Sold."], "lostRoundBoxed": "Your own trail. I taught Kade that.", "lostRoundOther": "Acceptable. For Sable.", "playerLeads": "You were a good rider. Were.", "rivalLeads": "The route was never going to be yours.", "matchPointAhead": "Take it, then. Take it from me.", "matchPointBehind": "Last disc." }
+  },
+
+  "roles": { "VESS": "DISPATCHER", "KADE": "OUTLANDS RIDER", "ORIN": "RELAY RUNNER", "SABLE": "THE BUYER", "*": "CONTACT" },
+
+  "board": {
+    "name": "ASTRO",
+    "launch": ["No wheels. Doesn't need 'em.", "Deck's warm. Go.", "Routes are the currency. Run one."],
+    "hit": ["Felt that in the trucks.", "Hull's mine too, you know.", "Less of that."],
+    "trick": ["Clean.", "That one's going on the wall.", "Again."],
+    "boost": ["Burning. Say when.", "That's the hull talking."],
+    "derez": ["Pixels. We were pixels.", "Reboot. Same deck."],
+    "respawn": ["Core's back. Breathe.", "Half a hull. Ride it."]
+  },
+
+  "riders": {
+    "cal":   { "launch": ["Clean lines.", "Second time in. Still mine."], "hit": ["Kerb one, Cal nothing.", "Line's gone. Find it again."], "trick": ["Marlow Street taught me that one.", "Still got it."], "derez": ["Saw the wall. Didn't believe it.", "That's one."] },
+    "dude1": { "launch": ["Nothing in here taller than my airs.", "Bowl local. Grid local now."], "hit": ["Coping bit me.", "Walls move in here."], "trick": ["Taller than the mast.", "Bleach, baby."], "derez": ["Boxed. Fine.", "Up. Nobody cuts a show for one derez."] },
+    "dude2": { "launch": ["Rails, conduits, anything with an edge.", "Dex never saw this line."], "hit": ["Dex's crew saw nothing.", "Edge took it."], "trick": ["Tight.", "Rook. Remember it."], "derez": ["Saw the door close.", "Again."] },
+    "girl1": { "launch": ["Filming this one.", "Long boost. Watch."], "hit": ["Not on camera. Good.", "Cut that."], "trick": ["Filmed better. Landed this.", "That's the show."], "derez": ["Cannery's going to hear about this.", "Still rolling."] }
+  }
+}

@@ -323,6 +323,14 @@ final class MissionRunner {
         defaults.set(true, forKey: "chapter.seen.\(m.chapter)")
         log.post("CHAPTER \(m.chapter)", .chapter, chapter: m.chapter, "\(Mission.chapterTitle(m.chapter)). \(Mission.chapterIntro(m.chapter))")
         log.post(Message.unknownSender, .static, chapter: m.chapter, Mission.staticLine(m.chapter))
+        postInterlude(m.chapter)
+    }
+    /// The shop owner, watching the cabinet from the counter: three lines per chapter, one message each.
+    private func postInterlude(_ chapter: Int) {
+        for line in Mission.interlude(chapter) {
+            let body = line.hasPrefix(Mission.interludeSender + ":") ? String(line.dropFirst(Mission.interludeSender.count + 1)).trimmingCharacters(in: .whitespaces) : line
+            log.post(Mission.interludeSender, .notice, chapter: min(3, chapter), body)
+        }
     }
     /// The log is open: everything in it counts as read.
     func markMessagesRead() { log.markRead() }
@@ -677,6 +685,7 @@ final class MissionRunner {
         if finished && !wasFinished {
             log.post(Message.routeSender, .static, chapter: current.chapter, Mission.staticLine(4))
             log.post("KADE", .debrief, code: current.code, chapter: current.chapter, String(Mission.endingLine.dropFirst(6)))
+            postInterlude(4)
         }
         log.post(current.contact, .notice, code: current.code, chapter: current.chapter, "\(current.code): \(reactiveLine)")
     }
