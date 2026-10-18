@@ -3,13 +3,16 @@ import RealityKit
 import Metal
 import simd
 
-/// Which vehicle the player rides. `SPEEDER_VEHICLE=board` swaps the speeder for the hoverboard
-/// (KERB's board + a Character Creator rider, `RiderRig`); everything else in the game is unchanged.
+/// Which vehicle the player rides. The hoverboard (KERB's board + a Character Creator rider, `RiderRig`) is the default
+/// since 18 Oct 2026 (Mark: the board belongs in the KERB story); SETTINGS > VEHICLE still offers the speeder.
+/// `SPEEDER_VEHICLE=board|speeder` forces one; the demo rides the speeder unless asked, so the reference captures hold.
 enum VehicleKind: String {
     case speeder, board
     static var current: VehicleKind {
-        if let k = VehicleKind(rawValue: ProcessInfo.processInfo.environment["SPEEDER_VEHICLE"] ?? "") { return k }
-        return UserDefaults.standard.integer(forKey: "prefs.vehicle") == 1 ? .board : .speeder
+        let env = ProcessInfo.processInfo.environment
+        if let k = VehicleKind(rawValue: env["SPEEDER_VEHICLE"] ?? "") { return k }
+        if env["SPEEDER_DEMO"] == "1" { return .speeder }
+        return (UserDefaults.standard.object(forKey: "prefs.vehicle") as? Int ?? 1) == 1 ? .board : .speeder
     }
 }
 

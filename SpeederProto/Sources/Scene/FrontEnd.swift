@@ -13,6 +13,8 @@ enum Screen: Equatable {
     case story        // the Griptap & Co opening (first run, and replay from SETTINGS)
     case paused       // over a run: RESUME / SETTINGS / QUIT TO TITLE
     case messages     // the message log (from the title, the pause menu and the briefing)
+    case notebook     // the chapter's notebook lines and the hint line (pause, briefing chip)
+    case goals        // a world's goal card (pause, briefing chip)
     case game         // the HUD and the job cards
 }
 
@@ -24,8 +26,10 @@ struct PlayerPrefs: Equatable {
     var haptics = true
     var quality = 0          // 0 high, 1 balanced, 2 battery
     var gridSteering = 0     // 0 smooth (analog), 1 snap 90
-    var vehicle = 0          // 0 speeder, 1 hoverboard (test build; `SPEEDER_VEHICLE=` overrides)
+    var vehicle = 1          // 0 speeder, 1 hoverboard (the default since 18 Oct 2026; `SPEEDER_VEHICLE=` overrides)
+    var cardStyle = 0        // 0 light (muted grey, dark ink: the default), 1 dark (the neon slab)
     var tracks = true        // Mark's music on; off = the generative music
+    var guidance = 2         // 0 off, 1 light (cues), 2 full (rule cards + cues); `prefs.guidance`, read by `Guidance`
     /// The developer panel: five taps on the version line in SETTINGS (always on for the Mac).
     var devUnlocked = PlayerPrefs.devDefault
 
@@ -38,6 +42,7 @@ struct PlayerPrefs: Equatable {
     static let qualityDetail = ["FULL POST PASS", "NO MOTION BLUR OR LENS FX", "ALSO NO RAIN, REFLECTIONS, STOREFRONTS"]
     static let steeringNames = ["SMOOTH", "SNAP 90"]
     static let vehicleNames = ["SPEEDER", "HOVERBOARD"]
+    static let cardStyleNames = ["LIGHT", "DARK"]
 
     static func load(_ d: UserDefaults) -> PlayerPrefs {
         var p = PlayerPrefs()
@@ -46,15 +51,19 @@ struct PlayerPrefs: Equatable {
         if d.object(forKey: "prefs.haptics") != nil { p.haptics = d.bool(forKey: "prefs.haptics") }
         p.quality = max(0, min(2, d.integer(forKey: "prefs.quality")))
         p.gridSteering = max(0, min(1, d.integer(forKey: "prefs.gridSteering")))
-        p.vehicle = max(0, min(1, d.integer(forKey: "prefs.vehicle")))
+        // the board became the default on 18 Oct 2026: a stored 0 from before then is the old default, not a choice
+        if !d.bool(forKey: "prefs.boardDefault") { d.set(true, forKey: "prefs.boardDefault"); d.set(1, forKey: "prefs.vehicle") }
+        if d.object(forKey: "prefs.vehicle") != nil { p.vehicle = max(0, min(1, d.integer(forKey: "prefs.vehicle"))) }
+        p.cardStyle = max(0, min(1, d.integer(forKey: "prefs.cardStyle")))
         if d.object(forKey: "prefs.tracks") != nil { p.tracks = d.bool(forKey: "prefs.tracks") }
+        if d.object(forKey: Guidance.levelKey) != nil { p.guidance = max(0, min(2, d.integer(forKey: Guidance.levelKey))) }
         p.devUnlocked = devDefault || d.bool(forKey: "prefs.devUnlocked")
         return p
     }
     func save(_ d: UserDefaults) {
         d.set(music, forKey: "prefs.music"); d.set(effects, forKey: "prefs.effects"); d.set(haptics, forKey: "prefs.haptics")
         d.set(quality, forKey: "prefs.quality"); d.set(gridSteering, forKey: "prefs.gridSteering"); d.set(devUnlocked, forKey: "prefs.devUnlocked")
-        d.set(vehicle, forKey: "prefs.vehicle"); d.set(tracks, forKey: "prefs.tracks")
+        d.set(vehicle, forKey: "prefs.vehicle"); d.set(tracks, forKey: "prefs.tracks"); d.set(guidance, forKey: Guidance.levelKey); d.set(cardStyle, forKey: "prefs.cardStyle")
     }
 
     /// Graphics quality and Grid steering over the world's look (call after `Theme.adjust`).
@@ -183,7 +192,9 @@ extension GameController {
                 MenuRow(id: "haptics", label: "HAPTICS", kind: .toggle(prefs.haptics)),
                 MenuRow(id: "quality", label: "GRAPHICS", detail: PlayerPrefs.qualityDetail[prefs.quality], kind: .choice(PlayerPrefs.qualityNames, prefs.quality)),
                 MenuRow(id: "steering", label: "GRID STEERING", kind: .choice(PlayerPrefs.steeringNames, prefs.gridSteering)),
-                MenuRow(id: "vehicle", label: "VEHICLE", detail: "TEST BUILD  //  REBUILDS THE WORLD", kind: .choice(PlayerPrefs.vehicleNames, prefs.vehicle)),
+                MenuRow(id: "vehicle", label: "VEHICLE", detail: "REBUILDS THE WORLD", kind: .choice(PlayerPrefs.vehicleNames, prefs.vehicle)),
+                guidanceRow,
+                MenuRow(id: "cards", label: "CARDS", detail: prefs.cardStyle == 0 ? "GREY CARD, DARK TEXT" : "NEON ON BLACK", kind: .choice(PlayerPrefs.cardStyleNames, prefs.cardStyle)),
                 MenuRow(id: "rider", label: "CALLSIGN", detail: "\(player.callsign)  //  \(player.liveryName)"),
             ]
             rows.append(MenuRow(id: "save", label: saveArmed ? "SAVED" : "SAVE GAME", detail: SaveSlot.exists(.standard) ? "LAST SAVE \(SaveSlot.savedText(.standard))" : "JOBS, CREDITS, GARAGE, RIDER"))
@@ -211,17 +222,39 @@ extension GameController {
             return []
         case .messages:
             return [MenuRow(id: "back", label: "BACK")]
+        case .notebook:
+            let contact = missions.chapterContact
+            return [MenuRow(id: "hint", label: "CALL \(contact)", detail: hintText.isEmpty ? "A HINT FOR THE FIRST OPEN LINE" : "AGAIN FOR A PLAINER ONE"),
+                    MenuRow(id: "back", label: "BACK")]
+        case .goals:
+            return [MenuRow(id: "goalworld", label: "WORLD", kind: .choice(GoalCard.worlds.map { GoalCard.title($0) }, GoalCard.worlds.firstIndex(of: goalsWorld) ?? 0)),
+                    MenuRow(id: "back", label: "BACK")]
         case .paused:
             var rows = [
                 MenuRow(id: "resume", label: "RESUME"),
                 MenuRow(id: "save", label: saveArmed ? "SAVED" : "SAVE GAME", detail: SaveSlot.exists(.standard) ? "LAST SAVE \(SaveSlot.savedText(.standard))" : "JOBS, CREDITS, GARAGE, RIDER"),
-            ] + (missionActive ? messagesRow : []) + [
+            ] + (missionActive ? messagesRow + [notebookRow] : []) + [goalsRow] + [
                 MenuRow(id: "settings", label: "SETTINGS"),
                 MenuRow(id: "title", label: "QUIT TO TITLE", detail: missionActive && !missions.isParked ? "THE JOB STARTS OVER" : ""),
             ]
             if prefs.devUnlocked { rows.append(MenuRow(id: "dev", label: "DEVELOPER PANEL", kind: .toggle(panelVisible))) }
             return rows
         }
+    }
+
+    /// NOTEBOOK: the chapter's lines, ticked of total and what the gate needs.
+    private var notebookRow: MenuRow {
+        let c = missions.chapter
+        return MenuRow(id: "notebook", label: "NOTEBOOK", detail: "CHAPTER \(c)  //  \(missions.notebook.tickedCount(chapter: c)) OF \(Notebook.notes(chapter: c).count) TICKED")
+    }
+    /// GOAL CARD: the world on screen's nine lines.
+    private var goalsRow: MenuRow {
+        let w = GoalCard.world(for: Theme(rawValue: settings.environment) ?? .neonCity)
+        let card = missions.goalCards[w]
+        return MenuRow(id: "goals", label: "GOAL CARD", detail: "\(GoalCard.title(w))  //  \(card?.doneCount ?? 0) OF \(card?.goals.count ?? 9) DONE")
+    }
+    private var guidanceRow: MenuRow {
+        MenuRow(id: "guidance", label: "GUIDANCE", detail: ["NO CARDS, NO CUES", "CUES ONLY", "RULE CARDS AND CUES"][prefs.guidance], kind: .choice(GuidanceLevel.names, prefs.guidance))
     }
 
     /// MESSAGES: the log, once there is anything in it; the detail names the newest sender and the unread count.
@@ -271,6 +304,12 @@ extension GameController {
         case "story": riderFirstRun = false; push(.story)
         case "freeplay": push(.worlds)
         case "messages": openMessages()
+        case "notebook": openNotebook()
+        case "goals": openGoals()
+        case "hint":
+            if let h = missions.callForHint() { hintSender = h.sender; hintText = h.text; sound.play(.approach, volume: 0.4, pitch: 1.4) }
+            else { hintSender = missions.chapterContact; hintText = "Nothing left on the list. Ride."; sound.play(.tick, volume: 0.4) }
+        case "guidance", "goalworld", "cards": adjust(id, by: 1)
         case "settings": push(.settings)
         case "rider": riderFirstRun = false; push(.rider)
         case "back": pop()
@@ -310,6 +349,12 @@ extension GameController {
         case "vehicle": setValue(id, ((prefs.vehicle + d) % 2 + 2) % 2)
         case "livery": setLivery(player.livery + d)
         case "roster": selectRider(Roster.index(of: rider) + d)
+        case "guidance": setValue(id, ((prefs.guidance + d) % 3 + 3) % 3)
+        case "cards": setValue(id, ((prefs.cardStyle + d) % 2 + 2) % 2)
+        case "goalworld":
+            let n = GoalCard.worlds.count, i = GoalCard.worlds.firstIndex(of: goalsWorld) ?? 0
+            goalsWorld = GoalCard.worlds[((i + d) % n + n) % n]
+            sound.play(.tick, volume: 0.4, pitch: 1.3)
         default: break
         }
     }
@@ -352,6 +397,14 @@ extension GameController {
         case "quality": p.quality = max(0, min(2, v))
         case "steering": p.gridSteering = max(0, min(1, v))
         case "vehicle": p.vehicle = max(0, min(1, v))
+        case "guidance":
+            p.guidance = max(0, min(2, v))
+            missions.guidance.setLevel(GuidanceLevel(rawValue: p.guidance) ?? .full)
+            do { print("GUIDE level \(GuidanceLevel(rawValue: p.guidance)?.label ?? "")") }
+        case "goalworld":
+            goalsWorld = GoalCard.worlds[max(0, min(GoalCard.worlds.count - 1, v))]
+            return
+        case "cards": p.cardStyle = max(0, min(1, v))
         case "livery": setLivery(v); return
         default: return
         }
@@ -452,6 +505,18 @@ extension GameController {
         }
     }
 
+    /// The notebook over the pause or the briefing (the briefing's NOTES chip).
+    func openNotebook() {
+        missions.notebook.sync(upTo: missions.chapter)
+        hintSender = ""; hintText = ""
+        push(.notebook)
+    }
+    /// The goal card for the world on screen (left / right switches world on the page).
+    func openGoals(world: String? = nil) {
+        goalsWorld = world ?? GoalCard.world(for: Theme(rawValue: settings.environment) ?? .neonCity)
+        push(.goals)
+    }
+
     /// The message log over the title, the pause or the briefing.
     func openMessages() {
         guard missions.messages.count > 0 else { return }
@@ -538,6 +603,11 @@ extension GameController {
         case "rider": riderFirstRun = true; return [.title, .rider]
         case "paused": return [.game, .paused]
         case "messages": return [.title, .messages]
+        case "notebook":
+            // SPEEDER_HINT=<n> calls the contact n times, so the sheet shows the ladder's step
+            for _ in 0..<(Int(ProcessInfo.processInfo.environment["SPEEDER_HINT"] ?? "0") ?? 0) { if let h = missions.callForHint() { hintSender = h.sender; hintText = h.text } }
+            return [.game, .paused, .notebook]
+        case "goals": goalsWorld = GoalCard.world(for: missions.current.theme); return [.game, .paused, .goals]
         case "riders": riderFirstRun = true; return [.title, .riders]
         case "story": return [.title, .story]
         case "game": return [.game]

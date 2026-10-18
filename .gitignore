@@ -6,3 +6,9 @@ SpeederProto/build-*/
 .DS_Store
 SpeederProto/Captures/**/log.txt
 new_images_per_Art_Brief_*/
+# Step 2 simulator shots are 3.5 MB each: the contact sheets in p20/ are committed, the raw folders re-take with sheets.sh
+SpeederProto/Captures/polish/p20/sim/
+SpeederProto/Captures/polish/p20/sim-dark/
+SpeederProto/Captures/polish/p20/sim-white/
+SpeederProto/Captures/polish/p20/demo-*/
+SpeederProto/Captures/polish/p20/sheets-log.txt

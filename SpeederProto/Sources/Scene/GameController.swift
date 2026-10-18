@@ -65,7 +65,25 @@ final class GameController: ObservableObject {
     private var rivalCommsRound = -1
     /// The board's and the rider's lines (narrative.json): queued behind the contact's and the rival's, one at a time.
     private var sideComms: [(speaker: String, text: String, delay: Float)] = []
-    private let linePicker = LinePicker()
+    /// The rider's and the board's barks (`Barks.swift`, tuned in narrative.json).
+    private let barks = Barks()
+    /// Step 2's HUD lanes: the guidance cue under the comms line, the goal / notebook toast top-right.
+    private var cueText = "", cueTimer: Float = 0
+    private var toastLabel = "", toastText = "", toastTimer: Float = 0
+    /// How long the rule card has been up (the demo dismisses it after a beat, so a capture can catch it).
+    private var cardTimer: Float = 0
+    private var forcedCardDone = false
+    /// Free play's run, for the goal card's metres line; the split taken last (tunnel / skyway events once each).
+    private var goalRunDistance: Float = 0
+    private var goalMetresStep = 0
+    private var lastDecisionSeen: String? = nil
+    private var lastGrindSecond = 0
+    private var hullLowSaid = false
+    /// The notebook page's last hint (CALL <contact>).
+    @Published var hintSender = ""
+    @Published var hintText = ""
+    /// The goal card page's world (left / right on the page; starts at the world on screen).
+    @Published var goalsWorld = "city"
     private var runClock: Float = 0
     /// The rider's identity, published for the HUD.
     @Published var player = Player()
@@ -220,6 +238,8 @@ final class GameController: ObservableObject {
         // every launch is a fresh start (riders, the opening, job 1); CONTINUE loads the manual save
         if SaveSlot.freshStartAtLaunch { SaveSlot.clearLive(.standard) }
         missions = MissionRunner()
+        missions.guidance.logging = demoMode; missions.notebook.logging = demoMode; barks.logging = demoMode
+        for g in missions.goalCards.values { g.logging = demoMode }
         #if os(macOS)
         arView = GameARView(frame: NSRect(x: 0, y: 0, width: 1280, height: 720))
         #else
@@ -645,26 +665,32 @@ final class GameController: ObservableObject {
             // the job loop runs under the title too (parked, briefed); only the game takes the accept
             let fire = input.firing
             if screen == .game {
-                if fire && !missionFirePrev && missions.phase != .running { acceptMission() }
+                if fire && !missionFirePrev && (missions.phase != .running || missions.card != nil) { acceptMission() }
                 briefingInput(input)
             }
             missionFirePrev = fire
+            guidanceFrame(dt: dt)
             var beaconHits = 0
             if let beacons, missions.isRunning {
                 beaconHits = beacons.update(distance: distance, roadX: { world.offset(atWorldZ: $0) - world.playerOffset }, playerX: speeder.x, playerY: speeder.altitude, time: time)
                 if beaconHits > 0 { flash = max(flash, 0.2); ackTimers.beacon = 0.6; gamepad.rumble(intensity: 0.5, sharpness: 0.9); sound.play(.beacon)
-                    soundtrack.announce(["vo_power_up"], key: "powerup", cooldown: 9, chance: 0.6) }
+                    soundtrack.announce(["vo_power_up"], key: "powerup", cooldown: 9, chance: 0.6)
+                    for _ in 0..<beaconHits { goalEvent("beacon") }
+                    say("beacon", delay: 0.8) }
             }
             missions.update(dt: simDt, travel: speed * simDt, speed: speed, newHits: hits - missionHitsSeen, boosting: input.boosting && missions.boostAllowed,
                             scraping: speeder.scraping && speed > 5, newKills: kills - missionKillsSeen, beaconsHitNow: beaconHits,
                             branch: world.lastDecision == "tunnel" ? -1 : (world.lastDecision == "skyway" ? 1 : 0))
             missionHitsSeen = hits
             missionKillsSeen = kills
+            if let c = missions.cueNow { cue(c) }
+            drainNews()
             if missions.isRunning, let s = missions.scoredNow {
                 let timeText = s.time > 0 ? String(format: "  +%.1f s", s.time) : ""
                 stamp((s.streak > 1 ? "+\(s.value)  x\(s.streak)" : "+\(s.value)") + timeText, seconds: 0.6)
                 sound.play(.gate, volume: 0.7, pitch: 0.85 + Float(s.streak) * 0.06)
                 if s.streak >= 3 { soundtrack.announce(["vo_combo"], key: "combo", cooldown: 12, chance: 0.7) }
+                if s.streak == 5 { say("streak", delay: 0.8) }
             }
             if missions.helmetUsedNow { stamp("HELMET", seconds: 0.9); flash = max(flash, 0.5); sound.play(.respawn, volume: 0.6) }
             if missions.respawnedNow {
@@ -688,6 +714,7 @@ final class GameController: ObservableObject {
                 let low: Float = ms.energy < 0.25 ? 0.45 : 0
                 let close: Float = ms.kind == .escape ? clamp01((25 - ms.gap) / 20) * 0.7 : 0
                 sound.set(.alarm, volume: max(low, close), pitch: close > low ? 1.4 : 1)
+                if ms.energy < 0.25 && !hullLowSaid { hullLowSaid = true; say("hull_low", delay: 0.6) }
             } else {
                 lastTickSecond = -1
             }
@@ -704,6 +731,7 @@ final class GameController: ObservableObject {
                 && ms.distanceLeft / max(speed, 1) > ms.timeLeft * 0.6 {
                 hurryCalled = true
                 soundtrack.announce(["vo_hurry_up"], priority: true)
+                say("time_low", delay: 1.5)
             }
             if missions.phase != mission.phase || missions.phase == .running && statsAccumulator > 0.2 { mission = ms }
             // music: the pad under the cards, bass on the run, the arp when it gets hot
@@ -775,7 +803,24 @@ final class GameController: ObservableObject {
         let style = world.currentBlock.style
         if style != lastStyle {
             if lastStyle != nil, let label = WorldScroller.sectionLabel(style) { stamp(label); sound.play(.section) }
+            if lastStyle != nil && moving {
+                if style == .tube { goalEvent("conduit") }
+                if style == .tunnel { goalEvent("undercity") }
+            }
             lastStyle = style
+        }
+        // the split taken (the goal card's tunnel / skyway lines)
+        if let d = world.lastDecision, d != lastDecisionSeen {
+            lastDecisionSeen = d
+            if moving && (d == "tunnel" || d == "skyway") { goalEvent(d) }
+        } else if world.lastDecision == nil { lastDecisionSeen = nil }
+        if !missionActive && moving {
+            goalRunDistance += travel
+            if Int(goalRunDistance / 500) > goalMetresStep {
+                goalMetresStep = Int(goalRunDistance / 500)
+                missions.goalMeasure("metres", value: Int(goalRunDistance), world: goalWorld)
+                drainNews()
+            }
         }
         // "coming up" cue: one tone when a section change comes into range
         if let u = world.upcoming {
@@ -861,6 +906,8 @@ final class GameController: ObservableObject {
                             o.entity.isEnabled = false
                             weapons.explode(at: c)
                             kills += 1
+                            goalEvent("kill")
+                            say("kill", delay: 0.6)
                             shakeBurst = max(shakeBurst, 0.2)
                             gamepad.rumble(intensity: 0.5, sharpness: 0.9)
                             sound.play(.kill, volume: 0.8)
@@ -986,19 +1033,78 @@ final class GameController: ObservableObject {
     /// hit, boost and respawn the board's. Rate-limited per event (`LinePicker`), shown once the lane is free, never
     /// over the contact or the rival. The speeder has no board voice, so only the rider's events fire there.
     private func say(_ event: String, delay: Float) {
-        let riderEvents: Set<String> = ["launch", "trick", "derez"]
-        var speaker = "", pool: [String] = []
-        if riderEvents.contains(event) {
-            speaker = String(rider.name.split(separator: " ").first ?? "RIDER")
-            pool = Narrative.riderLines(rider.id, event)
-        } else if speeder?.kind == .board {
-            speaker = Narrative.boardName
-            pool = Narrative.boardLines(event)
+        let name = String(rider.name.split(separator: " ").first ?? "RIDER")
+        let chapter = missionActive ? missions.current.chapter : 0
+        guard let b = barks.fire(event, chapter: chapter, rider: rider.id, riderName: name, onBoard: speeder?.kind == .board, now: time) else { return }
+        guard sideComms.count < 3 else { return }          // a backlog is stale by the time it would show
+        sideComms.append((b.speaker, b.text.uppercased(), delay))
+    }
+
+    // MARK: - Step 2: rule cards, cues, goal and notebook news
+
+    private var goalWorld: String { GoalCard.world(for: theme) }
+    /// Capture hooks, read once (the environment is a fresh dictionary on every call: it showed in a frame sample).
+    private static let forcedCard = ProcessInfo.processInfo.environment["SPEEDER_GUIDE_CARD"]
+    private static let holdCard = ProcessInfo.processInfo.environment["SPEEDER_HOLD_CARD"] == "1"
+
+    /// Per frame while the job loop is on: the briefing's cards, the capture hook, the demo's dismiss.
+    private func guidanceFrame(dt: Float) {
+        if screen == .game && worldReady && !pendingRebuild && !rebuilding && curtain < 0.01 {
+            if let id = Self.forcedCard, !forcedCardDone, missions.phase == .briefing || missions.phase == .running {
+                forcedCardDone = true
+                missions.forceCard(id)
+                print("GUIDE card \(id) (forced)")
+                mission = missions.snapshot()
+            } else if missions.phase == .briefing && missions.briefingCards() {
+                mission = missions.snapshot()
+            }
         }
-        guard !pool.isEmpty else { return }
-        let (cooldown, cap): (Float, Int) = event == "hit" ? (14, 2) : (event == "trick" ? (10, 3) : (event == "boost" ? (20, 1) : (1, 1)))
-        guard let text = linePicker.pick(event, from: pool, now: time, cooldown: cooldown, cap: cap) else { return }
-        sideComms.append((speaker, text.uppercased(), delay))
+        if missions.card != nil {
+            cardTimer += dt
+            if mission.card != missions.card { mission = missions.snapshot() }
+            if demoMode && !Self.holdCard && cardTimer > 1.6 { dismissCard() }
+        } else {
+            cardTimer = 0
+        }
+    }
+
+    private func dismissCard() {
+        guard missions.card != nil else { return }
+        missions.dismissCard()
+        cardTimer = 0
+        mission = missions.snapshot()
+        sound.play(.accept, volume: 0.6)
+    }
+
+    /// A one-line reminder on the cue lane (under the comms line).
+    private func cue(_ text: String) {
+        cueText = text
+        cueTimer = 3.2
+        sound.play(.approach, volume: 0.2, pitch: 2.0)
+    }
+
+    /// Goal and notebook news from the runner: a toast, a bark, the credits.
+    private func drainNews() {
+        for n in missions.takeNews() {
+            switch n {
+            case .goal(let g, let credits):
+                toastLabel = "GOAL"; toastText = "\(g.text.uppercased())  +\(credits)"; toastTimer = 3.0
+                sound.play(.pickupTaken, volume: 0.7); gamepad.rumble(intensity: 0.4, sharpness: 0.8)
+                if missions.isRunning || !missionActive { say("goal", delay: 1.0) }
+                mission.credits = missions.credits
+            case .goalNear:
+                if let t = missions.cueNow { cue(t) }
+            case .note(let note):
+                toastLabel = "NOTEBOOK"; toastText = note.text.uppercased(); toastTimer = 3.4
+                sound.play(.beacon, volume: 0.5)
+            }
+        }
+    }
+
+    /// A world event for the goal card (both job runs and free play).
+    private func goalEvent(_ id: String) {
+        missions.goalEvent(id, world: goalWorld)
+        drainNews()
     }
     private func updateSideComms(dt: Float) {
         guard rivalComms == nil, !sideComms.isEmpty else { return }
@@ -1062,11 +1168,14 @@ final class GameController: ObservableObject {
         ackTimers.beacon = max(0, ackTimers.beacon - dt); ackTimers.hit = max(0, ackTimers.hit - dt)
         ackTimers.stamp = max(0, ackTimers.stamp - dt); ackTimers.boost = max(0, ackTimers.boost - dt)
         commsTimer = max(0, commsTimer - dt)
+        cueTimer = max(0, cueTimer - dt); toastTimer = max(0, toastTimer - dt)
         ackTimers.trick = max(0, ackTimers.trick - dt)
         let a = ActionAck(boost: ackBoost || ackTimers.boost > 0, fire: ackTimers.fire > 0, jump: ackTimers.jump > 0, pickup: ackTimers.pickup > 0, trick: ackTimers.trick > 0,
                           snap: ackTimers.snap > 0, beacon: ackTimers.beacon > 0, hit: ackTimers.hit > 0,
                           stamp: ackTimers.stamp > 0 ? stampText : "",
-                          commsSpeaker: commsTimer > 0 ? commsSpeaker : "", commsText: commsTimer > 0 ? commsText : "")
+                          commsSpeaker: commsTimer > 0 ? commsSpeaker : "", commsText: commsTimer > 0 ? commsText : "",
+                          cueText: cueTimer > 0 ? cueText : "",
+                          toastLabel: toastTimer > 0 ? toastLabel : "", toastText: toastTimer > 0 ? toastText : "")
         if a != ack { ack = a }
         sound.update(dt: dt)
         arView.input.tapFire = false
@@ -1192,12 +1301,15 @@ final class GameController: ObservableObject {
         guard runCardUp else { return }
         runCardUp = false
         runCardPrev = true
+        missions.startGoalRun(world: goalWorld); goalRunDistance = 0; goalMetresStep = 0; lastGrindSecond = 0
+        barks.startRun()
         stamp("GO", seconds: 0.6); sound.play(.go)
         soundtrack.announce(["vo_ready", "vo_go"], priority: true)
     }
 
     func acceptMission() {
         if runCardUp { dismissRunCard(); return }
+        if missions.card != nil { dismissCard(); return }
         if let arena, arena.awaitingRestart, !missionActive { restartArenaMatch(arena); return }
         guard missionActive, !pendingRebuild, !rebuilding else { return }
         let wasBriefing = missions.phase == .briefing
@@ -1212,7 +1324,7 @@ final class GameController: ObservableObject {
             stamp("GO", seconds: 0.6)
             sound.play(.go)
             soundtrack.announce(["vo_ready", "vo_go"], priority: true)
-            linePicker.startRun(); sideComms = []
+            barks.startRun(); sideComms = []; hullLowSaid = false
             say("launch", delay: 5.5)      // after the contact's launch line (1.6 s + 2.8 s)
         }
         if rebuild {
@@ -1296,13 +1408,15 @@ final class GameController: ObservableObject {
             let fire = input.firing || (demoMode && time > 1.5 && !holdBriefing && !(holdResult && !missions.isParked) && Int(time * 2) % 3 == 0)
             if screen != .game {
                 // the front end has the buttons
-            } else if fire && !missionFirePrev && missions.phase != .running && missions.phase != .rivalIntro { acceptMission() }
+            } else if fire && !missionFirePrev && missions.card != nil { acceptMission() }
+            else if fire && !missionFirePrev && missions.phase != .running && missions.phase != .rivalIntro { acceptMission() }
             else if fire && !missionFirePrev && missions.phase == .rivalIntro && !demoMode && missions.snapshot().introLeft < Self.introSkipAfter { acceptMission() }
             missionFirePrev = fire
+            guidanceFrame(dt: dt)
             if screen == .game { briefingInput(input) }
             if missions.phase == .rivalIntro { missions.tickIntro(dt: dt); if missions.phase == .running { stamp("ROUND 1", seconds: 1.0); sound.play(.roundStart, volume: 0.6) } }
             missions.lastDerezCause = arena.stateText
-            arena.paused = missions.phase != .running || runCardUp
+            arena.paused = missions.phase != .running || runCardUp || missions.card != nil
             arena.matchTarget = Int.max
             if let r = missions.current.rival { arena.rival = r }
             let phaseBefore = missions.phase
@@ -1334,8 +1448,21 @@ final class GameController: ObservableObject {
         if ev.charged { ackTimers.boost = 0.4; stamp("CHARGE", seconds: 0.6); sound.play(.charge) }
         if ev.zoneOpened { stamp("ZONE", seconds: 1.2); sound.play(.zone) }
         // round and match beats: one stamp each, on the frame they happen
-        if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2); sound.play(.rivalDerez) }
-        if ev.roundLost { stamp("DEREZZED", seconds: 2.2); sound.play(.derez); say("derez", delay: 5.6) }   // after the rival's line
+        if ev.roundWon { stamp("\(arena.rivalName) DEREZZED", seconds: 2.2); sound.play(.rivalDerez); goalEvent("round"); say("round_won", delay: 5.6) }
+        if ev.roundLost { stamp("DEREZZED", seconds: 2.2); sound.play(.derez); say("derez", delay: 5.6)   // after the rival's line
+            if missionActive && missions.raise("derez") { mission = missions.snapshot() } }
+        // the goal card's Grid lines and the Grid's cues
+        if ev.padBoost { goalEvent("pad") }
+        if ev.charged { goalEvent("charge") }
+        if ev.pickupUsed != nil { goalEvent("pickup") }
+        if ev.jumped { goalEvent("jump") }
+        if ev.matchWon && !missionActive { goalEvent("match"); if arena.losses == 0 { goalEvent("flawless") } }
+        if ev.roundStart && arena.roundNumber == 1 { missions.startGoalRun(world: "grid"); lastGrindSecond = 0; barks.startRun(); missions.guidance.startRun() }
+        if Int(arena.bestGrind) > lastGrindSecond { lastGrindSecond = Int(arena.bestGrind); missions.goalMeasure("grind", value: lastGrindSecond, world: "grid"); drainNews() }
+        if arena.stateText.isEmpty && !arena.paused {
+            if arena.energy < 0.2, let t = missions.guidance.cue("grid_energy", now: time) { cue(t) }
+            else if arena.edge < 0.25, let t = missions.guidance.cue("grid_edge", now: time) { cue(t) }
+        }
         // the rival's voice: one line per round, after the attribution has had its frame
         if (ev.roundWon || ev.roundLost) && !ev.matchWon && !ev.matchLost && rivalCommsRound != arena.roundNumber {
             rivalCommsRound = arena.roundNumber

@@ -33,7 +33,19 @@ struct FrontEndView: View {
     /// The select / back art: the pad's buttons, else the keyboard's keys.
     private var selectSymbol: String { glyphs.connected ? glyphs.a : "return" }
     private var backSymbol: String { glyphs.connected ? glyphs.b : "escape" }
-    private var compactList: Bool { screen == .settings || screen == .rider || screen == .messages || screen == .riders }
+    private var compactList: Bool { screen == .settings || screen == .rider || screen == .messages || screen == .riders || screen == .notebook || screen == .goals }
+    /// The compact pages' heading.
+    private var pageTitle: String {
+        switch screen {
+        case .settings: return "SETTINGS"
+        case .messages: return "MESSAGES"
+        case .notebook: return "NOTEBOOK"
+        case .goals: return "GOAL CARD"
+        case .riders: return controller.riderFirstRun ? "WHO'S RIDING?" : "RIDERS"
+        case .paused: return "PAUSED"
+        default: return controller.onTitle ? "CALLSIGN" : "RIDER"
+        }
+    }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -89,8 +101,10 @@ struct FrontEndView: View {
             VStack(alignment: .leading, spacing: compactList ? 5 : 8) {
                 Spacer(minLength: 0)
                 if compactList {
-                    heading(screen == .settings ? "SETTINGS" : (screen == .messages ? "MESSAGES" : (screen == .riders ? (controller.riderFirstRun ? "WHO'S RIDING?" : "RIDERS") : "CALLSIGN")), over: "KERB: GALACTIC")
+                    heading(pageTitle, over: "KERB: GALACTIC")
                     if screen == .messages { messageList }
+                    if screen == .notebook { notebookPage }
+                    if screen == .goals { goalsPage }
                 } else {
                     Text("KERB: GALACTIC").font(HUDStyle.display(HUDStyle.wordmarkSize - 12)).tracking(6).foregroundStyle(.white)
                         .shadow(color: accent.opacity(0.8), radius: 14)
@@ -135,8 +149,10 @@ struct FrontEndView: View {
                 .ignoresSafeArea()
             VStack(alignment: .leading, spacing: 8) {
                 Spacer(minLength: 0)
-                heading(screen == .paused ? "PAUSED" : (screen == .settings ? "SETTINGS" : (screen == .messages ? "MESSAGES" : "RIDER")), over: pauseContext)
+                heading(pageTitle, over: pauseContext)
                 if screen == .messages { messageList }
+                if screen == .notebook { notebookPage }
+                if screen == .goals { goalsPage }
                 rows
                 footer.padding(.top, 2)
             }
@@ -188,6 +204,74 @@ struct FrontEndView: View {
         }
     }
 
+    // MARK: - Notebook and goal card (step 2)
+
+    /// The chapter's lines: a box per line (ticked in the accent), the gate's count, the contact's last hint.
+    private var notebookPage: some View {
+        let c = controller.missions.chapter
+        let items = controller.missions.notebook.items(chapter: c)
+        let ticked = items.filter(\.done).count, need = Notebook.need(chapter: c)
+        let contact = controller.missions.chapterContact
+        let tint = HUDStyle.color(Rival.named(contact)?.color ?? Rival.vessColor)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("CHAPTER \(c)  //  \(Mission.chapterTitle(c))").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.55))
+                Text("\(ticked) OF \(items.count)").font(HUDStyle.display(HUDStyle.labelSize + 1)).monospacedDigit().foregroundStyle(accent)
+                Text(ticked >= need ? "ENOUGH FOR THE NEXT CHAPTER" : "\(need - ticked) MORE WORTH DOING").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1)
+                    .foregroundStyle(ticked >= need ? HUDStyle.reward : .white.opacity(0.45))
+            }
+            ForEach(Array(items.enumerated()), id: \.offset) { _, it in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: it.done ? "checkmark.square.fill" : "square").font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(it.done ? accent : .white.opacity(0.4))
+                    Text(it.text).font(HUDStyle.body(HUDStyle.bodySize)).foregroundStyle(it.done ? .white.opacity(0.5) : .white.opacity(0.92))
+                        .strikethrough(it.done, color: .white.opacity(0.4))
+                }
+            }
+            if !controller.hintText.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    Rectangle().fill(tint.opacity(0.8)).frame(width: 2)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(controller.hintSender).font(HUDStyle.display(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(tint)
+                        Text(controller.hintText).font(HUDStyle.body(HUDStyle.bodySize)).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.top, 2)
+                .transition(.opacity)
+            }
+        }
+        .frame(width: 440, alignment: .leading)
+        .padding(.bottom, 4)
+    }
+
+    /// A world's nine goals: done ones ticked, the run's progress on counted lines, what each pays.
+    private var goalsPage: some View {
+        let w = controller.goalsWorld
+        let card = controller.missions.goalCards[w]
+        let items = card?.items ?? []
+        return VStack(alignment: .leading, spacing: 1) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(GoalCard.title(w)).font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.55))
+                Text("\(card?.doneCount ?? 0) OF \(items.count)").font(HUDStyle.display(HUDStyle.labelSize + 1)).monospacedDigit().foregroundStyle(accent)
+                Text("\(card?.earned ?? 0) CREDITS EARNED").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.45))
+            }
+            ForEach(Array(items.enumerated()), id: \.offset) { _, it in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: it.done ? "checkmark.square.fill" : "square").font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(it.done ? accent : .white.opacity(0.4))
+                    Text(it.text.uppercased()).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.5)
+                        .foregroundStyle(it.done ? .white.opacity(0.45) : .white.opacity(0.9))
+                    if !it.progress.isEmpty { Text(it.progress).font(HUDStyle.label(HUDStyle.labelSize)).monospacedDigit().foregroundStyle(HUDStyle.amber) }
+                    Spacer(minLength: 6)
+                    Text(it.done ? "PAID" : "+\(it.credits)").font(HUDStyle.display(HUDStyle.labelSize)).monospacedDigit()
+                        .foregroundStyle(it.done ? .white.opacity(0.35) : HUDStyle.reward)
+                }
+            }
+        }
+        .frame(width: 440, alignment: .leading)
+        .padding(.bottom, 4)
+    }
+
     // MARK: - Lists
 
     @ViewBuilder private var rows: some View {
@@ -202,9 +286,20 @@ struct FrontEndView: View {
                 }
             }
         } else {
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in bigRow(row, i) }
+            // the pause grew rows (NOTEBOOK, GOAL CARD): on a 390 pt phone the list scrolls rather than clip the heading
+            ViewThatFits(in: .vertical) {
+                bigStack(rows)
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) { bigStack(rows) }
+                        .onChange(of: controller.menuIndex) { _, i in withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(i, anchor: .center) } }
+                }
             }
+        }
+    }
+
+    private func bigStack(_ rows: [MenuRow]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in bigRow(row, i).id(i) }
         }
     }
 

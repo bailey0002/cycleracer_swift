@@ -44,6 +44,13 @@ struct NarrativeFile: Codable {
     var roles: [String: String]?
     var board: Board?
     var riders: [String: RiderLines]?
+    // step 2: guidance, the notebook, the goal cards, the barks
+    struct GuideCard: Codable { var title: String?; var lines: [String]? }
+    struct GuidanceText: Codable { var cards: [String: GuideCard]?; var cues: [String: String]? }
+    var guidance: GuidanceText?
+    var notebook: [String: NotebookChapter]?
+    var goals: [String: [GoalSpec]]?
+    var barks: [BarkSpec]?
 }
 
 enum Narrative {
@@ -54,7 +61,7 @@ enum Narrative {
               let data = try? Data(contentsOf: url) else { print("Narrative: narrative.json missing, Swift tables only"); return nil }
         do {
             let f = try JSONDecoder().decode(NarrativeFile.self, from: data)
-            print("Narrative: v\(f.version ?? 0), \(f.jobs?.count ?? 0) jobs, \(f.chapters?.count ?? 0) chapters, \(f.riders?.count ?? 0) riders")
+            print("Narrative: v\(f.version ?? 0), \(f.jobs?.count ?? 0) jobs, \(f.chapters?.count ?? 0) chapters, \(f.riders?.count ?? 0) riders, \(f.guidance?.cards?.count ?? 0) cards, \(f.goals?.count ?? 0) goal cards, \(f.barks?.count ?? 0) barks")
             return f
         } catch { print("Narrative: decode failed: \(error)"); return nil }
     }()
@@ -136,6 +143,7 @@ final class LinePicker {
     func startRun() { perRun = [:] }
 
     func pick(_ key: String, from pool: [String], now: Float, cooldown: Float, cap: Int) -> String? {
+        // a bark's chance is rolled by the caller (`Barks.fire`) before the pick, so a miss spends no cooldown
         guard !pool.isEmpty else { return nil }
         if let t = lastAt[key], now - t < cooldown { return nil }
         if perRun[key, default: 0] >= cap { return nil }

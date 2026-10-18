@@ -52,6 +52,7 @@ enum HeadlessLoop {
         let m = runner.current
         var report = RunReport(code: m.code, kind: m.kindText, timeLimit: m.timeLimit)
         _ = runner.accept()
+        runner.dismissCard()                       // a rule card holds the world; the loop reads it at once
         var t: Float = 0
         if m.kind == .duel {
             while runner.phase == .rivalIntro { runner.tickIntro(dt: dt); t += dt }
@@ -95,6 +96,7 @@ enum HeadlessLoop {
                     if killsTaken < killsToTake { killsNow = 1; killsTaken += 1 }
                     nextKill += killSpacing
                 }
+                if runner.card != nil { runner.dismissCard() }
                 runner.update(dt: simDt, travel: travel, speed: speed, newHits: newHits, boosting: boosting, newKills: killsNow, beaconsHitNow: beaconsNow,
                               branch: travelled > m.distance * 0.5 ? rider.branch : 0)
                 if runner.respawnedNow { respawns += 1 }
@@ -113,12 +115,13 @@ enum HeadlessLoop {
     }
 
     /// A fresh runner on its own defaults suite, at the first briefing (chapter card skipped).
-    static func freshRunner(at index: Int = 0) -> MissionRunner {
+    static func freshRunner(at index: Int = 0, guidance: GuidanceLevel = .off) -> MissionRunner {
         let suite = "speeder.tests.\(UUID().uuidString)"
         let d = UserDefaults(suiteName: suite)!
         d.removePersistentDomain(forName: suite)
         for c in 1...3 { d.set(true, forKey: "chapter.seen.\(c)") }
         if index > 0 { d.set(index, forKey: "cleared"); d.set(index, forKey: "missionIndex") }
+        d.set(guidance.rawValue, forKey: Guidance.levelKey)    // the balance loop rides without rule cards
         return MissionRunner(defaults: d)
     }
 
@@ -240,6 +243,7 @@ final class MissionLoopTests: XCTestCase {
         d.removePersistentDomain(forName: "speeder.tests.helmet")
         for c in 1...3 { d.set(true, forKey: "chapter.seen.\(c)") }
         d.set(1 << 5, forKey: Upgrades.key)     // helmet owned
+        d.set(0, forKey: Guidance.levelKey)
         let helmeted = MissionRunner(defaults: d)
         XCTAssertEqual(helmeted.upgrades.helmet, 1)
         _ = helmeted.accept(); _ = runner.accept()
@@ -389,6 +393,178 @@ final class MissionLoopTests: XCTestCase {
         XCTAssertEqual(runner.phase, .chapter)
         _ = runner.accept()
         XCTAssertEqual(runner.messages.filter { $0.sender == Mission.interludeSender }.count, 3)
+    }
+
+    // MARK: - Step 2: guidance, the notebook, the goal card, barks
+
+    /// Rule cards show once each at FULL and hold the world; LIGHT keeps the cues only; cues obey cooldown and cap.
+    func testGuidanceCardsOnceAndCues() {
+        let runner = HeadlessLoop.freshRunner(guidance: .full)
+        XCTAssertTrue(runner.briefingCards())
+        XCTAssertEqual(runner.card?.id, "briefing")
+        XCTAssertFalse(runner.briefingCards(), "one card at a time")
+        runner.dismissCard()
+        XCTAssertFalse(runner.briefingCards(), "the job card is shown once")
+        _ = runner.accept()
+        XCTAssertEqual(runner.phase, .running)
+        XCTAssertEqual(runner.card?.id, "relay", "the first relay raises its rule card")
+        XCTAssertEqual(runner.card?.lines.count ?? 0, 3)
+        XCTAssertFalse(runner.allowsMotion, "the world waits under the card")
+        let before = runner.snapshot().timeLeft
+        for _ in 0..<60 { runner.update(dt: HeadlessLoop.dt, travel: 0.75, speed: 45, newHits: 0, boosting: false) }
+        XCTAssertEqual(runner.snapshot().timeLeft, before, "no clock under a card")
+        runner.dismissCard()
+        XCTAssertTrue(runner.allowsMotion)
+        // the window closing with the drop far away: the cue fires once in the run
+        var cues: [String] = []
+        while runner.phase == .running {
+            runner.update(dt: HeadlessLoop.dt, travel: 0, speed: 0, newHits: 0, boosting: false)
+            if let c = runner.cueNow { cues.append(c) }
+        }
+        XCTAssertEqual(cues.filter { $0.hasPrefix("WINDOW CLOSING") }.count, 1, "\(cues)")
+        // the retry: no relay card again; the next kind gets its own
+        _ = runner.accept(); runner.autoStart = false
+        _ = runner.accept()
+        XCTAssertNil(runner.card, "the relay card is shown once")
+        let sweep = HeadlessLoop.freshRunner(at: 1, guidance: .full)
+        _ = sweep.accept()
+        XCTAssertEqual(sweep.card?.id, "sweep")
+        // a duel's card comes before the intro, and the intro waits for it
+        let duel = HeadlessLoop.freshRunner(at: 5, guidance: .full)
+        _ = duel.accept()
+        XCTAssertEqual(duel.phase, .rivalIntro); XCTAssertEqual(duel.card?.id, "duel")
+        duel.tickIntro(dt: 10); XCTAssertEqual(duel.phase, .rivalIntro, "the intro holds under the card")
+        duel.dismissCard(); duel.tickIntro(dt: 10); XCTAssertEqual(duel.phase, .running)
+        // LIGHT: no cards, cues still; cooldown and per-run cap
+        let g = HeadlessLoop.freshRunner(at: 2, guidance: .light).guidance
+        XCTAssertNil(g.card("garage"))
+        XCTAssertNotNil(g.cue("hull_low", now: 0))
+        XCTAssertNil(g.cue("hull_low", now: 10), "cooldown")
+        XCTAssertNotNil(g.cue("hull_low", now: 25))
+        XCTAssertNil(g.cue("hull_low", now: 60), "two per run")
+        g.startRun()
+        XCTAssertNotNil(g.cue("hull_low", now: 61), "a new run, a new cap")
+        XCTAssertEqual(g.cue("rings_short", now: 0, n: 3), "RINGS LEFT  //  3 MORE NEEDED")
+        g.setLevel(.off)
+        XCTAssertNil(g.cue("time_low", now: 0))
+        // every card and cue has its copy in the narrative file
+        XCTAssertEqual(Set(Narrative.file?.guidance?.cards?.keys.map { $0 } ?? []), Set(Guidance.cards.keys))
+        XCTAssertEqual(Set(Narrative.file?.guidance?.cues?.keys.map { $0 } ?? []), Set(Guidance.cues.keys))
+        for k in [Mission.Kind.delivery, .search, .escape, .salvage, .dive, .duel] { XCTAssertNotNil(Guidance.card(for: Guidance.kindCard(k))) }
+    }
+
+    /// Notebook lines tick from stored progress, the hint ladder gets plainer and stops at the last line, and the goose
+    /// gate holds chapter 2 until enough of chapter 1's lines are ticked.
+    func testNotebookTicksHintsAndGooseGate() {
+        let runner = HeadlessLoop.freshRunner()
+        let r = HeadlessLoop.play(runner, as: .clean)
+        XCTAssertTrue(r.flags.contains(.clean))
+        XCTAssertTrue(runner.notebook.isTicked(chapter: 1, id: "clean_disc"), "CLEAN on RELAY 01 ticks its line")
+        XCTAssertTrue(runner.notebook.isTicked(chapter: 1, id: "first_goal"), "the clean job's goal ticks the goal-card line")
+        XCTAssertEqual(runner.snapshot().notesNow.count, 2)
+        XCTAssertTrue(runner.messages.contains { $0.sender == "NOTEBOOK" })
+        // the hint line: the first open line with hints, vaguer to plainer, capped at the plainest
+        let levels = (0..<4).compactMap { _ in runner.callForHint() }
+        XCTAssertEqual(levels.count, 4)
+        XCTAssertEqual(levels.map(\.sender), Array(repeating: "VESS", count: 4))
+        let hints = Notebook.notes(chapter: 1).first { $0.id == "sweep_silver" }!.hints!
+        XCTAssertEqual(levels.map(\.text), [hints[0], hints[1], hints[2], hints[2]])
+        // the goose gate
+        let suite = "speeder.tests.goose"
+        let d = UserDefaults(suiteName: suite)!; d.removePersistentDomain(forName: suite)
+        for c in 1...3 { d.set(true, forKey: "chapter.seen.\(c)") }
+        d.set(0b111111, forKey: MissionRunner.clearedMaskKey)
+        let gated = MissionRunner(defaults: d)
+        XCTAssertTrue(gated.isUnlocked(6), "without the gate a cleared chapter opens the next")
+        gated.notebookGate = true
+        XCTAssertFalse(gated.isUnlocked(6), "the gate wants three notebook lines")
+        gated.notebook.tick(chapter: 1, id: "clean_disc"); gated.notebook.tick(chapter: 1, id: "tail_fast")
+        XCTAssertFalse(gated.isUnlocked(6))
+        d.set(Mission.Rank.silver.rawValue, forKey: "rank.1")
+        XCTAssertEqual(gated.notebook.sync(upTo: 1).map(\.note.id), ["sweep_silver"], "a rank. key ticks its line")
+        XCTAssertTrue(gated.isUnlocked(6), "three of five: chapter 2 opens")
+        XCTAssertFalse(gated.isUnlocked(12), "chapter 3 still needs chapter 2's jobs")
+        // every rule kind reads its key
+        d.set(true, forKey: "offer.1.done"); XCTAssertTrue(gated.notebook.isMet("offer:1"))
+        d.set(4, forKey: "flags.8"); XCTAssertTrue(gated.notebook.isMet("flag:8:gold")); XCTAssertFalse(gated.notebook.isMet("flag:8:clean"))
+        XCTAssertTrue(gated.notebook.isMet("cleared:5")); XCTAssertFalse(gated.notebook.isMet("cleared:6"))
+        // the new keys are progress: saved, loaded, cleared at a fresh start
+        for k in ["note.1.clean_disc", "hint.1.sweep_silver", "goal.city.kills", "guide.relay"] { XCTAssertTrue(SaveSlot.isProgressKey(k), k) }
+        XCTAssertFalse(SaveSlot.isProgressKey(Guidance.levelKey), "the guidance level is a setting")
+        XCTAssertEqual(Narrative.file?.notebook?.count, 3)
+        for c in 1...3 { XCTAssertEqual(Notebook.notes(chapter: c).count, 5); XCTAssertEqual(Notebook.need(chapter: c), 3) }
+    }
+
+    /// Goals are counted per run, done once, paid once, per world; the job's own goals land with the success.
+    func testGoalCardPaysOnce() {
+        let runner = HeadlessLoop.freshRunner()
+        runner.startGoalRun(world: "city")
+        for _ in 0..<9 { runner.goalEvent("kill", world: "city") }
+        XCTAssertEqual(runner.credits, 0)
+        XCTAssertEqual(runner.goalCards["city"]?.items[2].progress, "9/10")
+        runner.goalEvent("kill", world: "city")
+        XCTAssertEqual(runner.credits, 100, "ten in one run pays once")
+        XCTAssertTrue(runner.takeNews().contains { if case .goal(let g, 100) = $0 { return g.id == "kills" }; return false })
+        runner.startGoalRun(world: "city")
+        for _ in 0..<12 { runner.goalEvent("kill", world: "city") }
+        XCTAssertEqual(runner.credits, 100, "a done goal never pays again")
+        // counts are per run
+        runner.startGoalRun(world: "canyon")
+        for _ in 0..<6 { runner.goalEvent("kill", world: "canyon") }
+        runner.startGoalRun(world: "canyon")
+        for _ in 0..<6 { runner.goalEvent("kill", world: "canyon") }
+        XCTAssertFalse(runner.goalCards["canyon"]!.isDone(2), "six and six in two runs is not twelve in one")
+        // measures, and the worlds keep their own cards
+        runner.goalMeasure("score", value: 1999, world: "city"); XCTAssertEqual(runner.credits, 100)
+        runner.goalMeasure("score", value: 2000, world: "city"); XCTAssertEqual(runner.credits, 200)
+        runner.goalEvent("tunnel", world: "city")
+        XCTAssertTrue(runner.goalCards["city"]!.isDone(4)); XCTAssertFalse(runner.goalCards["canyon"]!.isDone(5))
+        XCTAssertEqual(runner.goalCards["city"]?.doneCount, 3)
+        // a clean gold job: the x8 streak lands mid-run, the clean and gold lines with the success, all on top of the payout
+        let credits = runner.credits
+        let r = HeadlessLoop.play(runner, as: .clean)
+        XCTAssertEqual(r.rank, .gold)
+        XCTAssertEqual(runner.credits, credits + r.payout + 100 + 150 + 200)
+        XCTAssertEqual(runner.snapshot().goalsNow.count, 3)
+        XCTAssertEqual(runner.snapshot().goalsDone, 6)
+        // the Grid: a duel job won 2-0 is a duel, a match and a flawless match
+        let duel = HeadlessLoop.freshRunner(at: 5)
+        HeadlessLoop.play(duel, as: .clean)
+        XCTAssertEqual(duel.goalCards["grid"]?.doneCount, 3)
+        for w in GoalCard.worlds { XCTAssertEqual(Narrative.file?.goals?[w]?.count, 9, w) }
+    }
+
+    /// Barks: the rider's own lines, the board only on the board, chance before cooldown, chapter overrides, no repeats.
+    func testBarksPickerRules() {
+        let b = Barks()
+        b.roll = { 0 }
+        let cal = Narrative.file?.barks?.first { $0.id == "streak" }?.riders?["cal"] ?? []
+        XCTAssertFalse(cal.isEmpty, "streak has lines per rider in the file")
+        let first = b.fire("streak", chapter: 1, rider: "cal", riderName: "CAL", onBoard: false, now: 0)
+        XCTAssertEqual(first?.speaker, "CAL")
+        XCTAssertTrue(cal.contains(first?.text ?? ""))
+        XCTAssertNil(b.fire("streak", chapter: 1, rider: "cal", riderName: "CAL", onBoard: false, now: 40), "one per run")
+        b.startRun()
+        let second = b.fire("streak", chapter: 1, rider: "cal", riderName: "CAL", onBoard: false, now: 80)
+        XCTAssertNotNil(second); XCTAssertNotEqual(second?.text, first?.text, "never the last line again")
+        // the board speaks only on the board, and a missed chance spends no cooldown
+        XCTAssertNil(b.fire("beacon", chapter: 1, rider: "cal", riderName: "CAL", onBoard: false, now: 0))
+        b.roll = { 0.9 }
+        XCTAssertNil(b.fire("beacon", chapter: 1, rider: "cal", riderName: "CAL", onBoard: true, now: 0))
+        b.roll = { 0 }
+        XCTAssertEqual(b.fire("beacon", chapter: 1, rider: "cal", riderName: "CAL", onBoard: true, now: 0)?.speaker, Narrative.boardName)
+        // step 1's events keep their lines in board / riders; chapter 3 has its own launch
+        XCTAssertTrue(Narrative.riderLines("dude1", "launch").contains(b.fire("launch", chapter: 1, rider: "dude1", riderName: "JONAH", onBoard: false, now: 0)?.text ?? "-"))
+        let ch3 = b.spec("launch", chapter: 3)?.lines ?? []
+        XCTAssertTrue(ch3.contains(b.fire("launch", chapter: 3, rider: "dude1", riderName: "JONAH", onBoard: false, now: 0)?.text ?? "-"))
+        XCTAssertTrue(Narrative.boardLines("hit").contains(b.fire("hit", chapter: 2, rider: "cal", riderName: "CAL", onBoard: true, now: 0)?.text ?? "-"))
+        // no repeats with two lines and no cooldown
+        let two = Barks(specs: [BarkSpec(id: "x", voice: "rider", cooldown: 0, perRun: 10, lines: ["a", "b"])])
+        let seq = (0..<6).compactMap { two.fire("x", chapter: 1, rider: "cal", riderName: "CAL", onBoard: false, now: Float($0))?.text }
+        XCTAssertEqual(seq.count, 6)
+        for (p, q) in zip(seq, seq.dropFirst()) { XCTAssertNotEqual(p, q) }
+        b.muted = true
+        XCTAssertNil(b.fire("goal", chapter: 1, rider: "cal", riderName: "CAL", onBoard: false, now: 500))
     }
 
     func testArcBalanceTable() {

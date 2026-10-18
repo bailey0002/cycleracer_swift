@@ -92,7 +92,9 @@
 		4EF5239FC8391F606497B992 /* music_therake.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 8DDA67B043FD0C9EF42B14B7 /* music_therake.m4a */; };
 		4FF502840DA59438EA0F737B /* ArenaAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FC2CD6EFC343AD0B0016F9 /* ArenaAI.swift */; };
 		507A4263BAB3E632DF4A6B8F /* sfx_blast.wav in Resources */ = {isa = PBXBuildFile; fileRef = 112A966EAECC2CDFAAB233DD /* sfx_blast.wav */; };
+		5320B7DEEBB58C5A7091C2E6 /* GoalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EB8762F56BAE57317E14111 /* GoalCard.swift */; };
 		537DFE8C00EFA879E867F1BD /* vo_objective_achieved.wav in Resources */ = {isa = PBXBuildFile; fileRef = C4128ED8FE5663202FB0B4B7 /* vo_objective_achieved.wav */; };
+		550F8FBC4CEC50E41EC7516D /* Notebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32491D3B393413FB380D4D36 /* Notebook.swift */; };
 		581BC241B3E41E982571CD05 /* ChakraPetch-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */; };
 		5943DC5B9F127F552F178AAC /* vo_new_highscore.wav in Resources */ = {isa = PBXBuildFile; fileRef = FCE86B42085A610C2DB980D4 /* vo_new_highscore.wav */; };
 		59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E74DD4583F19C94BE32E39 /* CameraRig.swift */; };
@@ -171,6 +173,7 @@
 		92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
 		9590C5B7564F9939CCDE8AD6 /* ChakraPetch-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */; };
 		98C93C4146DB8E027C690A7A /* ArtLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E254A40E482744855A866AF5 /* ArtLibrary.swift */; };
+		99CA4E5588A1E8B63E18EB07 /* Guidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21939E6B21E2D647B73450EC /* Guidance.swift */; };
 		9A4F9D347B1295FBCD282F7B /* neon-sign-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 6D1B4DBDA31434E0BA32AA40 /* neon-sign-01.png */; };
 		9ABE1C9549DF94F07F1FB124 /* Rider_dude1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = F342FA6D7AA5CDF7550B6D25 /* Rider_dude1.usdz */; };
 		9ACBE70159542E517D4D7EAD /* Weapons.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC6DBC66827CF202624BE7B3 /* Weapons.swift */; };
@@ -181,6 +184,7 @@
 		A06C7847B0BA24E8EFC4E1F6 /* neon-facade-05.png in Resources */ = {isa = PBXBuildFile; fileRef = 9D6EF71876933BEFDD6D367D /* neon-facade-05.png */; };
 		A16A6513EC3242347F998132 /* music_toolatetoolate.m4a in Resources */ = {isa = PBXBuildFile; fileRef = F78469BF83CF45E3F7B3A898 /* music_toolatetoolate.m4a */; };
 		A37EB33B22D9E43B7E1370F7 /* neon-facade-01.png in Resources */ = {isa = PBXBuildFile; fileRef = EE1999A537D2D7C94544538B /* neon-facade-01.png */; };
+		A459DAD8BCBA3BB7D9FA5171 /* Guidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21939E6B21E2D647B73450EC /* Guidance.swift */; };
 		A4D467A1EEEA7A99620EE92A /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
 		A51668861252ED415D35FC4A /* music_toolong.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 8ABEA19F20BFF87D573FD3A3 /* music_toolong.m4a */; };
 		A611F5A5EBD64E9D8E21B73A /* music_hideaway.m4a in Resources */ = {isa = PBXBuildFile; fileRef = A6AD2E56DC74F874A8DD2B3E /* music_hideaway.m4a */; };
@@ -205,6 +209,7 @@
 		B9558CD53F09B3685B1F72A2 /* vo_combo.wav in Resources */ = {isa = PBXBuildFile; fileRef = AF3FD57F62A4C096E651073F /* vo_combo.wav */; };
 		BA819C5B884C6C3A20236A47 /* grid-bowl.png in Resources */ = {isa = PBXBuildFile; fileRef = 1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */; };
 		BAC0888D747027F1CBCFCB08 /* neon-shop-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 2807BD977559C7CB8250C705 /* neon-shop-01.png */; };
+		BB0D2D9EFAB7051049B3D49A /* GoalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EB8762F56BAE57317E14111 /* GoalCard.swift */; };
 		BB919A94C6DEA905622CB353 /* sfx_laser.wav in Resources */ = {isa = PBXBuildFile; fileRef = C5BBB920AF1A8FF05456388B /* sfx_laser.wav */; };
 		BC200AB3763C80512F37EBC0 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = E59AAB31C250E0E039642DF5 /* Shaders.metal */; };
 		BF05A3ABEC2E830B06B0EDEF /* vo_round_1.wav in Resources */ = {isa = PBXBuildFile; fileRef = 62BD6E2FD6E7C41824F4037B /* vo_round_1.wav */; };
@@ -220,6 +225,7 @@
 		CDF68AAF754B4149E69C2429 /* sfx_tick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1DA047080DAC3E48A9C6612C /* sfx_tick.wav */; };
 		CEE259DD889694D01531BF49 /* neon-facade-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 92AB31F80D364C74D73A338B /* neon-facade-03.png */; };
 		D02AA29CA18085F9E349BD20 /* vo_round_2.wav in Resources */ = {isa = PBXBuildFile; fileRef = C37ECF4F912F4623C6B868B1 /* vo_round_2.wav */; };
+		D13C261D5AC7FDEB5876168E /* Barks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85D1F6F9F51E94F6FEE1F0C /* Barks.swift */; };
 		D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224CF6515E65592F712F0902 /* FXSettings.swift */; };
 		D3AB01995CE80B17AB1CEC03 /* neon-shop-02.png in Resources */ = {isa = PBXBuildFile; fileRef = F42886AEE63D22DE96DA7F1A /* neon-shop-02.png */; };
 		D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */ = {isa = PBXBuildFile; fileRef = 59796A2FF75D69C574FE80A0 /* PostFX.metal */; };
@@ -244,6 +250,7 @@
 		E4BA5063FAA37F1CB0887EBE /* TrailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8422C85AA5E9E828C56DE /* TrailRenderer.swift */; };
 		E67A083239561F9561BDA045 /* ChakraPetch-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 824850DBC01AACD8E876F1F6 /* ChakraPetch-Medium.ttf */; };
 		E6DC437F4F6D06BE3FF834D4 /* vo_round_3.wav in Resources */ = {isa = PBXBuildFile; fileRef = 9B5C03888AE8219F9A655351 /* vo_round_3.wav */; };
+		E7EE05A9B6B5E7F4A04E3C9A /* Notebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32491D3B393413FB380D4D36 /* Notebook.swift */; };
 		EA4EA13681E94E0ADAF38079 /* neon-facade-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */; };
 		EA6E0C0F4AB2DC46D198DA28 /* Mission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1362513C3D8ABE25AC8315B7 /* Mission.swift */; };
 		ECE0F218FBED42D240E57DE8 /* Rider_dude2.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */; };
@@ -252,6 +259,7 @@
 		EEB86B7D0B6B3989D2CCB2CC /* ArtLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E254A40E482744855A866AF5 /* ArtLibrary.swift */; };
 		EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0762ACC75D4CC67B23E329 /* GameController.swift */; };
 		F05D16985B22898D5314BBF5 /* neon-skyline.png in Resources */ = {isa = PBXBuildFile; fileRef = 761E24274CEDB6E4B002900F /* neon-skyline.png */; };
+		F382319D4806A6D51B2767E5 /* Barks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85D1F6F9F51E94F6FEE1F0C /* Barks.swift */; };
 		F46FD7625A15818915BD1A01 /* vo_combo_breaker.wav in Resources */ = {isa = PBXBuildFile; fileRef = 0679E9E547ED929A5794C3FB /* vo_combo_breaker.wav */; };
 		F4CA0144019743170E987786 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
 		F545E25B23FCF29F17F892FF /* StoryIntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE24CC7D71AAD9CB37666722 /* StoryIntroView.swift */; };
@@ -291,6 +299,7 @@
 		196E3ABE45D3AF97002D8E62 /* vo_you_lose.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_you_lose.wav; sourceTree = "<group>"; };
 		1DA047080DAC3E48A9C6612C /* sfx_tick.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_tick.wav; sourceTree = "<group>"; };
 		1F1CA2FD7E0F890B551EC319 /* grid-bowl.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-bowl.png"; sourceTree = "<group>"; };
+		21939E6B21E2D647B73450EC /* Guidance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Guidance.swift; sourceTree = "<group>"; };
 		224CF6515E65592F712F0902 /* FXSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FXSettings.swift; sourceTree = "<group>"; };
 		2807BD977559C7CB8250C705 /* neon-shop-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-shop-01.png"; sourceTree = "<group>"; };
 		2932D1CC89919872F6E2EB71 /* Board.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Board.usdz; sourceTree = "<group>"; };
@@ -298,6 +307,7 @@
 		29EC8E7CD387377F03E68669 /* TrackProgram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackProgram.swift; sourceTree = "<group>"; };
 		2BAD3E9B11D889D7180BCF4D /* sfx_warp.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_warp.wav; sourceTree = "<group>"; };
 		3073385324BD69D6531D493B /* Debrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debrief.swift; sourceTree = "<group>"; };
+		32491D3B393413FB380D4D36 /* Notebook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notebook.swift; sourceTree = "<group>"; };
 		37A7B277A67AB843AA132612 /* MissionProps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionProps.swift; sourceTree = "<group>"; };
 		37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Rider_dude2.usdz; sourceTree = "<group>"; };
 		4338D4037A2104B25EF97D53 /* Narrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrative.swift; sourceTree = "<group>"; };
@@ -343,6 +353,7 @@
 		868ACE88113A37309BDE3C7D /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
 		8ABEA19F20BFF87D573FD3A3 /* music_toolong.m4a */ = {isa = PBXFileReference; path = music_toolong.m4a; sourceTree = "<group>"; };
 		8DDA67B043FD0C9EF42B14B7 /* music_therake.m4a */ = {isa = PBXFileReference; path = music_therake.m4a; sourceTree = "<group>"; };
+		8EB8762F56BAE57317E14111 /* GoalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalCard.swift; sourceTree = "<group>"; };
 		8EDF10696E742E8061B8AF01 /* rider_dude1.mp4 */ = {isa = PBXFileReference; path = rider_dude1.mp4; sourceTree = "<group>"; };
 		9053514CE8B1F571D4E90C4A /* rider_cal.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_cal.jpg; sourceTree = "<group>"; };
 		92AB31F80D364C74D73A338B /* neon-facade-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-facade-03.png"; sourceTree = "<group>"; };
@@ -358,6 +369,7 @@
 		9ECC106A81BF86BD742C0D47 /* ArenaWorld.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaWorld.swift; sourceTree = "<group>"; };
 		9FDEF45F4DDEFC2B71D7B3DC /* rider_girl1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = rider_girl1.jpg; sourceTree = "<group>"; };
 		A6AD2E56DC74F874A8DD2B3E /* music_hideaway.m4a */ = {isa = PBXFileReference; path = music_hideaway.m4a; sourceTree = "<group>"; };
+		A85D1F6F9F51E94F6FEE1F0C /* Barks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Barks.swift; sourceTree = "<group>"; };
 		AC52AECFF158D9BC6F58F4C3 /* music_firstplace.m4a */ = {isa = PBXFileReference; path = music_firstplace.m4a; sourceTree = "<group>"; };
 		AE6C73901BD29F8ACAA63DD3 /* vo_mission_failed.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_mission_failed.wav; sourceTree = "<group>"; };
 		AF0BA62FBE7AB388DB5FBCEC /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
@@ -542,12 +554,16 @@
 		41A26131AA380A7C955A557C /* Missions */ = {
 			isa = PBXGroup;
 			children = (
+				A85D1F6F9F51E94F6FEE1F0C /* Barks.swift */,
 				3073385324BD69D6531D493B /* Debrief.swift */,
+				8EB8762F56BAE57317E14111 /* GoalCard.swift */,
+				21939E6B21E2D647B73450EC /* Guidance.swift */,
 				AF1B3D9DCB545B5257A55F15 /* MessageLog.swift */,
 				1362513C3D8ABE25AC8315B7 /* Mission.swift */,
 				37A7B277A67AB843AA132612 /* MissionProps.swift */,
 				E530C389E1FECDCC3E2D5B92 /* MissionRunner.swift */,
 				4338D4037A2104B25EF97D53 /* Narrative.swift */,
+				32491D3B393413FB380D4D36 /* Notebook.swift */,
 				B0A1F6907665CF7ECFD7DDF5 /* Player.swift */,
 				E1620C25D8A01ACD28D8EF9C /* Riders.swift */,
 				EAB9CF59ADA578BA2F72B30F /* SaveSlot.swift */,
@@ -975,6 +991,7 @@
 				1B5F82B56A0874899A2867FA /* ArenaWorld.swift in Sources */,
 				98C93C4146DB8E027C690A7A /* ArtLibrary.swift in Sources */,
 				18A4554AB853815327DB45F0 /* AvatarActor.swift in Sources */,
+				F382319D4806A6D51B2767E5 /* Barks.swift in Sources */,
 				59D798DC2C51ACC165AC7442 /* CameraRig.swift in Sources */,
 				1DCDB9F975249B1F36C99403 /* Debrief.swift in Sources */,
 				60068708FF0A24190CD48367 /* FXSettings.swift in Sources */,
@@ -984,6 +1001,8 @@
 				08F8F6D3C270A9FFED2EDB0C /* GameController.swift in Sources */,
 				39B55898EFD94C6D219D2273 /* GameMode.swift in Sources */,
 				A975139BC959AB5AC5F0212B /* GameView.swift in Sources */,
+				BB0D2D9EFAB7051049B3D49A /* GoalCard.swift in Sources */,
+				99CA4E5588A1E8B63E18EB07 /* Guidance.swift in Sources */,
 				874F606EA09A1D02E81137AB /* HUDView.swift in Sources */,
 				6A80F9F3360AD1340BF798D3 /* Input.swift in Sources */,
 				5F20EC056DE38F2E4417C878 /* LightCycle.swift in Sources */,
@@ -994,6 +1013,7 @@
 				6217B1DC87DB3D1206277B17 /* MissionProps.swift in Sources */,
 				077FD038A6003EABA8B6BC90 /* MissionRunner.swift in Sources */,
 				5C7D7BD822E832ED1BA2F04D /* Narrative.swift in Sources */,
+				E7EE05A9B6B5E7F4A04E3C9A /* Notebook.swift in Sources */,
 				ACF428C3B307AB50E7FC3904 /* Platform.swift in Sources */,
 				AE6B361F8A64298F877C17FC /* Player.swift in Sources */,
 				D4BD421A95A74B295E438CA5 /* PostFX.metal in Sources */,
@@ -1028,6 +1048,7 @@
 				8DC614C19F8BA5BFD7DDC5F9 /* ArenaWorld.swift in Sources */,
 				EEB86B7D0B6B3989D2CCB2CC /* ArtLibrary.swift in Sources */,
 				44D867CA914D3443D0E4B4EB /* AvatarActor.swift in Sources */,
+				D13C261D5AC7FDEB5876168E /* Barks.swift in Sources */,
 				FD8037649C1CFA950F65AB87 /* CameraRig.swift in Sources */,
 				F611F1A14B9E7E7897D1153C /* Debrief.swift in Sources */,
 				D30F61A4A95AD50B2BD094E2 /* FXSettings.swift in Sources */,
@@ -1037,6 +1058,8 @@
 				EF736742F80B33A4E334E3A2 /* GameController.swift in Sources */,
 				6AFE4AE2948BF12FA8344AF9 /* GameMode.swift in Sources */,
 				DC41CBFF327A56F45112A39A /* GameView.swift in Sources */,
+				5320B7DEEBB58C5A7091C2E6 /* GoalCard.swift in Sources */,
+				A459DAD8BCBA3BB7D9FA5171 /* Guidance.swift in Sources */,
 				F7F866353C2595C4A553AFFA /* HUDView.swift in Sources */,
 				8037292F5CC5D1D550286AE3 /* Input.swift in Sources */,
 				8A156D2A07099DCA7F9BC9F2 /* LightCycle.swift in Sources */,
@@ -1047,6 +1070,7 @@
 				3EEA9A12F0D52EA687DE3BB7 /* MissionProps.swift in Sources */,
 				B5D836180C3204429C0E0C08 /* MissionRunner.swift in Sources */,
 				2BEA8F283CC889437D4782FF /* Narrative.swift in Sources */,
+				550F8FBC4CEC50E41EC7516D /* Notebook.swift in Sources */,
 				02D3D56823114D66FCF57FEF /* Platform.swift in Sources */,
 				AFB983264A7AB37663B129A4 /* Player.swift in Sources */,
 				114AC7696E476AC1272FD8FD /* PostFX.metal in Sources */,

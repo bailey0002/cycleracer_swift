@@ -149,6 +149,16 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - 17 Oct 2026: the GDD (PR #8), the R&D plan (PR #9) and its step 1, the narrative file and the three nouns (PR #10),
   all on master. PR #7 (the garage) still open, on the iPhone 12, unjudged. Next: step 2, KERB's Guidance / Notebook /
   GoalCard / Barks ported (`docs/assessment-2026-10-17-rd.md` §8).
+- 18 Oct 2026: step 2 on branch `claude/guidance` (`docs/polish-log.md` "Step 2", `Captures/polish/p20/`): KERB's
+  Guidance (rule cards once each, the world waits; the cue lane; GUIDANCE FULL / LIGHT / OFF), Notebook (five lines per
+  chapter, CALL <contact> hints, the goose gate behind `notebookGate` / `SPEEDER_NOTE_GATE=1`, Mark's call), GoalCard
+  (nine per world, paid once) and Barks (tuning in `narrative.json` `barks`). 19 tests. Gotchas: the balance loop must
+  ride with guidance OFF (`HeadlessLoop.freshRunner(guidance:)`) since a card holds `update`; one rule card per briefing
+  look (`briefingCardShown`), or the cards chain; the guide / note / hint / goal keys are progress (a fresh start teaches
+  again). Sheets: `Captures/polish/p20/sheets.sh`.
+  Same day, Mark's notes: the **hoverboard is the default vehicle** (`PlayerPrefs.vehicle = 1`, a one-time migration
+  `prefs.boardDefault`; the demo still rides the speeder unless `SPEEDER_VEHICLE=board`, so reference captures hold),
+  and **LIGHT cards** (a muted cool grey, not white: Mark found white too bright; dark ink, deep accents via `HUDView.tone` / `ink` / `cardAccent`; SETTINGS > CARDS for DARK).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

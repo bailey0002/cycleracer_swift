@@ -134,6 +134,16 @@ struct MissionState: Equatable {
     var chapterIntro = ""
     var chapterCast: [(name: String, standing: Mission.Standing)] = []
     var finished = false          // the arc is done (the ending's title and roster)
+    // step 2: the rule card up (the world waits), the notebook and the goal card
+    var card: RuleCard? = nil
+    var notesTicked = 0, notesTotal = 0, notesNeed = 0
+    var goalWorld = "city"
+    var goalsDone = 0, goalsTotal = 0
+    var goalNext = ""
+    var goalNextPay = 0
+    /// Lines ticked and goals done by this run (the success card lists them).
+    var notesNow: [String] = []
+    var goalsNow: [String] = []
 
     static func == (a: MissionState, b: MissionState) -> Bool {
         a.phase == b.phase && a.code == b.code && a.contact == b.contact && a.brief == b.brief && a.debrief == b.debrief
@@ -147,6 +157,8 @@ struct MissionState: Equatable {
         && a.rivalWins == b.rivalWins && a.rivalLosses == b.rivalLosses && a.rivalTaunt == b.rivalTaunt && a.introLeft == b.introLeft
         && a.messageCount == b.messageCount && a.unreadMessages == b.unreadMessages && a.chapter == b.chapter && a.finished == b.finished
         && a.shownChip == b.shownChip && a.offerBonus == b.offerBonus && a.offerDone == b.offerDone
+        && a.card == b.card && a.notesTicked == b.notesTicked && a.goalsDone == b.goalsDone && a.goalWorld == b.goalWorld
+        && a.notesNow == b.notesNow && a.goalsNow == b.goalsNow
     }
 }
 
@@ -212,6 +224,24 @@ final class MissionRunner {
     /// Set on the frame a gate or beacon scores (HUD stamp), cleared next update.
     private(set) var scoredNow: (value: Int, streak: Int, time: Float)? = nil
     private let defaults: UserDefaults
+    // MARK: step 2 (KERB's guidance, notebook, goal card)
+    /// Rule cards and cues (`Guidance.swift`); the card up holds the world (`allowsMotion`).
+    let guidance: Guidance
+    let notebook: Notebook
+    private(set) var goalCards: [String: GoalCard] = [:]
+    private(set) var card: RuleCard? = nil
+    /// The cue this frame's update raised (the HUD's cue lane), nil otherwise.
+    private(set) var cueNow: String? = nil
+    /// The goose gate: a chapter also needs the notebook lines of the chapters before it (off until Mark decides;
+    /// `SPEEDER_NOTE_GATE=1`, the headless test).
+    var notebookGate = ProcessInfo.processInfo.environment["SPEEDER_NOTE_GATE"] == "1"
+    /// Goal and notebook news since the controller last looked (toasts, barks); drained by `takeNews`.
+    enum News: Equatable { case goal(GoalSpec, credits: Int), goalNear(GoalSpec), note(NoteSpec) }
+    private var news: [News] = []
+    private var notesNow: [String] = []
+    private var goalsNow: [String] = []
+    /// One rule card per look at the briefing (reset on every accept and every return to the briefing).
+    private var briefingCardShown = false
     static let scrapeDrain: Float = 0.08      // per second against a barrier
     static let recharge: Float = 0.035        // per second when not boosting or scraping
     static let beaconCharge: Float = 0.2
@@ -225,6 +255,13 @@ final class MissionRunner {
         self.defaults = defaults
         let env = ProcessInfo.processInfo.environment
         if env["SPEEDER_RESET_PROGRESS"] == "1" { Self.clearStoredProgress(defaults, missions: missions) }
+        guidance = Guidance(defaults: defaults, demo: env["SPEEDER_DEMO"] == "1")
+        notebook = Notebook(defaults: defaults)
+        for w in GoalCard.worlds { goalCards[w] = GoalCard(world: w, defaults: defaults) }
+        // captures: SPEEDER_GOALS=city:kills,grid:round marks goal-card lines done (no credits)
+        if let g = env["SPEEDER_GOALS"] {
+            for item in g.split(separator: ",") { defaults.set(true, forKey: GoalCard.prefix + item.replacingOccurrences(of: ":", with: ".")) }
+        }
         credits = defaults.integer(forKey: "credits")
         upgrades = Upgrades.load(defaults)
         player = Player.load(defaults)
@@ -251,7 +288,8 @@ final class MissionRunner {
     private static func clearStoredProgress(_ defaults: UserDefaults, missions: [Mission]) {
         for k in ["credits", "missionIndex", "cleared", clearedMaskKey, Upgrades.key] { defaults.removeObject(forKey: k) }
         for m in missions { defaults.removeObject(forKey: "rank.\(m.id)"); defaults.removeObject(forKey: "flags.\(m.id)") }
-        for k in defaults.dictionaryRepresentation().keys where k.hasPrefix("record.") || k.hasPrefix("said.") || k.hasPrefix("chapter.seen.") || k.hasPrefix("offer.") { defaults.removeObject(forKey: k) }
+        let prefixes = ["record.", "said.", "chapter.seen.", "offer.", Guidance.prefix, Notebook.prefix, Notebook.hintPrefix, GoalCard.prefix]
+        for k in defaults.dictionaryRepresentation().keys where prefixes.contains(where: { k.hasPrefix($0) }) { defaults.removeObject(forKey: k) }
         defaults.removeObject(forKey: MessageLog.key); defaults.removeObject(forKey: MessageLog.readKey)
     }
 
@@ -288,6 +326,7 @@ final class MissionRunner {
         }
         if phase == .briefing && needsChapterCard(index) { phase = .chapter }
         previewIndex = index; previewOffer = activeOffer
+        briefingCardShown = false
         autoStart = false
         shopNote = ""
     }
@@ -306,7 +345,7 @@ final class MissionRunner {
     /// The briefing or the chapter card is up (the inbox and the garage take input on the briefing only).
     var isParked: Bool { phase == .briefing || phase == .chapter }
     /// The vehicle only moves while the job is live.
-    var allowsMotion: Bool { phase == .running }
+    var allowsMotion: Bool { phase == .running && card == nil }
 
     // MARK: - Chapter cards and the message log
 
@@ -363,6 +402,7 @@ final class MissionRunner {
         guard missions.indices.contains(i) else { return false }
         let m = missions[i]
         guard missions.allSatisfy({ $0.chapter >= m.chapter || isCleared($0.id) }) else { return false }
+        if notebookGate && m.chapter > 1 && !(1..<m.chapter).allSatisfy({ notebook.satisfied(chapter: $0) }) { return false }
         let before = missions.filter { $0.chapter == m.chapter && $0.id < m.id }
         if m.kind == .duel { return before.allSatisfy { isCleared($0.id) } }
         let position = before.count
@@ -443,6 +483,7 @@ final class MissionRunner {
     /// Accept the briefing, or continue past a result. Returns true when the world must be
     /// rebuilt for a new (or retried) mission.
     func accept() -> Bool {
+        briefingCardShown = false
         switch phase {
         case .chapter:
             openChapter()
@@ -457,8 +498,9 @@ final class MissionRunner {
                 shopNote = ""
                 return true
             }
-            if current.kind == .duel { phase = .rivalIntro; introLeft = Self.introDuration; return false }
+            if current.kind == .duel { phase = .rivalIntro; introLeft = Self.introDuration; raise(Guidance.kindCard(.duel)); return false }
             startRun()
+            raise(Guidance.kindCard(current.kind))
             return false
         case .rivalIntro:
             // A again skips the card
@@ -507,12 +549,14 @@ final class MissionRunner {
         hitsTaken = 0; newFlags = []; boostArmed = true
         helmetArmed = upgrades.helmet > 0; helmetUsedNow = false
         reactiveLine = ""; lastDerezCause = ""; introLeft = 0; failReason = ""; branchTaken = 0
+        guidance.startRun(); cueNow = nil; notesNow = []; goalsNow = []
+        startGoalRun(world: GoalCard.world(for: current.theme))
         if !isCleared(index) { log.post(current.contact, .brief, code: current.code, chapter: current.chapter, current.brief) }
     }
 
     /// The rival intro card counts down, then the duel starts.
     func tickIntro(dt: Float) {
-        guard phase == .rivalIntro else { return }
+        guard phase == .rivalIntro, card == nil else { return }
         introLeft -= dt
         if introLeft <= 0 { startRun() }
     }
@@ -544,6 +588,7 @@ final class MissionRunner {
         score += v
         scoredNow = (v, streak, time)
         if climbs { streak = min(Mission.maxStreak, streak + 1) }
+        goalMeasure("streak", value: streak, world: GoalCard.world(for: current.theme))
     }
 
     /// Free play on The Grid pays into the same purse.
@@ -559,7 +604,8 @@ final class MissionRunner {
     /// `newHits` collisions and `newKills` obstacle kills since last frame, `beaconsHitNow` rings
     /// flown through this frame.
     func update(dt: Float, travel: Float, speed: Float, newHits: Int, boosting: Bool, scraping: Bool = false, newKills: Int = 0, beaconsHitNow: Int = 0, branch: Int = 0) {
-        guard phase == .running else { return }
+        cueNow = nil
+        guard phase == .running, card == nil else { return }
         let m = current
         if branch != 0 { branchTaken = branch }
         elapsed += dt
@@ -601,6 +647,7 @@ final class MissionRunner {
                 elapsed += Self.respawnPenalty
                 respawnedNow = true
                 if elapsed >= m.timeLimit { respawnedNow = false; fail("TIME OUT"); return }
+                raise("respawn")
             } else {
                 fail("HULL BREACHED"); return
             }
@@ -630,12 +677,28 @@ final class MissionRunner {
             succeed(m.basePay + timeBonus + hullBonus + bonus + score / 20)
             return
         }
-        if elapsed >= m.timeLimit { fail("TIME OUT") }
+        if elapsed >= m.timeLimit { fail("TIME OUT"); return }
+        cues(speed: speed, boosting: boosting)
+    }
+
+    /// The cue lane: the first reminder whose condition holds and whose cooldown and cap allow it (LIGHT and FULL).
+    private func cues(speed: Float, boosting: Bool) {
+        let m = current
+        let left = m.timeLimit - elapsed, togo = m.distance - travelled
+        var c: (String, Int)? = nil
+        if m.kind == .escape && gap < 20 { c = ("gap_close", 0) }
+        else if energy < 0.25 && energy > 0 { c = (m.kind == .search || m.kind == .salvage ? "hull_refill" : "hull_low", 0) }
+        else if boosting && !boostArmed { c = ("boost_empty", 0) }
+        else if left < 12 && togo / max(speed, 1) > left * 0.6 { c = ("time_low", 0) }
+        else if m.kind == .search && travelled > m.distance * 0.6 && beaconsHit < m.beaconsRequired { c = ("rings_short", m.beaconsRequired - beaconsHit) }
+        else if m.kind == .salvage && travelled > m.distance * 0.6 && killsTaken < m.killsRequired { c = ("targets_short", m.killsRequired - killsTaken) }
+        else if streak == 5 { c = ("streak", 5) }
+        if let c, let text = guidance.cue(c.0, now: elapsed, n: c.1) { cueNow = text }
     }
 
     /// Advance a live duel from the arena's score.
     func updateDuel(dt: Float, wins: Int, losses: Int) {
-        guard phase == .running, current.kind == .duel else { return }
+        guard phase == .running, current.kind == .duel, card == nil else { return }
         elapsed += dt
         duelWins = wins; duelLosses = losses
         if wins >= current.duelTarget { score = (wins - losses) * 100; succeed(current.basePay + max(0, wins - losses) * 100); return }
@@ -668,6 +731,18 @@ final class MissionRunner {
         if current.kind == .duel, let r = current.rival { recordMatch(rival: r.name, won: true) }
         reactiveLine = Debrief.reactive(contact: current.contact, outcome: outcome(), defaults: defaults)
         phase = .success
+        // the goal card: the job's own lines (the run's events came in while it ran), then the notebook
+        let world = GoalCard.world(for: current.theme)
+        if current.kind == .duel {
+            goalEvent("duel", world: world); goalEvent("match", world: world)
+            if duelLosses == 0 { goalEvent("flawless", world: world) }
+        } else {
+            if hitsTaken == 0 { goalEvent("clean", world: world) }
+            if rank == .gold { goalEvent("gold", world: world) }
+            goalMeasure("score", value: score, world: world)
+            goalMeasure("metres", value: Int(travelled), world: world)
+        }
+        syncNotebook()
         // the story channel: the debrief (once), the reaction, the unlocks, the offers, the ending
         if !replay || bonus > 0 {
             let d = current.debrief
@@ -707,6 +782,7 @@ final class MissionRunner {
 
     private func fail(_ reason: String) {
         failReason = reason
+        if current.kind != .duel { goalMeasure("metres", value: Int(travelled), world: GoalCard.world(for: current.theme)) }
         if current.kind == .duel, let r = current.rival { recordMatch(rival: r.name, won: false) }
         reactiveLine = Debrief.failure(contact: current.contact, reason: reason)
         phase = .failed
@@ -752,6 +828,97 @@ final class MissionRunner {
                             rivalColor: m.rival?.color ?? SIMD3<Float>(1, 0.5, 0.2),
                             contactRole: Debrief.role(m.contact), introLeft: introLeft,
                             messageCount: log.count, unreadMessages: log.unread, latestSender: log.latest?.sender ?? "",
-                            chapterIntro: Mission.chapterIntro(m.chapter), chapterCast: Mission.chapterCast(m.chapter), finished: finished)
+                            chapterIntro: Mission.chapterIntro(m.chapter), chapterCast: Mission.chapterCast(m.chapter), finished: finished,
+                            card: card,
+                            notesTicked: notebook.tickedCount(chapter: m.chapter), notesTotal: Notebook.notes(chapter: m.chapter).count,
+                            notesNeed: Notebook.need(chapter: m.chapter),
+                            goalWorld: GoalCard.world(for: m.theme),
+                            goalsDone: goalCards[GoalCard.world(for: m.theme)]?.doneCount ?? 0,
+                            goalsTotal: goalCards[GoalCard.world(for: m.theme)]?.goals.count ?? 0,
+                            goalNext: goalCards[GoalCard.world(for: m.theme)]?.nextOpen?.text ?? "",
+                            goalNextPay: goalCards[GoalCard.world(for: m.theme)]?.nextOpen?.pay ?? 0,
+                            notesNow: notesNow, goalsNow: goalsNow)
     }
+
+    // MARK: - Step 2: rule cards, the goal card, the notebook
+
+    /// Raise a rule card if guidance allows it (FULL, never seen); nothing while another card is up.
+    @discardableResult
+    func raise(_ id: String) -> Bool {
+        guard card == nil, let c = guidance.card(id) else { return false }
+        card = c
+        return true
+    }
+    /// Captures: show a card whatever the level and the seen set (`SPEEDER_GUIDE_CARD`).
+    func forceCard(_ id: String) { if let c = Guidance.card(for: id) { card = c } }
+    /// A / tap on the card: the world moves again.
+    func dismissCard() { card = nil }
+
+    /// The briefing's cards, at most one per look: the job card first, then the goal card after a clear, the garage
+    /// when a part is affordable, the first side offer, the notebook once a line has ticked.
+    @discardableResult
+    func briefingCards() -> Bool {
+        guard phase == .briefing, card == nil, !briefingCardShown else { return false }
+        var raised = raise("briefing")
+        if !raised && clearedCount >= 1 { raised = raise("goals") }
+        if !raised && upgrades.items.contains(where: { !$0.owned && credits >= $0.price }) { raised = raise("garage") }
+        if !raised && !offersShown.isEmpty { raised = raise("offer") }
+        if !raised && (1...3).contains(where: { notebook.tickedCount(chapter: $0) > 0 }) { raised = raise("notebook") }
+        briefingCardShown = raised
+        return raised
+    }
+
+    /// A run starts for the goal card (a job's launch, a free run's card, a match's first round).
+    func startGoalRun(world: String) { goalCards[world]?.startRun() }
+
+    /// One world event for the goal card ("kill", "beacon", "tunnel", "pad", ...): pays what it completes once.
+    func goalEvent(_ id: String, world: String) {
+        guard let card = goalCards[world] else { return }
+        apply(card.note(event: id))
+    }
+    /// A run's measure ("score", "streak", "metres", "grind").
+    func goalMeasure(_ id: String, value: Int, world: String) {
+        guard let card = goalCards[world] else { return }
+        apply(card.note(measure: id, value: value))
+    }
+    private func apply(_ events: [GoalEvent]) {
+        var anyDone = false
+        for e in events {
+            switch e {
+            case .done(let g, let pay):
+                credits += pay
+                defaults.set(credits, forKey: "credits")
+                news.append(.goal(g, credits: pay))
+                goalsNow.append("\(g.text.uppercased())  +\(pay)")
+                anyDone = true
+            case .progress(let g, let n):
+                if n == g.need - 1 {
+                    news.append(.goalNear(g))
+                    if let t = guidance.cue("goal_near", now: elapsed) { cueNow = t }
+                }
+            }
+        }
+        if anyDone { syncNotebook() }
+    }
+    /// Re-check the notebook's auto rules for the chapters reached; ticks go to the news, the run's card and the log.
+    private func syncNotebook() {
+        let reached = missions.filter { isUnlocked($0.id) || isCleared($0.id) }.map(\.chapter).max() ?? 1
+        for (c, n) in notebook.sync(upTo: max(reached, current.chapter)) {
+            news.append(.note(n))
+            notesNow.append(n.text.uppercased())
+            log.post("NOTEBOOK", .notice, chapter: c, "Ticked: \(n.text)")
+        }
+    }
+    func takeNews() -> [News] { defer { news = [] }; return news }
+
+    /// The notebook's hint line: the current chapter's contact, one step plainer per call.
+    func callForHint() -> (sender: String, text: String)? {
+        let c = current.chapter
+        guard let h = notebook.hint(chapter: c) else { return nil }
+        let sender = missions.first { $0.chapter == c }?.contact ?? current.contact
+        return (sender, h.text)
+    }
+    var chapter: Int { current.chapter }
+    /// The chapter's contact (the notebook's CALL row).
+    var chapterContact: String { missions.first { $0.chapter == current.chapter }?.contact ?? current.contact }
 }
