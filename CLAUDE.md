@@ -3,6 +3,7 @@
 Read this first in any new thread. Longer background lives in `SpeederProto/README.md`,
 `SpeederProto/docs/`, and the memory directory.
 - **GDD:** `GDD_2026-10-17.md` (repo root) is the current-state design document, read from the code with a status tag on every element; its interactive map is `docs/gdd-map.html`.
+- **R&D plan (17 Oct 2026):** `SpeederProto/docs/assessment-2026-10-17-rd.md` (the world settled, five workstreams, a seven-step build order; research in `docs/research-2026-10-17-reports.md`).
 - **Rule:** whenever the GDD's status tags change after a device test, update the map's `ELEMENTS` array and its `data-s` / `chips()` tags to match, in the same commit.
 
 ## What this is
