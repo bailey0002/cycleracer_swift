@@ -163,7 +163,7 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   (Mark's call, matching `com.greystratum.kerbskate`), version 0.1.0, encryption flag, opaque icon. Archive with
   `testflight/ship.sh SpeederProto.xcodeproj SpeederProto-iOS cycleracer_swift`; the upload needs Mark's App Store
   Connect API key and the App Store Connect record (README "TestFlight"). Device installs now use the new bundle id.
-- Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
+- Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md` (step 3, objectives and clues; written 18 Oct 2026).
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
 ## Build, verify, deploy (all from `SpeederProto/`)
@@ -179,7 +179,8 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   flash can land on one run only, so A/B by eye or against a master-vs-master diff) and Read the PNGs.
   The demo starts in the game; `SPEEDER_TITLE=1` or `SPEEDER_SCREEN=<screen>` shows the front end. `SPEEDER_DEMO_BIAS=-0.45`
   takes the tunnel branch; `SPEEDER_VARIANT=canyon` etc. applies a preset. Allow ~30 s per run.
-- Phone (Mark's iPhone 12, paired over Wi-Fi, id 1438FC4B-510E-5302-9AAE-0833BC5A856F, team HNBN55RN29):
+- Phones (paired over Wi-Fi, team HNBN55RN29): Mark's iPhone 12 (1438FC4B-510E-5302-9AAE-0833BC5A856F) and iPhone 16e
+  (EE203F95-3B89-57F4-94F6-2D6B5E209423); bundle id `com.greystratum.kerbgalactic` since 18 Oct 2026.
   the exact build/install/launch command is in `SpeederProto/README.md`. Build the phone in **Release**
   (`build-device/Build/Products/Release-iphoneos`): ready 3.9 s after launch, Debug is about four
   times slower (the procedural textures are Swift pixel loops). `devicectl ... process launch --console`
