@@ -146,6 +146,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   the ring switch); the soundtrack has its own timer so Hideaway starts under the splash. PR #5 merged 1 Oct 2026
   (master has the hoverboard + KERB: GALACTIC frame); audio + a three-agent review pass on branch `claude/audio`, PR #6
   (`docs/polish-log.md` "Follow-ups (2 Oct 2026)" lists the fixes: camera lift, rebuild re-queue, duel lines, etc.).
+- 17 Oct 2026: the GDD (PR #8), the R&D plan (PR #9) and its step 1, the narrative file and the three nouns (PR #10),
+  all on master. PR #7 (the garage) still open, on the iPhone 12, unjudged. Next: step 2, KERB's Guidance / Notebook /
+  GoalCard / Barks ported (`docs/assessment-2026-10-17-rd.md` §8).
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md`.
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 
