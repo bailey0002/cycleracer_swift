@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "notes": "Every line of story text in one place (assessment-2026-10-17-rd.md step 1). Loaded by Missions/Narrative.swift; the Swift tables stay as the fallback when a key is missing. {hits} {section} {wins} {losses} are filled at runtime. Lists are rotated by the game ([wins % n], no repeats) as the Swift code did.",
+  "version": 2,
+  "notes": "Every line of story text in one place (assessment-2026-10-17-rd.md step 1). Loaded by Missions/Narrative.swift; the Swift tables stay as the fallback when a key is missing. {hits} {section} {wins} {losses} are filled at runtime. Lists are rotated by the game ([wins % n], no repeats) as the Swift code did. Step 2 (18 Oct 2026) adds guidance (rule cards and cues, {n} filled), notebook (per chapter: need, lines with auto rules and three hints), goals (nine per world) and barks (event tuning; step 1 events take their lines from board / riders).",
 
   "nouns": {
     "disc": "A rider's route, sealed: name, memory, the right to ride. The thing you carry and the thing you duel with.",
@@ -178,5 +178,348 @@
     "dude1": { "launch": ["Nothing in here taller than my airs.", "Bowl local. Grid local now."], "hit": ["Coping bit me.", "Walls move in here."], "trick": ["Taller than the mast.", "Bleach, baby."], "derez": ["Boxed. Fine.", "Up. Nobody cuts a show for one derez."] },
     "dude2": { "launch": ["Rails, conduits, anything with an edge.", "Dex never saw this line."], "hit": ["Dex's crew saw nothing.", "Edge took it."], "trick": ["Tight.", "Rook. Remember it."], "derez": ["Saw the door close.", "Again."] },
     "girl1": { "launch": ["Filming this one.", "Long boost. Watch."], "hit": ["Not on camera. Good.", "Cut that."], "trick": ["Filmed better. Landed this.", "That's the show."], "derez": ["Cannery's going to hear about this.", "Still rolling."] }
-  }
+  },
+
+  "guidance": {
+    "cards": {
+      "briefing": {
+        "lines": [
+          "This card is the job: who sent it, what it pays, what counts.",
+          "Left and right browse the inbox. Y buys in the garage.",
+          "A takes the job. The road waits until you do."
+        ],
+        "title": "THE JOB CARD"
+      },
+      "relay": {
+        "lines": [
+          "Carry the disc to the drop before the window closes.",
+          "Every gate you pass adds time. Hits and scrapes drain the hull.",
+          "Hull left at the drop pays out."
+        ],
+        "title": "RELAY"
+      },
+      "sweep": {
+        "lines": [
+          "Fly through the red rings. Some sit high: climb for them.",
+          "A missed ring goes grey and is gone.",
+          "Reach the end with enough rings, inside the window."
+        ],
+        "title": "SWEEP"
+      },
+      "run": {
+        "lines": [
+          "Something is behind you. Stay ahead of it to the relay.",
+          "Boost pulls away, but boost burns the same bar as the hull.",
+          "Caught at four metres."
+        ],
+        "title": "RUN"
+      },
+      "salvage": {
+        "lines": [
+          "Shoot the marked targets before the drop.",
+          "A or L1 fires. Each target refills a little hull.",
+          "Miss too many and the job fails at the end."
+        ],
+        "title": "SALVAGE"
+      },
+      "dive": {
+        "lines": [
+          "A conduit time trial. No weapons.",
+          "Hits bruise the hull twice as hard.",
+          "Thread the obstacles and keep the window."
+        ],
+        "title": "DIVE"
+      },
+      "duel": {
+        "lines": [
+          "Light cycles. Your trail is a wall, and so is theirs.",
+          "Make the rival hit a trail or a wall. Hitting your own loses the round.",
+          "Pads charge the boost. Win the rounds the card asks for."
+        ],
+        "title": "THE GRID"
+      },
+      "respawn": {
+        "lines": [
+          "An empty hull costs a respawn, not the job.",
+          "You ride on from here at half hull, four seconds down.",
+          "Two per job. The count is under the hull bar."
+        ],
+        "title": "HULL RESTORED"
+      },
+      "derez": {
+        "lines": [
+          "You lost a round, not the duel.",
+          "Turn early: the rival cuts across your nose.",
+          "Stay off your own trail. It kills you as well."
+        ],
+        "title": "DEREZZED"
+      },
+      "goals": {
+        "lines": [
+          "Every world has nine goals. Once done, they stay done.",
+          "Each goal pays credits once, in jobs or in free play.",
+          "The card is on the briefing and in the pause menu."
+        ],
+        "title": "THE GOAL CARD"
+      },
+      "notebook": {
+        "lines": [
+          "Each chapter keeps a short list of things worth doing.",
+          "Lines tick themselves when you do them.",
+          "Stuck? Pause, open the notebook and call your contact."
+        ],
+        "title": "THE NOTEBOOK"
+      },
+      "offer": {
+        "lines": [
+          "Someone wants a job done their way. It is in the inbox, in amber.",
+          "Same road, one extra rule, a bonus on top.",
+          "The bonus pays once."
+        ],
+        "title": "SIDE OFFER"
+      },
+      "garage": {
+        "lines": [
+          "You can afford a part. The garage is on this card.",
+          "Up and down pick a part, Y buys it. On touch, tap the row.",
+          "Parts stay fitted for every job after."
+        ],
+        "title": "THE GARAGE"
+      }
+    },
+    "cues": {
+      "hull_low": "HULL LOW  //  EASE OFF THE BOOST",
+      "hull_refill": "HULL LOW  //  RINGS AND TARGETS REFILL IT",
+      "boost_empty": "BOOST NEEDS HULL  //  LET IT RECHARGE",
+      "time_low": "WINDOW CLOSING  //  GATES ADD TIME",
+      "gap_close": "PURSUER CLOSE  //  BOOST PULLS AWAY",
+      "rings_short": "RINGS LEFT  //  {n} MORE NEEDED",
+      "targets_short": "TARGETS LEFT  //  {n} MORE TO DESTROY",
+      "streak": "STREAK x{n}  //  A HIT RESETS IT",
+      "goal_near": "ONE MORE FOR THE GOAL",
+      "grid_energy": "ENERGY LOW  //  PADS RECHARGE IT",
+      "grid_edge": "TOO CLOSE  //  GIVE THE TRAIL ROOM"
+    }
+  },
+
+  "notebook": {
+    "1": {
+      "need": 3,
+      "lines": [
+        {
+          "id": "first_goal",
+          "text": "Tick a goal on the Neon City card.",
+          "auto": "goals:city:1",
+          "hints": [
+            "The city keeps a list. Read it.",
+            "Pause. GOAL CARD. Pick the easy one.",
+            "Shoot ten targets in one run. That is a goal."
+          ]
+        },
+        {
+          "id": "clean_disc",
+          "text": "Carry the first disc without a scratch.",
+          "auto": "flag:0:clean",
+          "hints": [
+            "The first job. Again. Better.",
+            "No hits on RELAY 01. Not one.",
+            "Replay RELAY 01 from the inbox. Hug the middle lane, shoot what blocks it."
+          ]
+        },
+        {
+          "id": "sweep_silver",
+          "text": "Silver or better on the beacon sweep.",
+          "auto": "rank:1:silver",
+          "hints": [
+            "The rings remember who missed them.",
+            "SWEEP 01. Silver needs the streak.",
+            "Take every ring on SWEEP 01 without a hit between them."
+          ]
+        },
+        {
+          "id": "tail_fast",
+          "text": "Shake the tail with a third of the window left.",
+          "auto": "flag:3:fast",
+          "hints": [
+            "Being ahead is not the same as being fast.",
+            "RUN 01, FAST flag. Boost early.",
+            "Boost off the line on RUN 01 and again past halfway. Keep a third of the clock."
+          ]
+        },
+        {
+          "id": "tunnel_line",
+          "text": "Ride Kade's tunnel line.",
+          "auto": "offer:0",
+          "hints": [
+            "Someone wants THE SPLIT done their way.",
+            "Clean on RELAY 02 puts an offer in the inbox.",
+            "Clear RELAY 02 with no hits, then take SIDE 01 and stay left at the split."
+          ]
+        }
+      ]
+    },
+    "2": {
+      "need": 3,
+      "lines": [
+        {
+          "id": "outlands_clean",
+          "text": "Cross the Outlands without a scratch.",
+          "auto": "flag:6:clean",
+          "hints": [
+            "The canyon forgives nothing. Forgive it back.",
+            "RELAY 04, no hits.",
+            "Replay RELAY 04. Stay low under the arches, shoot what blocks the lane."
+          ]
+        },
+        {
+          "id": "canyon_silver",
+          "text": "Silver on the canyon sweep.",
+          "auto": "rank:7:silver",
+          "hints": [
+            "The high rings pay.",
+            "SWEEP 02, silver. Climb for the red ones.",
+            "Climb before each high ring on SWEEP 02; a hit between rings resets the streak."
+          ]
+        },
+        {
+          "id": "convoy_gold",
+          "text": "Gold on the convoy.",
+          "auto": "flag:8:gold",
+          "hints": [
+            "Kade counts the wrecks.",
+            "SALVAGE 01, gold. Every target.",
+            "Fire early on SALVAGE 01: all eight targets, no hits, the streak does the rest."
+          ]
+        },
+        {
+          "id": "pipe_dark",
+          "text": "Run Orin's pipe, dark.",
+          "auto": "offer:1",
+          "hints": [
+            "Orin has a faster idea.",
+            "FAST on RUN 02 opens SIDE 02.",
+            "Clear RUN 02 with a third of the window left, then take SIDE 02 from the inbox."
+          ]
+        },
+        {
+          "id": "canyon_goals",
+          "text": "Four goals on the Sunset Canyon card.",
+          "auto": "goals:canyon:4",
+          "hints": [
+            "The canyon has its own list.",
+            "Pause. GOAL CARD in the canyon.",
+            "Free play counts: ride the canyon and do the easy four."
+          ]
+        }
+      ]
+    },
+    "3": {
+      "need": 3,
+      "lines": [
+        {
+          "id": "double_fast",
+          "text": "Out-run the double cross with time to spare.",
+          "auto": "flag:12:fast",
+          "hints": [
+            "Speed is the only alibi.",
+            "RUN 03, FAST.",
+            "Boost through the first conduit on RUN 03 and keep a third of the clock."
+          ]
+        },
+        {
+          "id": "crates_silver",
+          "text": "Silver on Sable's crates.",
+          "auto": "rank:13:silver",
+          "hints": [
+            "Sable counts too.",
+            "SALVAGE 02, silver.",
+            "Twelve crates on SALVAGE 02 with the streak unbroken by hits."
+          ]
+        },
+        {
+          "id": "deep_clean",
+          "text": "Dive the deep line without a scratch.",
+          "auto": "flag:14:clean",
+          "hints": [
+            "The pipe bruises double.",
+            "DIVE 02, no hits.",
+            "Replay DIVE 02; ride the centre of each pipe and do not boost into the bends."
+          ]
+        },
+        {
+          "id": "whole_ledger",
+          "text": "Take the whole ledger.",
+          "auto": "offer:2",
+          "hints": [
+            "Ten beacons. Sable wants ten.",
+            "GOLD on SALVAGE 02 opens SIDE 03.",
+            "Gold on SALVAGE 02, then SIDE 03: all ten rings on SWEEP 03."
+          ]
+        },
+        {
+          "id": "grid_goals",
+          "text": "Five goals on The Grid card.",
+          "auto": "goals:grid:5",
+          "hints": [
+            "The Grid keeps score of more than rounds.",
+            "Pause on the Grid. GOAL CARD.",
+            "Free play on The Grid counts. Grind a wall, take three pads, win a round."
+          ]
+        }
+      ]
+    }
+  },
+
+  "goals": {
+    "city": [
+      {"id": "score", "text": "Score 2,000 in one job", "measure": "score", "value": 2000, "credits": 100},
+      {"id": "streak", "text": "Build a x8 streak", "measure": "streak", "value": 8, "credits": 100},
+      {"id": "kills", "text": "Destroy 10 targets in one run", "event": "kill", "count": 10, "credits": 100},
+      {"id": "rings", "text": "Fly through 5 rings in one run", "event": "beacon", "count": 5, "credits": 100},
+      {"id": "tunnel", "text": "Take the tunnel at the split", "event": "tunnel", "credits": 75},
+      {"id": "skyway", "text": "Take the skyway at the split", "event": "skyway", "credits": 75},
+      {"id": "conduits", "text": "Ride two conduits in one run", "event": "conduit", "count": 2, "credits": 125},
+      {"id": "clean", "text": "Clear a job without a hit", "event": "clean", "credits": 150},
+      {"id": "gold", "text": "Gold on any city job", "event": "gold", "credits": 200}
+    ],
+    "canyon": [
+      {"id": "score", "text": "Score 2,500 in one job", "measure": "score", "value": 2500, "credits": 100},
+      {"id": "distance", "text": "Ride 3 km in one run", "measure": "metres", "value": 3000, "credits": 100},
+      {"id": "kills", "text": "Destroy 12 targets in one run", "event": "kill", "count": 12, "credits": 100},
+      {"id": "rings", "text": "Fly through 6 rings in one run", "event": "beacon", "count": 6, "credits": 100},
+      {"id": "undercity", "text": "Ride under the canyon floor", "event": "undercity", "credits": 75},
+      {"id": "low_road", "text": "Take the low road at the split", "event": "tunnel", "credits": 75},
+      {"id": "pipes", "text": "Ride three rock pipes in one run", "event": "conduit", "count": 3, "credits": 125},
+      {"id": "clean", "text": "Clear a canyon job without a hit", "event": "clean", "credits": 150},
+      {"id": "gold", "text": "Gold on any canyon job", "event": "gold", "credits": 200}
+    ],
+    "grid": [
+      {"id": "round", "text": "Win a round", "event": "round", "credits": 75},
+      {"id": "match", "text": "Win a match", "event": "match", "credits": 150},
+      {"id": "flawless", "text": "Win a match without losing a round", "event": "flawless", "credits": 250},
+      {"id": "pads", "text": "Take three SURGE pads in one match", "event": "pad", "count": 3, "credits": 100},
+      {"id": "charge", "text": "Pick up a CHARGE", "event": "charge", "credits": 75},
+      {"id": "pickup", "text": "Use a PULSE or a PHASE", "event": "pickup", "credits": 75},
+      {"id": "jumps", "text": "Jump three times in one match", "event": "jump", "count": 3, "credits": 75},
+      {"id": "grind", "text": "Grind a wall for 3 seconds", "measure": "grind", "value": 3, "credits": 125},
+      {"id": "duel", "text": "Win a duel job", "event": "duel", "credits": 150}
+    ]
+  },
+
+  "barks": [
+    {"id": "launch", "voice": "rider", "cooldown": 1, "perRun": 1},
+    {"id": "launch", "voice": "rider", "chapter": 3, "cooldown": 1, "perRun": 1, "lines": ["The core. Nobody's provisional in here.", "Last district. Ride it like it's yours."]},
+    {"id": "hit", "voice": "board", "cooldown": 14, "perRun": 2},
+    {"id": "trick", "voice": "rider", "cooldown": 10, "perRun": 3},
+    {"id": "boost", "voice": "board", "cooldown": 20, "perRun": 1},
+    {"id": "derez", "voice": "rider", "cooldown": 1, "perRun": 1},
+    {"id": "respawn", "voice": "board", "cooldown": 1, "perRun": 1},
+    {"id": "streak", "voice": "rider", "cooldown": 30, "perRun": 1, "lines": ["Five clean. Don't jinx it.", "That's a line. Keep it.", "Nobody touch me."], "riders": {"cal": ["Clean lines. Told you.", "Marlow Street rules apply."], "dude1": ["Bowl rhythm. Keep the pump.", "Jonah's on a run."], "dude2": ["Tight, like the block.", "Rook doesn't miss twice."], "girl1": ["Long boost, longer streak.", "Plaza taught me patience."]}},
+    {"id": "beacon", "voice": "board", "cooldown": 12, "perRun": 2, "chance": 0.5, "lines": ["Ring's in.", "Counted.", "Red one. Got it."]},
+    {"id": "kill", "voice": "board", "cooldown": 15, "perRun": 2, "chance": 0.4, "lines": ["Scrap.", "That one won't block anybody.", "Photons work."]},
+    {"id": "hull_low", "voice": "board", "cooldown": 30, "perRun": 1, "lines": ["We're riding on paint now.", "One more and I'm a coaster."]},
+    {"id": "time_low", "voice": "rider", "cooldown": 30, "perRun": 1, "lines": ["Clock's eating me.", "Gates. I need gates."]},
+    {"id": "goal", "voice": "rider", "cooldown": 20, "perRun": 2, "lines": ["That's one for the card.", "Put that on the list."]},
+    {"id": "round_won", "voice": "rider", "cooldown": 20, "perRun": 2, "lines": ["One down.", "Didn't see the turn, did you."], "riders": {"cal": ["Line held. Theirs didn't.", "Clean turn. Clean wall."], "dude1": ["Big air, bigger wall.", "Bleach one, them nothing."], "dude2": ["Boxed. Street rules.", "Should've read the corner."], "girl1": ["Patience. Then the wall.", "Out-waited."]}}
+  ]
 }

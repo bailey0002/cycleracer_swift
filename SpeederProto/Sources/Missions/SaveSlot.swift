@@ -10,7 +10,8 @@ enum SaveSlot {
     /// Exact keys that make up a run's progress (identity included: the save is the whole rider).
     private static let exactKeys = ["credits", "missionIndex", "cleared", MissionRunner.clearedMaskKey, Upgrades.key,
                                     "callsign", "livery", Roster.key, "story.seen", MessageLog.key, MessageLog.readKey]
-    private static let prefixes = ["rank.", "flags.", "record.", "said.", "chapter.seen.", "offer."]
+    /// Step 2: the rule cards seen (`guide.`), the notebook's ticks and hint calls (`note.`, `hint.`), the goal cards (`goal.`).
+    static let prefixes = ["rank.", "flags.", "record.", "said.", "chapter.seen.", "offer.", Guidance.prefix, Notebook.prefix, Notebook.hintPrefix, GoalCard.prefix]
 
     static func isProgressKey(_ k: String) -> Bool { exactKeys.contains(k) || prefixes.contains { k.hasPrefix($0) } }
 

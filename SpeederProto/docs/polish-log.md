@@ -734,3 +734,69 @@ the ramps read as two lines only.
   defaults and the interludes in the log); simulator sheets `p19/sim-relay01-24` (the disc on the first card),
   `p19/sim-ch3-24` (the rule and the I/O Line on the chapter card), `p19/sim-duel04-24`. Release build installed on
   the iPhone 16e (the iPhone 12 was unreachable over Wi-Fi tonight); not yet judged on a phone.
+
+## Step 2 of the R&D plan: guidance, the notebook, the goal card, barks (18 Oct 2026)
+
+`assessment-2026-10-17-rd.md` §8 step 2, branch `claude/guidance`, KERB Skate's four data-shaped systems ported
+(`../kerb_skate_game/KerbSkate/Game/Guidance.swift`, `Notebook.swift`, `GoalCard.swift`, `Barks.swift`). Captures in
+`Captures/polish/p20/` (`sim/` for the simulator sheets, `sheets.sh` re-takes them, `demo-relay01/log.txt` for the log).
+Every line of copy is in `narrative.json` (now v2: `guidance`, `notebook`, `goals`, `barks`), the Swift tables stay as
+the fallback, and every new progress key is in `SaveSlot.prefixes` (`guide.`, `note.`, `hint.`, `goal.`).
+
+- **Guidance** (`Missions/Guidance.swift`). Thirteen rule cards in plain words, three lines at most, once each
+  (`guide.<id>`): THE JOB CARD on the first briefing; RELAY / SWEEP / RUN / SALVAGE / DIVE on the first launch of each
+  kind; THE GRID before the rival's intro (the intro countdown waits); HULL RESTORED on the first respawn; DEREZZED on
+  the first lost round; and, one per briefing, THE GOAL CARD after the first clear, THE GARAGE when a part is affordable,
+  SIDE OFFER when the first offer is on the table, THE NOTEBOOK once a line has ticked. The world waits under a card:
+  `MissionRunner.allowsMotion` is false, `update` / `updateDuel` / `tickIntro` return early, the Grid pauses. A / tap
+  dismisses it (`acceptMission` takes the card first). The **cue lane** sits under the comms line in amber: HULL LOW,
+  WINDOW CLOSING, PURSUER CLOSE, RINGS / TARGETS LEFT (`{n}`), STREAK x5, BOOST NEEDS HULL, ONE MORE FOR THE GOAL, and
+  on the Grid ENERGY LOW and TOO CLOSE, each with a cooldown and a per-run cap. **GUIDANCE** FULL / LIGHT (cues only) /
+  OFF is a row in SETTINGS (`prefs.guidance`; the pause list was already full on a 390 pt phone); `SPEEDER_GUIDANCE=0|1|2` forces it, the demo runs OFF
+  unless asked, `SPEEDER_GUIDE_CARD=<id>` + `SPEEDER_HOLD_CARD=1` raise and hold one card for a sheet. Because the
+  seen-set is progress, every fresh start teaches again and a save remembers.
+- **The notebook** (`Missions/Notebook.swift`). Five lines per chapter, ticked by rules over keys the game already
+  keeps (`rank:1:silver`, `flag:0:clean`, `offer:0`, `goal:city:kills`, `goals:canyon:4`, `cleared:5`), checked on every
+  success and every goal. A tick toasts top-right, lists on the result card and posts NOTEBOOK to the message log.
+  The NOTEBOOK page (pause row, the briefing's NOTES chip) shows the chapter's lines and what the gate needs; CALL
+  <contact> gives the first open line's hint, plainer on each call and stopping at the plainest (`hint.<ch>.<id>`).
+  **The goose gate** (a chapter also needs three of the previous chapter's five lines) is in `isUnlocked` behind
+  `notebookGate`, off in the game: it is Mark's call, `SPEEDER_NOTE_GATE=1` turns it on.
+- **The goal card** (`Missions/GoalCard.swift`). Nine lines per world (Neon City, Sunset Canyon, The Grid), event lines
+  counted within one run and measure lines on one run's best, done once and paid once (`goal.<world>.<id>`; 3,125
+  credits over the three cards, a third of the garage). Jobs and free play share it: kills, rings, the split taken,
+  conduit / undercity entries and free-play metres come from `GameController`, clean / gold / score / streak / duel
+  from `MissionRunner.succeed`, pads / CHARGE / pickups / jumps / rounds / matches / grind from the arena's events. On
+  the briefing: a GOALS chip and a strip of nine boxes with the next line; on the pause: the GOAL CARD page (left /
+  right picks the world); in a run: a toast; on the result card: a line per goal done. `SPEEDER_GOALS=city:kills,...`
+  marks lines done for captures.
+- **Barks** (`Missions/Barks.swift`) finish step 1's `say`: the hard-coded cooldowns moved into `narrative.json`
+  `barks` (cooldown, per-run cap, chance rolled before the cooldown is spent, a per-chapter override, lines per rider),
+  and seven events joined the six: streak x5, ring, kill, hull low (rider / ASTRO), window closing, goal done, round won.
+  The board's lines still only fire on the board. `BARK <id> <voice>: <text>` log lines; `SPEEDER_BARKS=0` mutes.
+- **Tests**: 19 green (15 + one per system): `testGuidanceCardsOnceAndCues` (once each, the clock holds under a card,
+  the duel's intro waits, LIGHT, cooldowns and caps, the file carries every card and cue),
+  `testNotebookTicksHintsAndGooseGate` (a clean RELAY 01 ticks two lines, the hint ladder, the gate holding chapter 2
+  until three lines tick, every rule kind, the new keys are progress), `testGoalCardPaysOnce` (per-run counts, once
+  only, per world, the clean gold job's three lines on top of its payout, a 2-0 duel's three Grid lines),
+  `testBarksPickerRules` (rider lines, board only on the board, chance before cooldown, chapter 3's launch, no repeats).
+  The balance loop rides with guidance OFF (`HeadlessLoop.freshRunner(guidance:)`) and dismisses any card it meets.
+- **Mark's notes mid-session (18 Oct).** *The board is the default vehicle*: `PlayerPrefs.vehicle` defaults to 1 and a
+  one-time migration (`prefs.boardDefault`) turns a stored 0 (the old default, not a choice) into 1; SETTINGS > VEHICLE
+  still offers the speeder. The demo rides the speeder unless `SPEEDER_VEHICLE=board`, so every reference capture holds.
+  *"Like reading a story in DOS"*: the cards (rule cards, briefing, chapter, result, failed, free-play run, match) now
+  default to **LIGHT**: first warm paper, then (Mark: "a little bright") a **muted cool grey** (0.67 → 0.61, about 90 %
+  opaque, the world faint behind it) that breaks the dark of play without a stark jump; near-black ink, a soft drop
+  shadow, and every neon text colour darkened to a deep shade of itself (`HUDView.tone`, `ink`, `cardAccent`, `cardAmber`, `cardReward`, the
+  ranks as old gold / slate / copper); the bright accent stays on buttons and chips with black text. SETTINGS > CARDS
+  switches back to DARK. The cue lane and the toasts got near-solid black backing (0.68 / 0.7). Before / after:
+  `p20/sim-dark/` (neon), `p20/sim-white/` (paper), `p20/sim/` (the grey, current); `p20/sheet-before-after.png`.
+- **Layout fixes from the sheets**: the NOTES / GOALS chips moved from the briefing header (they wrapped the callsign)
+  into the goal-card strip; the GOAL CARD page's lines tightened so WORLD and BACK fit at 390 pt; the big-row lists
+  (title, pause) scroll when they cannot fit; GUIDANCE left the pause for SETTINGS (the pause had grown to seven rows).
+  The briefing showed THE GOAL CARD and THE NOTEBOOK cards back to back after the first clear, so one card per look at
+  the briefing (`briefingCardShown`).
+- Not done from the kickoff's wish list: a "how to ride" card and a first-hit card (two cards on launch was one too many;
+  the briefing's OBJECTIVES and the controls line already carry it), and contact barks (the contact keeps the three-line
+  comms rule; the new barks are the rider's and ASTRO's). The rule cards name pad buttons (A, Y): Mark, 18 Oct, assume a
+  controller for now; touch wording waits for a touch pass. Phone: all of step 2 is `UNJUDGED`.

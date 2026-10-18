@@ -395,7 +395,7 @@ footer ul{margin:6px 0 0;padding-left:18px}
         <dt>Platform</dt><dd>iPhone, landscape, iOS 18+, Backbone or any pad, touch fallback; the same code on macOS 15+. SwiftUI + RealityKit + Metal, no packages</dd>
         <dt>Genre</dt><dd>Scrolling hover-racer jobs (delivery, sweep, escape, salvage, dive) plus a Tron light-cycle arena for the duels. Tron-clean, single player</dd>
         <dt>Session</dt><dd>50–88 s corridor windows · duels first to 2 or 3 · free play without a clock</dd>
-        <dt>Dev loop</dt><dd>Claude Code builds, verifies with captures, the simulator and 14 headless tests, pushes a Release build to the iPhone 12; you judge by thumb</dd>
+        <dt>Dev loop</dt><dd>Claude Code builds, verifies with captures, the simulator and 19 headless tests, pushes a Release build to the iPhone 12; you judge by thumb</dd>
         <dt>Source</dt><dd><code>GDD_2026-10-17.md</code> read against <code>master</code> (PR #6); PR #7 <code>claude/garage</code> noted where it changes a number</dd>
       </dl>
     </div>
@@ -468,10 +468,10 @@ footer ul{margin:6px 0 0;padding-left:18px}
       <p class="note" style="margin:6px 0 0">Every launch clears the live progress keys, so riders → story → callsign play every time. SAVE GAME (pause, SETTINGS) snapshots them into <code>save.slot</code>; CONTINUE SAVE on the title loads it. <code>SPEEDER_KEEP_PROGRESS=1</code> skips the clear.</p>
     </div>
     <div class="panel" data-s="BUILT PHONE"><div class="row between"><h4>Settings rows</h4><span class="chips"><span class="chip c-BUILT">BUILT</span><span class="chip c-PHONE">PHONE</span></span></div>
-      <table class="t" style="margin-top:6px"><tr><th>Row</th><th>Values</th></tr><tr><td>MUSIC · EFFECTS</td><td>0–10 (defaults 8 / 10)</td></tr><tr><td>SOUNDTRACK</td><td>on = Mark's tracks, off = generative music</td></tr><tr><td>HAPTICS</td><td>on / off</td></tr><tr><td>GRAPHICS</td><td>HIGH · BALANCED (no motion blur, lens FX) · BATTERY (also no rain, reflections, storefronts)</td></tr><tr><td>GRID STEERING</td><td>SMOOTH · SNAP 90</td></tr><tr><td>VEHICLE</td><td>SPEEDER · HOVERBOARD (test build, rebuilds)</td></tr><tr><td>CALLSIGN · SAVE GAME · STORY · RESET PROGRESS (press twice) · DEVELOPER PANEL (five taps)</td><td></td></tr></table>
+      <table class="t" style="margin-top:6px"><tr><th>Row</th><th>Values</th></tr><tr><td>MUSIC · EFFECTS</td><td>0–10 (defaults 8 / 10)</td></tr><tr><td>SOUNDTRACK</td><td>on = Mark's tracks, off = generative music</td></tr><tr><td>HAPTICS</td><td>on / off</td></tr><tr><td>GRAPHICS</td><td>HIGH · BALANCED (no motion blur, lens FX) · BATTERY (also no rain, reflections, storefronts)</td></tr><tr><td>GRID STEERING</td><td>SMOOTH · SNAP 90</td></tr><tr><td>VEHICLE</td><td>HOVERBOARD (the default since 18 Oct) · SPEEDER (rebuilds)</td></tr><tr><td>GUIDANCE</td><td>OFF · LIGHT (cues) · FULL (rule cards + cues)</td></tr><tr><td>CARDS</td><td>LIGHT (muted grey, dark ink: the default) · DARK (neon on black)</td></tr><tr><td>CALLSIGN · SAVE GAME · STORY · RESET PROGRESS (press twice) · DEVELOPER PANEL (five taps)</td><td></td></tr></table>
     </div>
-    <div class="panel" data-s="GAP"><div class="row between"><h4>Guidance</h4><span class="chips"><span class="chip c-GAP">GAP</span></span></div>
-      <p class="note" style="margin:6px 0 0">The OBJECTIVES block on the briefing and the controls hint on launch are the whole of it. KERB's rule cards, cue lane and hint line have no equivalent here yet; interludes and a hub scene are <span class="chip c-DESIGNED">DESIGNED</span>.</p>
+    <div class="panel" data-s="BUILT CAPTURED"><div class="row between"><h4>Guidance</h4><span class="chips"><span class="chip c-BUILT">BUILT</span><span class="chip c-CAPTURED">CAPTURED</span></span></div>
+      <p class="note" style="margin:6px 0 0">KERB's systems, ported 18 Oct (step 2). Thirteen rule cards, once each, the world waiting under them: the job card, one per kind (the Grid's before the rival intro), the first respawn, the first lost round, then one per briefing for the goal card, the garage, the first side offer, the notebook. A cue lane under the comms line with cooldowns and caps. GUIDANCE FULL / LIGHT / OFF in SETTINGS. The NOTEBOOK page (five lines per chapter, CALL the contact for a hint, the goose gate behind a flag) and the GOAL CARD page (nine per world). Phone: <span class="chip c-UNJUDGED">UNJUDGED</span>. A hub scene is <span class="chip c-DESIGNED">DESIGNED</span>.</p>
     </div>
   </div>
 </section>
@@ -647,7 +647,7 @@ footer ul{margin:6px 0 0;padding-left:18px}
     <div class="panel"><h4>The garage</h4><div class="scrollx"><table class="t tnum" id="shoptable" style="margin-top:8px"></table></div>
       <p class="note" style="margin-top:8px">Bought on the briefing (GARAGE rows, A to buy). Prices from 27 Sep 2026: chapter 1 buys two pieces, the set is complete late in chapter 3.</p></div>
   </div>
-  <div class="panel flat" style="margin-top:16px" data-s="GAP"><div class="row between"><h4>Not in the economy yet</h4><span class="chip c-GAP">GAP</span></div><p class="note" style="margin-top:6px">Persistent collectibles, a best-time or score table per job, free-play goals beyond credits, reputation and districts unlocked by spend (<span class="chip c-DESIGNED">DESIGNED</span> in game-direction.md).</p></div>
+  <div class="panel flat" style="margin-top:16px" data-s="GAP"><div class="row between"><h4>Not in the economy yet</h4><span class="chip c-GAP">GAP</span></div><p class="note" style="margin-top:6px">Persistent collectibles, a best-time or score table per job, reputation and districts unlocked by spend (<span class="chip c-DESIGNED">DESIGNED</span> in game-direction.md). Free-play goals now come from the goal card (nine per world, 3,125 credits in all, <span class="chip c-BUILT">BUILT</span> <span class="chip c-CAPTURED">CAPTURED</span>).</p></div>
 </section>
 
 <!-- ============ WORLDS ============ -->
@@ -703,7 +703,7 @@ footer ul{margin:6px 0 0;padding-left:18px}
   <div class="grid g2" style="margin-top:16px">
     <div class="panel"><h4>Testing</h4>
       <ul class="stack" style="padding-left:18px;margin:8px 0 0;font-size:13.5px;gap:5px">
-        <li><code>Tests/MissionLoopTests.swift</code>: 14 tests, a 60 Hz headless loop over <code>MissionRunner</code> with six rider profiles and the balance table</li>
+        <li><code>Tests/MissionLoopTests.swift</code>: 19 tests, a 60 Hz headless loop over <code>MissionRunner</code> with six rider profiles and the balance table</li>
         <li><code>xcodebuild test -scheme SpeederProto-macOS</code> with <code>SPEEDER_TESTS=1</code> (the app becomes a bare host, ~3 s)</li>
         <li><code>Captures/polish/capture.sh &lt;dir&gt; &lt;s&gt; ENV=VAL</code>: fixed 60 Hz frames, survives the crash-restore modal and display sleep</li>
         <li><code>simshot.sh</code> for simulator HUD sheets; the MCP simulator for touch flows</li>
@@ -735,7 +735,7 @@ footer ul{margin:6px 0 0;padding-left:18px}
           <div><span class="lab">Step</span><b>4</b><span>D4 the cast: CC5 / iClone faces and talk, real voices, rider lines, the Kerbie Astro in the garage.</span></div>
           <div><span class="lab">Step</span><b>5</b><span>Guidance: rule cards, a cue lane, persistent goals, a best-time table, free-play goals.</span></div>
           <div><span class="lab">Step</span><b>6</b><span>RealityView migration (B4), batching (A6), Game Center (D9), iCloud sync.</span></div>
-          <div><span class="lab">Decide</span><b>7</b><span>main vs master; the hub scene; hoverboard or speeder as the vehicle.</span></div>
+          <div><span class="lab">Decide</span><b>7</b><span>main vs master; the hub scene. (The hoverboard became the default vehicle on 18 Oct.)</span></div>
         </div>
       </div>
       <div class="panel"><h4>Worth checking against the code</h4>
@@ -804,16 +804,16 @@ function applyFilter(){
 const ELEMENTS=[
  ['Griptap & Co opening comic','story','BUILT PHONE'],['Chapter 1 · Downtown','story','BUILT CAPTURED PHONE'],['Chapter 2 · Outlands','story','BUILT CAPTURED'],['Chapter 3 · The Core','story','BUILT CAPTURED UNJUDGED'],
  ['Chapter cards','story','BUILT CAPTURED'],['Message log + the unseen sender','story','BUILT CAPTURED'],['Side offers (3)','jobs','BUILT CAPTURED'],['The ending (ROUTE-HOLDER, VESS in free play)','story','BUILT UNJUDGED'],
- ['Hub scene, heist, reputation','jobs','DESIGNED'],['Contacts VESS / KADE / ORIN voices','story','BUILT CAPTURED'],['Cabinet announcer (Kenney stand-in)','tech','BUILT PHONE'],['Real voices, recorded cast','tech','DESIGNED'],['Riders\' own lines','riders','BUILT CAPTURED'],['The board speaks (ASTRO)','riders','BUILT CAPTURED'],['narrative.json: every line in one file','story','BUILT CAPTURED'],['The disc, the I/O Line, the broken rule','story','BUILT CAPTURED'],['Shop-owner interludes in the log','story','BUILT CAPTURED'],
+ ['Hub scene, heist, reputation','jobs','DESIGNED'],['Contacts VESS / KADE / ORIN voices','story','BUILT CAPTURED'],['Cabinet announcer (Kenney stand-in)','tech','BUILT PHONE'],['Real voices, recorded cast','tech','DESIGNED'],['Riders\' own lines','riders','BUILT CAPTURED'],['The board speaks (ASTRO)','riders','BUILT CAPTURED'],['Barks (rider and board, tuned in narrative.json)','riders','BUILT CAPTURED'],['narrative.json: every line in one file','story','BUILT CAPTURED'],['The disc, the I/O Line, the broken rule','story','BUILT CAPTURED'],['Shop-owner interludes in the log','story','BUILT CAPTURED'],
  ['Four playable riders + handling on the board','riders','BUILT CAPTURED PHONE'],['Callsign, livery, titles','riders','BUILT PHONE'],['Rivals with tempers, skills, records','grid','BUILT CAPTURED PHONE'],['The cast through CC5 / iClone (D4)','riders','DESIGNED'],
- ['Screens title → result','flow','BUILT PHONE'],['Fresh start + manual save','flow','BUILT PHONE'],['Run cards (OBJECTIVES, free play card)','flow','BUILT PHONE'],['Rule cards, cue lane, hint line','flow','GAP'],['Interludes','flow','DESIGNED'],
+ ['Screens title → result','flow','BUILT PHONE'],['Fresh start + manual save','flow','BUILT PHONE'],['Run cards (OBJECTIVES, free play card)','flow','BUILT PHONE'],['Rule cards, cue lane, guidance level','flow','BUILT CAPTURED'],['Notebook + hint line (goose gate behind a flag)','flow','BUILT CAPTURED'],['Interludes','flow','DESIGNED'],
  ['Backbone controls (corridor)','controls','BUILT PHONE'],['Grid controls, snap steering','controls','BUILT PHONE'],['Hoverboard tricks X / Y','controls','BUILT PHONE'],['Touch buttons on the phone','controls','BUILT PHONE'],
  ['The one bar, respawns, helmet','jobs','BUILT CAPTURED PHONE'],['Streak score, ranks, flags','jobs','BUILT CAPTURED PHONE'],['Windows from the headless loop','jobs','BUILT CAPTURED'],['Chapter 1 jobs','jobs','BUILT CAPTURED PHONE'],['Chapter 2 and 3 jobs','jobs','BUILT CAPTURED UNJUDGED'],
  ['Light cycle (Armagetron curve)','grid','BUILT PHONE'],['Trails, grind, edge, jump, pads, pickups','grid','BUILT PHONE'],['Sumo zone, void rounds','grid','BUILT CAPTURED UNJUDGED'],['Arena AI (tempers, skills, loop guard)','grid','BUILT CAPTURED'],['AI on the helix ramps','grid','GAP'],['arena-next 6–10','grid','DESIGNED'],
- ['Credits, the garage (9,800)','credits','BUILT CAPTURED PHONE'],['Free-play match pay','credits','BUILT CAPTURED'],['Best-time table, free-play goals','credits','GAP'],['Persistent collectibles','credits','GAP'],
+ ['Credits, the garage (9,800)','credits','BUILT CAPTURED PHONE'],['Free-play match pay','credits','BUILT CAPTURED'],['Goal cards: nine per world, paid once','credits','BUILT CAPTURED'],['Best-time table','credits','GAP'],['Persistent collectibles','credits','GAP'],
  ['Neon City','worlds','BUILT PHONE'],['Sunset Canyon','worlds','BUILT PHONE'],['The Grid (master garage)','worlds','BUILT PHONE'],['PR #7 helix garage, wider camera, aqua trails','worlds','BUILT CAPTURED UNJUDGED'],['Composed tracks (TrackComposer)','worlds','BUILT CAPTURED'],['Generated art (city, Grid tiles)','worlds','BUILT PHONE'],['Grid material quality (component test)','worlds','DESIGNED'],
  ['Camera rig, post pass, rain, FX','tech','BUILT PHONE'],['Same-frame acks, haptics','tech','BUILT PHONE'],['Synth sound + generative music','tech','BUILT PHONE'],['Soundtrack: 7 tracks, announcer rules','tech','BUILT PHONE'],['Audio mix by ear','tech','BUILT UNJUDGED'],['Phone fps and thermals','tech','BUILT UNJUDGED'],
- ['Headless loop, 14 tests, capture harness','tech','BUILT CAPTURED'],['iCloud sync','tech','GAP'],['RealityView migration, batching, Game Center','tech','DESIGNED'],
+ ['Headless loop, 19 tests, capture harness','tech','BUILT CAPTURED'],['iCloud sync','tech','GAP'],['RealityView migration, batching, Game Center','tech','DESIGNED'],
 ];
 function stage(s){const a=s.split(' ');if(a.includes('GAP'))return'GAP';if(a.includes('DESIGNED'))return'DESIGNED';if(a.includes('PHONE'))return'PHONE';if(a.includes('CAPTURED'))return'CAPTURED';return'BUILT'}
 const RUNGS=[['GAP','Missing','var(--red)'],['DESIGNED','On paper','var(--muted)'],['BUILT','In code, unproven','var(--ink)'],['CAPTURED','Proven by the harness','var(--cyan)'],['PHONE','Judged on the phone','var(--magenta)']];
@@ -904,7 +904,7 @@ const NODES={
  purse:{c:4,y:170,l:'Credits + garage',sub:'the purse',s:'BUILT CAPTURED PHONE',f:'MissionRunner (Upgrades)',d:'One purse. Jobs pay base + time + hull + kind bonus + score / 20; replays half; matches 40 × wins + 150 + grind. Four upgrades, 9,800 total.'},
  unlock:{c:4,y:240,l:'Unlock + titles',sub:'cleared.mask · rank · flags',s:'BUILT CAPTURED',f:'MissionRunner.isUnlocked · Player.title',d:'A chapter opens when the one before it is cleared; the first job opens two, a duel waits for all; flags open the side offers; golds and cleared count give the title.'},
  defaults:{c:4,y:320,l:'UserDefaults',sub:'progress · prefs · save',s:'BUILT PHONE',f:'SaveSlot.swift · PlayerPrefs',d:'credits, missionIndex, cleared(.mask), upgrades, rank.<n>, flags.<n>, record.*, said.*, chapter.seen.*, offer.*, messages, callsign, livery, rider.id, story.seen; prefs.*; save.slot. Cleared at launch unless saved.'},
- capture:{c:4,y:420,l:'Captures + tests',sub:'capture.sh · 14 tests',s:'BUILT CAPTURED',f:'Captures/polish/capture.sh · Tests/MissionLoopTests.swift',d:'Fixed-step frames read as PNGs, simulator sheets, and the headless 60 Hz loop that set the windows and the garage prices.'},
+ capture:{c:4,y:420,l:'Captures + tests',sub:'capture.sh · 19 tests',s:'BUILT CAPTURED',f:'Captures/polish/capture.sh · Tests/MissionLoopTests.swift',d:'Fixed-step frames read as PNGs, simulator sheets, and the headless 60 Hz loop that set the windows and the garage prices.'},
 };
 const EDGES=[['pad','gc'],['env','gc'],['env','runner'],['catalogue','runner'],['catalogue','scroller'],['theme','scroller'],['theme','arena'],['theme','post'],['assets','vehicle'],['assets','tracks'],['riders','vehicle'],['riders','hud'],
  ['scroller','gc'],['vehicle','gc'],['arena','gc'],['ai','arena'],['camera','gc'],['gc','runner'],['gc','sound'],['gc','tracks'],['gc','post'],['gc','haptics'],['gc','hud'],

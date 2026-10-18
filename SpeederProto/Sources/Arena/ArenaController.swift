@@ -114,7 +114,7 @@ final class ArenaController {
     /// Set when a free-play match ends; cleared by `restartMatch()`.
     private(set) var matchResult: MatchResult? = nil
     private var grindRun: Float = 0
-    private var bestGrind: Float = 0
+    private(set) var bestGrind: Float = 0
     private var longestTrail: Float = 0
     var awaitingRestart: Bool { if case .result = phase { return true } else { return false } }
     /// Name tag over the rival: a thin box (flat quads on moving entities get culled) with the

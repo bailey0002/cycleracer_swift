@@ -606,7 +606,7 @@ replay from SETTINGS) -> CALLSIGN -> the first briefing. `SPEEDER_SCREEN=story|r
 `SPEEDER_RIDER=cal|dude1|dude2|girl1`. Product name and bundle id stay `SpeederProto`. Details:
 `docs/polish-log.md` "KERB: GALACTIC".
 
-## The hoverboard (alternative vehicle, 29 Sep 2026, test build)
+## The hoverboard (29 Sep 2026; the default vehicle since 18 Oct 2026)
 
 SETTINGS > VEHICLE: SPEEDER / HOVERBOARD (or `SPEEDER_VEHICLE=board`) swaps the speeder for KERB's
 skateboard with a Character Creator rider standing on it (`Resources/Board.usdz`, `Resources/Rider.usdz`,
@@ -617,6 +617,22 @@ Board and rider are 1.35x for the phone. Tricks: pad X = 360, pad Y = barrel rol
 rider tucks and a stamp names the trick. Fire is also on L1 with a shooting arm. `SPEEDER_TRICK_AT=4:spin,7:roll`
 forces tricks for captures. The speeder path is unchanged. `SPEEDER_CAMERA=side` is the pose-check camera. Details and captures:
 `docs/polish-log.md` "The hoverboard", `Captures/polish/p13/`.
+
+## Guidance, notebook, goal card, barks (18 Oct 2026, R&D step 2)
+
+KERB Skate's four systems, ported (`Sources/Missions/Guidance.swift`, `Notebook.swift`, `GoalCard.swift`,
+`Barks.swift`; copy in `Resources/narrative.json`; details in `docs/polish-log.md`, "Step 2").
+- Rule cards once each (the world waits, A / tap dismisses), a cue lane under the comms line, GUIDANCE FULL / LIGHT /
+  OFF in SETTINGS. The NOTEBOOK page (pause, the briefing's NOTES chip) with CALL <contact> hints; the
+  GOAL CARD page (pause, the GOALS chip), nine goals per world paid once; rider and board barks tuned in the JSON.
+- Hooks: `SPEEDER_GUIDANCE=0|1|2` (the demo defaults to 0), `SPEEDER_GUIDE_CARD=<id>` + `SPEEDER_HOLD_CARD=1` (a card
+  for a sheet), `SPEEDER_SCREEN=notebook|goals`, `SPEEDER_NOTE=<id,...>` (pre-tick lines), `SPEEDER_HINT=<n>` (call n
+  times on the notebook screen), `SPEEDER_GOALS=<world:id,...>`, `SPEEDER_NOTE_GATE=1` (the goose gate),
+  `SPEEDER_BARKS=0`. Log lines `GUIDE`, `NOTE`, `HINT`, `GOAL`, `BARK` in demo mode.
+- Simulator sheets: `Captures/polish/p20/sheets.sh [name ...]` (13 cards, the pages, the briefing, a run, the result).
+- Same day: the hoverboard is the default vehicle (the demo still rides the speeder unless `SPEEDER_VEHICLE=board`), and
+  the cards default to LIGHT, a muted grey with dark ink (SETTINGS > CARDS for the neon DARK). Contact sheets:
+  `swift Tools/contact-sheet.swift <out.png> <columns> <tileWidth> <png ...>`.
 
 ## Next steps (brief milestones 7–8)
 

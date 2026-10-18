@@ -37,6 +37,8 @@ struct HUDView: View {
             .animation(.easeOut(duration: controller.ack.boost ? 0.15 : 0.4), value: controller.ack.boost)
             if controller.screen == .game { missionOverlay }
             stampOverlay
+            toastOverlay
+            if controller.screen == .game, let c = controller.mission.card { ruleCard(c) }
             if controller.screen != .game { FrontEndView(controller: controller).transition(.opacity) }
             // the developer panel (unlocked in SETTINGS) sits over everything, the menus included
             if controller.panelVisible {
@@ -77,6 +79,25 @@ struct HUDView: View {
         }
     }
     private var running: Bool { controller.mission.phase == .running }
+
+    // MARK: Card style (18 Oct 2026, Mark: "like reading a story in DOS"): LIGHT = muted grey with dark ink, the default;
+    // DARK = the neon slab. Inside a card every text colour goes through these, so neon accents darken on paper.
+    private var lightCards: Bool { controller.prefs.cardStyle == 0 }
+    private var ink: Color { lightCards ? Color(red: 0.04, green: 0.05, blue: 0.07) : .white }
+    private var cardAccent: Color { lightCards ? tone(theme.hudAccent) : accent }
+    private var cardAmber: Color { lightCards ? Color(red: 0.44, green: 0.24, blue: 0.0) : HUDStyle.amber }
+    private var cardReward: Color { lightCards ? Color(red: 0.14, green: 0.3, blue: 0.0) : HUDStyle.reward }
+    /// A neon colour as card text: itself on the dark slab, a deep shade of it on paper.
+    private func tone(_ c: SIMD3<Float>) -> Color {
+        guard lightCards else { return HUDStyle.color(c) }
+        let m = max(c.x, max(c.y, c.z))
+        return HUDStyle.color(c / max(m, 0.001) * 0.32)
+    }
+    private var paper: some View {
+        // muted cool grey (Mark: white was too bright): breaks the dark of play without a stark jump
+        LinearGradient(colors: [Color(red: 0.67, green: 0.68, blue: 0.71).opacity(0.93), Color(red: 0.61, green: 0.62, blue: 0.66).opacity(0.9)],
+                       startPoint: .top, endPoint: .bottom)
+    }
 
     // MARK: - Top row
 
@@ -121,14 +142,36 @@ struct HUDView: View {
                 objectiveLine(m)
                 if m.helmetArmed { chip("HELMET", HUDStyle.amber) }
                 commsLine
+                cueLine
             }
         } else if isArena && !cardUp, let z = controller.stats.zone {
             VStack(spacing: 2) {
                 Text(z).font(HUDStyle.display(HUDStyle.headingSize)).foregroundStyle(.white)
                 Text("STAY INSIDE").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(.white.opacity(0.6))
+                cueLine
             }
+        } else if isArena && !cardUp && !controller.ack.cueText.isEmpty {
+            cueLine
         } else {
             Color.clear.frame(width: 1, height: 1)
+        }
+    }
+
+    /// The guidance cue lane (LIGHT and FULL): one plain reminder in amber, under the comms line.
+    @ViewBuilder private var cueLine: some View {
+        let t = controller.ack.cueText
+        if !t.isEmpty {
+            HStack(spacing: 5) {
+                Image(systemName: "info.circle").font(.system(size: 10, weight: .semibold))
+                Text(t).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1)
+            }
+            .foregroundStyle(HUDStyle.amber)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(.black.opacity(0.68))
+            .clipShape(CutCorner(cut: 4))
+            .id(t)
+            .transition(.opacity)
+            .animation(.easeOut(duration: 0.2), value: t)
         }
     }
 
@@ -381,6 +424,68 @@ struct HUDView: View {
         .allowsHitTesting(false)
     }
 
+    /// A goal done or a notebook line ticked: a toast top-right, under the score, in the reward colour.
+    @ViewBuilder private var toastOverlay: some View {
+        let a = controller.ack
+        VStack(alignment: .trailing, spacing: 2) {
+            if !a.toastText.isEmpty && controller.screen == .game {
+                HStack(spacing: 6) {
+                    Image(systemName: a.toastLabel == "GOAL" ? "checkmark.seal.fill" : "checkmark.square.fill").font(.system(size: 11, weight: .bold))
+                    Text(a.toastLabel).font(HUDStyle.display(HUDStyle.labelSize)).tracking(2)
+                }
+                .foregroundStyle(HUDStyle.reward)
+                Text(a.toastText).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(0.8).foregroundStyle(.white)
+                    .multilineTextAlignment(.trailing).frame(maxWidth: 300, alignment: .trailing)
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, a.toastText.isEmpty ? 0 : 6)
+        .background(a.toastText.isEmpty ? .clear : .black.opacity(0.7))
+        .clipShape(CutCorner(cut: 6))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+        .padding(.top, HUDStyle.topInset + 64)
+        .padding(.trailing, HUDStyle.sideInset)
+        .animation(.easeOut(duration: 0.25), value: a.toastText)
+        .allowsHitTesting(false)
+    }
+
+    /// A rule card (Guidance): the world waits under it; A / tap dismisses. Plain words, three lines at most.
+    private func ruleCard(_ c: RuleCard) -> some View {
+        ZStack {
+            Color.black.opacity(lightCards ? 0.35 : 0.55).ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 8) {
+                    Image(systemName: "lightbulb.max").font(.system(size: 13, weight: .semibold)).foregroundStyle(cardAmber)
+                    Text("HOW IT WORKS").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2.5).foregroundStyle(ink.opacity(0.5))
+                }
+                Text(c.title).font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(3).foregroundStyle(cardAccent)
+                    .shadow(color: lightCards ? .clear : accent.opacity(0.5), radius: 8)
+                hairline(accent.opacity(0.35))
+                ForEach(Array(c.lines.enumerated()), id: \.offset) { _, l in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Rectangle().fill(cardAccent).frame(width: 5, height: 5).offset(y: -2)
+                        Text(l).font(HUDStyle.body(HUDStyle.bodySize + 2)).lineSpacing(2).foregroundStyle(ink.opacity(0.95)).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                HStack(alignment: .center, spacing: 10) {
+                    prompt("GOT IT")
+                    Spacer(minLength: 0)
+                    Text("GUIDANCE \(GuidanceLevel(rawValue: controller.prefs.guidance)?.label ?? "FULL")  //  SETTINGS").font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).foregroundStyle(ink.opacity(0.35))
+                }
+            }
+            .padding(.horizontal, 18).padding(.vertical, 14)
+            .frame(width: min(HUDStyle.cardWidth + 30, 470), alignment: .leading)
+            .background { if lightCards { paper } else { LinearGradient(colors: [Color(white: 0.03).opacity(0.97), Color(white: 0.05).opacity(0.94)], startPoint: .top, endPoint: .bottom) } }
+            .clipShape(CutCorner(cut: 14))
+            .shadow(color: .black.opacity(lightCards ? 0.5 : 0), radius: 14, y: 5)
+            .overlay(alignment: .top) { hairline(HUDStyle.amber.opacity(0.9)) }
+            .overlay(alignment: .bottom) { hairline(accent.opacity(0.4)) }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { controller.acceptMission() }
+        .transition(.scale(scale: 0.94).combined(with: .opacity))
+        .animation(.spring(duration: 0.3, bounce: 0.2), value: c.id)
+    }
+
     // MARK: - Missions
 
     @ViewBuilder private var missionOverlay: some View {
@@ -395,7 +500,7 @@ struct HUDView: View {
         case .briefing:
             card(footer: m.browsing ? "LOAD THIS JOB" : "ACCEPT") {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("CHAPTER \(m.chapter)  //  \(m.chapterTitle)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                    Text("CHAPTER \(m.chapter)  //  \(m.chapterTitle)").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(ink.opacity(0.5))
                     if m.messageCount > 0 { messagesChip(m) }
                     Spacer()
                     identityRow(m)
@@ -403,14 +508,15 @@ struct HUDView: View {
                 HStack(alignment: .top, spacing: 14) {
                     // left: the job
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("\(m.code)  //  \(m.title)").font(HUDStyle.display(HUDStyle.titleSize)).tracking(1).foregroundStyle(accent)
+                        Text("\(m.code)  //  \(m.title)").font(HUDStyle.display(HUDStyle.titleSize)).tracking(1).foregroundStyle(cardAccent)
                         row("JOB", "\(m.index + 1)/\(m.count)", "PAY", "\(m.kind == .duel ? "DUEL" : "HULL PAYS")", "CREDITS", "\(m.credits)")
                         if m.offerBonus > 0 {
-                            Text("SIDE OFFER FROM \(m.contact)  //  \(m.offerDone ? "PAID" : "+\(m.offerBonus) CREDITS ON TOP")").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.amber)
-                        } else if m.cleared { Text("CLEARED  //  REPLAY PAYS HALF").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(HUDStyle.amber) }
-                        Text(m.brief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
-                        Text(m.goalText).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(accent)
+                            Text("SIDE OFFER FROM \(m.contact)  //  \(m.offerDone ? "PAID" : "+\(m.offerBonus) CREDITS ON TOP")").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(cardAmber)
+                        } else if m.cleared { Text("CLEARED  //  REPLAY PAYS HALF").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(cardAmber) }
+                        Text(m.brief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(ink.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+                        Text(m.goalText).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(cardAccent)
                         objectivesBlock(m)
+                        goalStrip(m)
                         if m.kind != .duel {
                             HStack(spacing: 10) {
                                 row("BEST", m.bestRank.text, "SILVER", "\(m.silverScore)", "GOLD", "\(m.goldScore)", valueColor: rankColor(m.bestRank))
@@ -422,13 +528,13 @@ struct HUDView: View {
                     // right: who is talking (and who you will face)
                     VStack(alignment: .center, spacing: 3) {
                         portrait(m.contact, tint: HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor), size: 52)
-                        Text(m.contact).font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5).foregroundStyle(HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor))
-                        Text(m.contactRole).font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                        Text(m.contact).font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5).foregroundStyle(tone(Rival.named(m.contact)?.color ?? Rival.vessColor))
+                        Text(m.contactRole).font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).foregroundStyle(ink.opacity(0.5)).lineLimit(1)
                         if m.kind == .duel && !m.rivalName.isEmpty {
                             Text("VS").font(HUDStyle.display(10)).tracking(2).foregroundStyle(.red).padding(.top, 2)
                             portrait(m.rivalName, tint: HUDStyle.color(m.rivalColor), size: 44)
-                            Text(m.rivalName).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(m.rivalColor))
-                            Text("\(m.rivalTemper)  \(m.rivalWins)-\(m.rivalLosses)").font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).monospacedDigit().foregroundStyle(.white.opacity(0.6))
+                            Text(m.rivalName).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(tone(m.rivalColor))
+                            Text("\(m.rivalTemper)  \(m.rivalWins)-\(m.rivalLosses)").font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1).monospacedDigit().foregroundStyle(ink.opacity(0.6))
                         }
                     }
                     .frame(width: 112)
@@ -444,51 +550,58 @@ struct HUDView: View {
         case .success:
             StagedCard(steps: 6) { step in
                 card(footer: "NEXT JOB") {
-                    Text(m.successTitle).font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(accent)
+                    Text(m.successTitle).font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(cardAccent)
                         .scaleEffect(step >= 1 ? 1 : 1.4, anchor: .leading).opacity(step >= 1 ? 1 : 0)
                     HStack(spacing: 8) {
-                        Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
-                        Text("\(m.code)  //  \(m.title)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.7))
+                        Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(tone(m.liveryColor))
+                        Text("\(m.code)  //  \(m.title)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(ink.opacity(0.7))
                     }
                     .opacity(step >= 1 ? 1 : 0)
                     if m.kind != .duel {
                         HStack(alignment: .firstTextBaseline, spacing: 14) {
                             Text(m.rank.text).font(HUDStyle.display(HUDStyle.cardTitleSize + 8)).tracking(3).foregroundStyle(rankColor(m.rank))
                                 .scaleEffect(step >= 2 ? 1 : 1.6, anchor: .leading)
-                            stat("SCORE", "\(step >= 3 ? m.score : 0)", .white)
-                            if m.rank > .none && m.rank >= m.bestRank { Text("NEW BEST").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(HUDStyle.reward).opacity(step >= 3 ? 1 : 0) }
+                            stat("SCORE", "\(step >= 3 ? m.score : 0)", ink)
+                            if m.rank > .none && m.rank >= m.bestRank { Text("NEW BEST").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(cardReward).opacity(step >= 3 ? 1 : 0) }
                         }
                         .opacity(step >= 2 ? 1 : 0)
                         flagsRow(m.flags, new: m.newFlags).opacity(step >= 4 ? 1 : 0)
                     }
                     HStack(alignment: .firstTextBaseline, spacing: 14) {
-                        stat("PAYOUT", "+\(step >= 5 ? m.payout : 0)", accent)
-                        stat("CREDITS", "\(step >= 5 ? m.credits : m.credits - m.payout)", .white)
-                        if m.kind != .duel { stat("HULL", "\(Int(m.energy * 100))%", .white) }
-                        if m.kind == .search { stat("BEACONS", "\(m.beaconsHit)/\(m.beaconsTotal)", HUDStyle.pickup) }
+                        stat("PAYOUT", "+\(step >= 5 ? m.payout : 0)", cardAccent)
+                        stat("CREDITS", "\(step >= 5 ? m.credits : m.credits - m.payout)", ink)
+                        if m.kind != .duel { stat("HULL", "\(Int(m.energy * 100))%", ink) }
+                        if m.kind == .search { stat("BEACONS", "\(m.beaconsHit)/\(m.beaconsTotal)", lightCards ? tone(SIMD3(0.85, 0.7, 1.0)) : HUDStyle.pickup) }
                     }
                     .opacity(step >= 4 ? 1 : 0)
                     if !m.reactiveLine.isEmpty || !m.debrief.isEmpty {
                         hairline(accent.opacity(0.35)).opacity(step >= 5 ? 1 : 0)
                         if !m.reactiveLine.isEmpty {
                             Text("\(m.contact): \(m.reactiveLine)").font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2)
-                                .foregroundStyle(HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor)).fixedSize(horizontal: false, vertical: true)
+                                .foregroundStyle(tone(Rival.named(m.contact)?.color ?? Rival.vessColor)).fixedSize(horizontal: false, vertical: true)
                                 .opacity(step >= 5 ? 1 : 0)
                         }
                         if !m.debrief.isEmpty {
-                            Text(m.debrief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+                            Text(m.debrief).font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2).foregroundStyle(ink.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
                                 .opacity(step >= 6 ? 1 : 0)
                         }
+                    }
+                    if !m.goalsNow.isEmpty || !m.notesNow.isEmpty {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(m.goalsNow, id: \.self) { g in resultTick("GOAL", g) }
+                            ForEach(m.notesNow, id: \.self) { n in resultTick("NOTEBOOK", n) }
+                        }
+                        .opacity(step >= 6 ? 1 : 0)
                     }
                 }
             }
         case .failed:
             card(footer: "RETRY NOW") {
                 Text("RUN FAILED").font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(.red)
-                Text(m.failReason).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(.white.opacity(0.8))
+                Text(m.failReason).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1).foregroundStyle(ink.opacity(0.8))
                 if !m.reactiveLine.isEmpty {
                     Text("\(m.contact): \(m.reactiveLine)").font(HUDStyle.body(HUDStyle.bodySize)).lineSpacing(2)
-                        .foregroundStyle(HUDStyle.color(Rival.named(m.contact)?.color ?? Rival.vessColor)).fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(tone(Rival.named(m.contact)?.color ?? Rival.vessColor)).fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -498,32 +611,67 @@ struct HUDView: View {
     /// cast's standing. Shown once, before the first briefing of each chapter; A / tap goes on to the briefing.
     private func chapterCard(_ m: MissionState) -> some View {
         card(footer: "OPEN CHAPTER") {
-            Text("CHAPTER \(m.chapter)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(3).foregroundStyle(.white.opacity(0.5))
-            Text(m.chapterTitle).font(HUDStyle.display(HUDStyle.cardTitleSize + 6)).tracking(4).foregroundStyle(accent)
-                .shadow(color: accent.opacity(0.6), radius: 10)
+            Text("CHAPTER \(m.chapter)").font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(3).foregroundStyle(ink.opacity(0.5))
+            Text(m.chapterTitle).font(HUDStyle.display(HUDStyle.cardTitleSize + 6)).tracking(4).foregroundStyle(cardAccent)
+                .shadow(color: lightCards ? .clear : accent.opacity(0.6), radius: 10)
             hairline(accent.opacity(0.35))
-            Text(m.chapterIntro).font(HUDStyle.body(HUDStyle.bodySize + 1)).lineSpacing(3).foregroundStyle(.white.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
+            Text(m.chapterIntro).font(HUDStyle.body(HUDStyle.bodySize + 1)).lineSpacing(3).foregroundStyle(ink.opacity(0.9)).fixedSize(horizontal: false, vertical: true)
                 .padding(.vertical, 2)
             HStack(alignment: .top, spacing: 16) {
                 ForEach(m.chapterCast, id: \.name) { c in
                     let known = c.standing != .unknown
                     let tint = HUDStyle.color(Rival.named(c.name)?.color ?? Rival.vessColor)
                     VStack(spacing: 3) {
-                        portrait(c.name, tint: known ? tint : .white.opacity(0.25), size: 44).saturation(known ? 1 : 0).opacity(known ? 1 : 0.45).blur(radius: known ? 0 : 2.5)
-                        Text(known ? c.name : "????").font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(known ? tint : .white.opacity(0.4))
+                        portrait(c.name, tint: known ? tint : ink.opacity(0.25), size: 44).saturation(known ? 1 : 0).opacity(known ? 1 : 0.45).blur(radius: known ? 0 : 2.5)
+                        Text(known ? c.name : "????").font(HUDStyle.display(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(known ? tint : ink.opacity(0.4))
                         Text(c.standing.rawValue).font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(1)
-                            .foregroundStyle(c.standing == .rival ? .red : (c.standing == .unknown ? .white.opacity(0.35) : .white.opacity(0.6)))
+                            .foregroundStyle(c.standing == .rival ? .red : (c.standing == .unknown ? ink.opacity(0.35) : ink.opacity(0.6)))
                     }
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 3) {
-                    Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 3)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
-                    Text(m.playerTitle).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(.white.opacity(0.5))
-                    Text("\(m.credits) CREDITS").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).monospacedDigit().foregroundStyle(.white.opacity(0.5))
+                    Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 3)).tracking(1.5).foregroundStyle(tone(m.liveryColor))
+                    Text(m.playerTitle).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(ink.opacity(0.5))
+                    Text("\(m.credits) CREDITS").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).monospacedDigit().foregroundStyle(ink.opacity(0.5))
                 }
             }
             .padding(.top, 4)
         }
+    }
+
+    /// NOTES / GOALS on the briefing's header: a tap opens the page.
+    private func pageChip(_ icon: String, _ text: String, lit: Bool, _ open: @escaping () -> Void) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon).font(.system(size: 9, weight: .semibold))
+            Text(text).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).monospacedDigit().lineLimit(1)
+        }
+        .fixedSize()
+        .foregroundStyle(lit ? .black : ink.opacity(0.7))
+        .padding(.horizontal, 6).padding(.vertical, 2)
+        .background(lit ? HUDStyle.reward : ink.opacity(0.12))
+        .clipShape(CutCorner(cut: 4))
+        .contentShape(Rectangle())
+        .onTapGesture { open() }
+        .padding(.leading, 6)
+    }
+
+    /// The world's goal card in one line on the briefing: nine boxes and the next open goal with its pay.
+    private func goalStrip(_ m: MissionState) -> some View {
+        HStack(alignment: .center, spacing: 6) {
+            pageChip("checklist", "NOTES \(m.notesTicked)/\(m.notesTotal)", lit: m.notesTicked >= m.notesNeed && m.notesNeed > 0) { controller.openNotebook() }
+                .padding(.leading, -6)
+            pageChip("square.grid.3x3", "GOALS \(m.goalsDone)/\(m.goalsTotal)", lit: false) { controller.openGoals(world: m.goalWorld) }
+            HStack(spacing: 2) {
+                ForEach(0..<max(0, m.goalsTotal), id: \.self) { i in
+                    Rectangle().fill(i < m.goalsDone ? HUDStyle.reward : ink.opacity(0.18)).frame(width: 6, height: 6)
+                }
+            }
+            if !m.goalNext.isEmpty {
+                Text("NEXT  \(m.goalNext.uppercased())  +\(m.goalNextPay)").font(HUDStyle.label(HUDStyle.labelSize - 2)).tracking(0.5)
+                    .foregroundStyle(ink.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.6)
+            }
+        }
+        .padding(.top, 2)
     }
 
     /// The message log's chip on the briefing: count, unread, a tap opens the log.
@@ -532,9 +680,9 @@ struct HUDView: View {
             Image(systemName: "envelope").font(.system(size: 9, weight: .semibold))
             Text(m.unreadMessages > 0 ? "\(m.unreadMessages) NEW" : "MESSAGES").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1)
         }
-        .foregroundStyle(m.unreadMessages > 0 ? .black : .white.opacity(0.7))
+        .foregroundStyle(m.unreadMessages > 0 ? .black : ink.opacity(0.7))
         .padding(.horizontal, 6).padding(.vertical, 2)
-        .background(m.unreadMessages > 0 ? accent : .white.opacity(0.12))
+        .background(m.unreadMessages > 0 ? accent : ink.opacity(0.12))
         .clipShape(CutCorner(cut: 4))
         .contentShape(Rectangle())
         .onTapGesture { controller.openMessages() }
@@ -551,7 +699,7 @@ struct HUDView: View {
                 TextField("CALLSIGN", text: $callsignDraft)
                     .textFieldStyle(.plain)
                     .font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5)
-                    .foregroundStyle(HUDStyle.color(m.liveryColor))
+                    .foregroundStyle(tone(m.liveryColor))
                     .frame(width: 96)
                     .focused($callsignFocus)
                     #if os(iOS)
@@ -561,13 +709,13 @@ struct HUDView: View {
                     .onSubmit { controller.setCallsign(callsignDraft); editingCallsign = false }
                     .onChange(of: callsignFocus) { _, f in if !f && editingCallsign { controller.setCallsign(callsignDraft); editingCallsign = false } }
             } else {
-                Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5).foregroundStyle(HUDStyle.color(m.liveryColor))
+                Text(m.callsign).font(HUDStyle.display(HUDStyle.labelSize + 2)).tracking(1.5).foregroundStyle(tone(m.liveryColor))
                     .contentShape(Rectangle())
                     .onTapGesture { callsignDraft = m.callsign; editingCallsign = true; callsignFocus = true }
             }
-            Text(m.playerTitle).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(.white.opacity(0.5))
+            Text(m.playerTitle).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(ink.opacity(0.5))
             Rectangle().fill(HUDStyle.color(m.liveryColor)).frame(width: 12, height: 12)
-                .overlay(Rectangle().stroke(.white.opacity(0.5), lineWidth: 1))
+                .overlay(Rectangle().stroke(ink.opacity(0.5), lineWidth: 1))
                 .contentShape(Rectangle().inset(by: -8))
                 .onTapGesture { controller.cycleLivery() }
         }
@@ -578,7 +726,7 @@ struct HUDView: View {
         let owned = m.upgrades.items.filter { $0.level > 0 }
         if !owned.isEmpty {
             HStack(spacing: 5) {
-                Text("LOADOUT").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                Text("LOADOUT").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(ink.opacity(0.5))
                 ForEach(Array(owned.enumerated()), id: \.offset) { _, item in
                     chip("\(item.title) \(item.level > 1 ? "II" : "I")", accent.opacity(0.85))
                 }
@@ -645,11 +793,11 @@ struct HUDView: View {
                         HStack(spacing: 3) {
                             if j.cleared { Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)) }
                             Text(j.code).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.5)
-                            if j.offer && !j.cleared { Text("+\(j.bonus)").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(0.5).foregroundStyle(shown ? .black : HUDStyle.reward) }
+                            if j.offer && !j.cleared { Text("+\(j.bonus)").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(0.5).foregroundStyle(shown ? .black : cardReward) }
                         }
-                        .foregroundStyle(shown ? .black : (j.cleared ? .white.opacity(0.6) : .white))
+                        .foregroundStyle(shown ? .black : (j.cleared ? ink.opacity(0.6) : ink))
                         .padding(.horizontal, 7).padding(.vertical, 3)
-                        .background(shown ? (j.offer ? HUDStyle.amber : accent) : (j.offer ? HUDStyle.amber.opacity(j.cleared ? 0.1 : 0.28) : .white.opacity(j.cleared ? 0.06 : 0.14)))
+                        .background(shown ? (j.offer ? HUDStyle.amber : accent) : (j.offer ? HUDStyle.amber.opacity(j.cleared ? 0.1 : 0.28) : ink.opacity(j.cleared ? 0.06 : 0.14)))
                         .clipShape(CutCorner(cut: 4))
                         .contentShape(Rectangle())
                         .onTapGesture { controller.browseJob(to: j.id) }
@@ -660,7 +808,7 @@ struct HUDView: View {
                             Image(systemName: glyphs.stick).font(.system(size: 10))
                             Text("BROWSE").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1)
                         }
-                        .foregroundStyle(.white.opacity(0.4)).padding(.leading, 4)
+                        .foregroundStyle(ink.opacity(0.4)).padding(.leading, 4)
                     }
                 }
             }
@@ -673,12 +821,12 @@ struct HUDView: View {
     private func garage(_ m: MissionState) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
-                Text("GARAGE").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                Text("GARAGE").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(ink.opacity(0.5))
                 if touchPlay {
-                    Text("TAP A ROW TO BUY").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.35))
+                    Text("TAP A ROW TO BUY").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(ink.opacity(0.35))
                 } else {
-                    Image(systemName: glyphs.y).font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
-                    Text("BUY").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.35))
+                    Image(systemName: glyphs.y).font(.system(size: 10)).foregroundStyle(ink.opacity(0.4))
+                    Text("BUY").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(ink.opacity(0.35))
                 }
             }
             ForEach(Array(m.upgrades.items.enumerated()), id: \.offset) { i, item in
@@ -689,46 +837,46 @@ struct HUDView: View {
                     Text(item.title).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.8)
                         .frame(width: 96, alignment: .leading)
                     if item.owned {
-                        Text("OWNED").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(.white.opacity(0.4))
+                        Text("OWNED").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(ink.opacity(0.4))
                     } else {
-                        Text(item.level > 0 ? "II" : "I").font(HUDStyle.label(HUDStyle.labelSize)).foregroundStyle(.white.opacity(0.5)).frame(width: 14)
-                        Text("\(item.price)").font(HUDStyle.display(HUDStyle.labelSize + 1)).monospacedDigit().foregroundStyle(can ? HUDStyle.amber : .white.opacity(0.5)).frame(width: 40, alignment: .trailing)
-                        Text(item.detail).font(HUDStyle.body(HUDStyle.labelSize + 1)).foregroundStyle(.white.opacity(0.6))
+                        Text(item.level > 0 ? "II" : "I").font(HUDStyle.label(HUDStyle.labelSize)).foregroundStyle(ink.opacity(0.5)).frame(width: 14)
+                        Text("\(item.price)").font(HUDStyle.display(HUDStyle.labelSize + 1)).monospacedDigit().foregroundStyle(can ? cardAmber : ink.opacity(0.5)).frame(width: 40, alignment: .trailing)
+                        Text(item.detail).font(HUDStyle.body(HUDStyle.labelSize + 1)).foregroundStyle(ink.opacity(0.6))
                     }
                 }
-                .foregroundStyle(item.owned ? .white.opacity(0.45) : (hot ? .white : .white.opacity(0.8)))
+                .foregroundStyle(item.owned ? ink.opacity(0.45) : (hot ? ink : ink.opacity(0.8)))
                 .contentShape(Rectangle())
                 .onTapGesture { controller.buyUpgrade(at: i) }
             }
-            if !m.shopNote.isEmpty { Text(m.shopNote).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.5).foregroundStyle(HUDStyle.amber) }
+            if !m.shopNote.isEmpty { Text(m.shopNote).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.5).foregroundStyle(cardAmber) }
         }
     }
 
     /// Free-play match result on The Grid.
     private func matchCard(_ r: ArenaController.MatchResult, credits: Int) -> some View {
         card(footer: "NEXT MATCH") {
-            Text(r.won ? "MATCH WON" : "MATCH LOST").font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(r.won ? accent : .red)
+            Text(r.won ? "MATCH WON" : "MATCH LOST").font(HUDStyle.display(HUDStyle.cardTitleSize)).tracking(2).foregroundStyle(r.won ? cardAccent : .red)
             HStack(spacing: 12) {
                 portrait(r.rival, tint: HUDStyle.color(Rival.named(r.rival)?.color ?? Rival.vessColor))
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(controller.player.callsign).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.color(controller.player.liveryColor))
-                        Text("\(r.wins)").font(HUDStyle.display(HUDStyle.titleSize + 4)).foregroundStyle(accent)
-                        Text("-").font(HUDStyle.display(HUDStyle.titleSize)).foregroundStyle(.white.opacity(0.5))
+                        Text(controller.player.callsign).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(tone(controller.player.liveryColor))
+                        Text("\(r.wins)").font(HUDStyle.display(HUDStyle.titleSize + 4)).foregroundStyle(cardAccent)
+                        Text("-").font(HUDStyle.display(HUDStyle.titleSize)).foregroundStyle(ink.opacity(0.5))
                         Text("\(r.losses)").font(HUDStyle.display(HUDStyle.titleSize + 4)).foregroundStyle(HUDStyle.rival)
                         Text(r.rival).font(HUDStyle.label(HUDStyle.labelSize + 1)).tracking(1.5).foregroundStyle(HUDStyle.rival)
                     }
-                    Text("\(r.rounds) ROUNDS").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(.white.opacity(0.6))
+                    Text("\(r.rounds) ROUNDS").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1).foregroundStyle(ink.opacity(0.6))
                 }
             }
             HStack(alignment: .firstTextBaseline, spacing: 14) {
-                stat("BEST GRIND", String(format: "%.1f s", r.bestGrind), .white)
-                stat("LONGEST TRAIL", String(format: "%.0f m", r.longestTrail), .white)
-                stat("ENERGY", "\(Int(r.energyLeft * 100))%", .white)
+                stat("BEST GRIND", String(format: "%.1f s", r.bestGrind), ink)
+                stat("LONGEST TRAIL", String(format: "%.0f m", r.longestTrail), ink)
+                stat("ENERGY", "\(Int(r.energyLeft * 100))%", ink)
             }
             HStack(alignment: .firstTextBaseline, spacing: 14) {
-                stat("CREDITS", "+\(r.credits)", accent)
-                stat("TOTAL", "\(credits)", .white)
+                stat("CREDITS", "+\(r.credits)", cardAccent)
+                stat("TOTAL", "\(credits)", ink)
             }
         }
     }
@@ -736,17 +884,17 @@ struct HUDView: View {
     // MARK: - Card furniture
 
     /// Label / value pairs on one line.
-    private func row(_ l1: String, _ v1: String, _ l2: String, _ v2: String, _ l3: String, _ v3: String, valueColor: Color = .white) -> some View {
+    private func row(_ l1: String, _ v1: String, _ l2: String, _ v2: String, _ l3: String, _ v3: String, valueColor: Color? = nil) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            stat(l1, v1, valueColor, small: true)
-            stat(l2, v2, .white, small: true)
-            stat(l3, v3, .white, small: true)
+            stat(l1, v1, valueColor ?? ink, small: true)
+            stat(l2, v2, ink, small: true)
+            stat(l3, v3, ink, small: true)
         }
     }
 
     private func stat(_ label: String, _ value: String, _ color: Color, small: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(label).font(HUDStyle.label(HUDStyle.labelSize - (small ? 1 : 0))).tracking(1).foregroundStyle(.white.opacity(0.5))
+            Text(label).font(HUDStyle.label(HUDStyle.labelSize - (small ? 1 : 0))).tracking(1).foregroundStyle(ink.opacity(0.5))
             Text(value).font(HUDStyle.display(small ? HUDStyle.labelSize + 1 : HUDStyle.headingSize - 2)).monospacedDigit().foregroundStyle(color)
         }
     }
@@ -756,11 +904,20 @@ struct HUDView: View {
             ForEach(Array(Mission.Flags.all.enumerated()), id: \.offset) { _, f in
                 let has = flags.contains(f.0), isNew = new.contains(f.0)
                 Text(f.1).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1)
-                    .foregroundStyle(has ? .black : .white.opacity(0.45))
+                    .foregroundStyle(has ? .black : ink.opacity(0.45))
                     .padding(.horizontal, 5).padding(.vertical, 2)
-                    .background(has ? (isNew ? HUDStyle.reward : HUDStyle.amber) : .white.opacity(0.08))
+                    .background(has ? (isNew ? HUDStyle.reward : HUDStyle.amber) : ink.opacity(0.08))
                     .clipShape(CutCorner(cut: 3))
             }
+        }
+    }
+
+    /// One goal done or notebook line ticked by the run, on the success card.
+    private func resultTick(_ label: String, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(cardReward)
+            Text(label).font(HUDStyle.display(HUDStyle.labelSize - 1)).tracking(1.5).foregroundStyle(cardReward)
+            Text(text).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.6).foregroundStyle(ink.opacity(0.85))
         }
     }
 
@@ -783,7 +940,7 @@ struct HUDView: View {
             .background(accent)
             .clipShape(CutCorner(cut: 7))
             if !touchPlay {
-                Text("or F / return").font(HUDStyle.label(HUDStyle.labelSize - 1)).foregroundStyle(.white.opacity(0.3))
+                Text("or F / return").font(HUDStyle.label(HUDStyle.labelSize - 1)).foregroundStyle(ink.opacity(0.3))
             }
         }
         .padding(.top, 4)
@@ -793,6 +950,7 @@ struct HUDView: View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 6) { content() }
+                    .foregroundStyle(ink.opacity(0.92))
                     .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 6)
             }
             .frame(maxHeight: HUDStyle.cardMaxHeight)
@@ -800,8 +958,9 @@ struct HUDView: View {
             prompt(footer).padding(.horizontal, 14).padding(.bottom, 10)
         }
             .frame(width: HUDStyle.cardWidth, alignment: .leading)
-            .background(LinearGradient(colors: [.black.opacity(0.72), .black.opacity(0.5)], startPoint: .top, endPoint: .bottom))
+            .background { if lightCards { paper } else { LinearGradient(colors: [.black.opacity(0.72), .black.opacity(0.5)], startPoint: .top, endPoint: .bottom) } }
             .clipShape(CutCorner(cut: 14))
+            .shadow(color: .black.opacity(lightCards ? 0.45 : 0), radius: 12, y: 4)
             .overlay(alignment: .top) { hairline(accent.opacity(0.85)) }
             .overlay(alignment: .bottom) { hairline(accent.opacity(0.4)) }
             .contentShape(Rectangle())
@@ -824,14 +983,14 @@ struct HUDView: View {
         case .dive:     lines = ["NO WEAPONS  //  THREAD THE OBSTACLES", "HITS BRUISE THE HULL TWICE AS HARD", "REACH THE END INSIDE THE WINDOW"]
         }
         return VStack(alignment: .leading, spacing: 2) {
-            Text("OBJECTIVES").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(.white.opacity(0.45)).padding(.top, 2)
+            Text("OBJECTIVES").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(ink.opacity(0.45)).padding(.top, 2)
             ForEach(lines, id: \.self) { l in
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Rectangle().fill(accent).frame(width: 5, height: 5).offset(y: -1)
-                    Text(l).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.8).foregroundStyle(.white.opacity(0.85))
+                    Rectangle().fill(cardAccent).frame(width: 5, height: 5).offset(y: -1)
+                    Text(l).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.8).foregroundStyle(ink.opacity(0.85))
                 }
             }
-            Text(controlsLine).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.45)).padding(.top, 3)
+            Text(controlsLine).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(ink.opacity(0.45)).padding(.top, 3)
         }
     }
 
@@ -851,31 +1010,32 @@ struct HUDView: View {
             : ["ENDLESS RUN  //  NO JOB, NO CLOCK", "FLY CLEAN: HITS AND SCRAPES DRAIN THE HULL", "SHOOT THE LIME TARGETS  //  TAKE THE FORK YOU LIKE"]
         return card(footer: "RIDE") {
             HStack(alignment: .firstTextBaseline) {
-                Text("FREE PLAY").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(.white.opacity(0.5))
+                Text("FREE PLAY").font(HUDStyle.label(HUDStyle.labelSize)).tracking(2).foregroundStyle(ink.opacity(0.5))
                 Spacer()
-                Text(controller.rider.name).font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(accent)
+                Text(controller.rider.name).font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(cardAccent)
             }
-            Text(world).font(HUDStyle.display(HUDStyle.titleSize)).tracking(2).foregroundStyle(accent)
-            Text(controller.onBoard ? "ON THE KERBIE ASTRO" : "ON THE SPEEDER").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(.white.opacity(0.7))
+            Text(world).font(HUDStyle.display(HUDStyle.titleSize)).tracking(2).foregroundStyle(cardAccent)
+            Text(controller.onBoard ? "ON THE KERBIE ASTRO" : "ON THE SPEEDER").font(HUDStyle.label(HUDStyle.labelSize)).tracking(1.5).foregroundStyle(ink.opacity(0.7))
             VStack(alignment: .leading, spacing: 2) {
-                Text("THE RUN").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(.white.opacity(0.45)).padding(.top, 4)
+                Text("THE RUN").font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(2).foregroundStyle(ink.opacity(0.45)).padding(.top, 4)
                 ForEach(lines, id: \.self) { l in
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Rectangle().fill(accent).frame(width: 5, height: 5).offset(y: -1)
-                        Text(l).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.8).foregroundStyle(.white.opacity(0.85))
+                        Rectangle().fill(cardAccent).frame(width: 5, height: 5).offset(y: -1)
+                        Text(l).font(HUDStyle.label(HUDStyle.labelSize)).tracking(0.8).foregroundStyle(ink.opacity(0.85))
                     }
                 }
             }
-            Text(controlsLine).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(.white.opacity(0.5)).padding(.top, 4)
+            Text(controlsLine).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(ink.opacity(0.5)).padding(.top, 4)
         }
     }
 
     private func rankColor(_ r: Mission.Rank) -> Color {
         switch r {
-        case .gold: return Color(red: 1.0, green: 0.85, blue: 0.3)
-        case .silver: return Color(red: 0.85, green: 0.9, blue: 1.0)
-        case .bronze: return Color(red: 0.9, green: 0.6, blue: 0.35)
-        case .none: return .white.opacity(0.6)
+        // on paper: old gold, slate, copper (the neon versions vanish on a light card)
+        case .gold: return lightCards ? Color(red: 0.42, green: 0.3, blue: 0.0) : Color(red: 1.0, green: 0.85, blue: 0.3)
+        case .silver: return lightCards ? Color(red: 0.2, green: 0.25, blue: 0.34) : Color(red: 0.85, green: 0.9, blue: 1.0)
+        case .bronze: return lightCards ? Color(red: 0.38, green: 0.18, blue: 0.05) : Color(red: 0.9, green: 0.6, blue: 0.35)
+        case .none: return ink.opacity(0.6)
         }
     }
 
@@ -892,9 +1052,9 @@ struct HUDView: View {
     /// The one meter used everywhere: a label and a 4 pt line, no box.
     private func bar(_ label: String, _ value: Float, _ color: Color, width: CGFloat, low: Bool = false) -> some View {
         HStack(spacing: 6) {
-            Text(label).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.2).frame(width: 46, alignment: .trailing).foregroundStyle(low ? color : .white.opacity(0.6))
+            Text(label).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1.2).frame(width: 46, alignment: .trailing).foregroundStyle(low ? color : ink.opacity(0.6))
             ZStack(alignment: .leading) {
-                Rectangle().fill(.white.opacity(0.14)).frame(width: width, height: 4)
+                Rectangle().fill(ink.opacity(0.14)).frame(width: width, height: 4)
                 Rectangle().fill(color).frame(width: CGFloat(max(0, min(1, value))) * width, height: 4)
                     .animation(.linear(duration: 0.1), value: value)
                 // hairline ticks at the quarters
@@ -914,7 +1074,7 @@ struct HUDView: View {
     private var pauseButton: some View {
         Image(systemName: controller.glyphs.connected ? controller.glyphs.menu : "pause.circle")
             .font(.system(size: 18, weight: .medium))
-            .foregroundStyle(.white.opacity(0.6))
+            .foregroundStyle(ink.opacity(0.6))
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
             .onTapGesture { controller.pause() }

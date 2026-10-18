@@ -95,6 +95,10 @@ struct ActionAck: Equatable {
     /// A contact's line in the ear ("VESS", "Packet is live. Do not stop."); empty when off.
     var commsSpeaker = ""
     var commsText = ""
+    /// Step 2: the guidance cue lane ("WINDOW CLOSING  //  GATES ADD TIME") and the goal / notebook toast.
+    var cueText = ""
+    var toastLabel = ""
+    var toastText = ""
 }
 
 /// SF Symbol names for the connected pad's buttons (`GCControllerElement.sfSymbolsName`), so the

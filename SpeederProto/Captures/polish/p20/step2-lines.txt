@@ -1,0 +1,28 @@
+# Step 2 log lines (Mac demo, 18 Oct 2026)
+# 1) SPEEDER_DEMO=1 SPEEDER_GUIDANCE=2 SPEEDER_MISSION=0 SPEEDER_RESET_PROGRESS=1 SPEEDER_TITLE=0 (95 s): RELAY 01 to success, then SWEEP 01's briefing
+Narrative: v2, 18 jobs, 4 chapters, 4 riders, 13 cards, 3 goal cards, 14 barks
+GUIDE card briefing
+GUIDE card relay
+BARK launch rider: Clean lines.
+comms: CAL: CLEAN LINES. at 10.2 s
+GUIDE cue hull_low: HULL LOW  //  EASE OFF THE BOOST at 2.8 s
+GUIDE cue streak: STREAK x5  //  A HIT RESETS IT at 10.7 s
+BARK streak rider: Clean lines. Told you.
+comms: CAL: CLEAN LINES. TOLD YOU. at 26.6 s
+GOAL near world=city id=kills 9/10
+GUIDE cue goal_near: ONE MORE FOR THE GOAL at 23.1 s
+GOAL done world=city id=kills +100 (1/9)
+NOTE tick ch=1 id=first_goal (1/5)
+BARK goal rider: Put that on the list.
+comms: CAL: PUT THAT ON THE LIST. at 41.9 s
+GOAL done world=city id=score +100 (2/9)
+t=61.1 fps=61 speed=25 m/s entities=5462 dist=2411 mission=success beacons=0/0 gap=70 hull=0.84
+GUIDE card goals
+GUIDE card sweep
+BARK launch rider: Second time in. Still mine.
+comms: CAL: SECOND TIME IN. STILL MINE. at 70.0 s
+
+# 2) capture.sh demo-notebook 22 SPEEDER_MISSION=0 SPEEDER_SCREEN=notebook SPEEDER_HINT=3 SPEEDER_NOTE=first_goal
+HINT ch=1 id=clean_disc level=0
+HINT ch=1 id=clean_disc level=1
+HINT ch=1 id=clean_disc level=2
