@@ -16,7 +16,7 @@ Mark assumes a **controller** (the Backbone) for everything for now: no touch wo
 
 ---
 
-Read `CLAUDE.md` in this workspace first, then `GDD_2026-10-17.md` §8–§9, then
+Read `CLAUDE.md` in this workspace first, then `GDD_2026-10-29.md` §8–§9, then
 `SpeederProto/docs/assessment-2026-10-17-rd.md` §4.1 (objective shapes), §4.2 (hazards), §4.4 (clues and people in a
 corridor), §7 (where each piece lives) and §8 (step 3), then the last two sections of `SpeederProto/docs/polish-log.md`
 ("Step 2" and "TestFlight prep"). Ask Mark first how the step 2 build played on the phone; fold his notes in before
