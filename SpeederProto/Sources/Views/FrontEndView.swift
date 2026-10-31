@@ -54,7 +54,7 @@ struct FrontEndView: View {
             } else if screen == .story {
                 StoryIntroView(controller: controller).transition(.opacity)
             } else if controller.onTitle {
-                titleFrame.transition(.opacity)
+                if screen == .title && TitleArt.enabled { artTitle.transition(.opacity) } else { titleFrame.transition(.opacity) }
             } else {
                 pauseFrame.transition(.opacity)
             }
@@ -123,6 +123,109 @@ struct FrontEndView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {}
+    }
+
+    // MARK: - The key-art title (31 Oct 2026)
+
+    /// Mark's key art full-bleed, letterboxed so its painted buttons stay where he painted them at every
+    /// aspect (the bands a wider phone leaves are the same art blurred); the controls are overlays mapped
+    /// from the image's own proportions (`TitleArt.buttons`): a touch hit area each, and a glowing stroke
+    /// on the one the stick / cursor has. Rows the art has no button for (CONTINUE SAVE, MESSAGES) are
+    /// chips in the bottom-left corner; the callsign / credits line sits bottom-right.
+    private var artTitle: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            let fit = TitleArt.fitRect(in: size)
+            let rows = controller.menuRows
+            ZStack(alignment: .topLeading) {
+                Color.black
+                if let img = BundledImage.load("title_splash", ext: "png") {
+                    if fit.width < size.width - 1 || fit.height < size.height - 1 {
+                        Image(decorative: img, scale: 1).resizable().aspectRatio(contentMode: .fill)
+                            .frame(width: size.width, height: size.height).clipped()
+                            .blur(radius: 16).opacity(0.55)
+                    }
+                    Image(decorative: img, scale: 1).resizable()
+                        .frame(width: fit.width, height: fit.height)
+                        .position(x: fit.midX, y: fit.midY)
+                } else {
+                    Text("title_splash.png missing").foregroundStyle(.red).padding(40)
+                }
+                ForEach(TitleArt.buttons) { b in
+                    if let i = rows.firstIndex(where: { $0.id == b.id }) {
+                        artButton(b, row: rows[i], index: i, rect: TitleArt.map(b.rect, into: fit), skew: b.skew * fit.width)
+                    }
+                }
+                // rows without a painted button, then the legend, in the bottom-left corner
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
+                        if !TitleArt.painted.contains(row.id) { artChip(row, i) }
+                    }
+                    footer
+                }
+                .padding(.leading, HUDStyle.sideInset + 12)
+                .padding(.bottom, HUDStyle.bottomInset + 8)
+                .frame(width: size.width, height: size.height, alignment: .bottomLeading)
+                riderLine
+                    .scaleEffect(0.7, anchor: .bottomTrailing)
+                    .padding(.trailing, HUDStyle.sideInset + 12)
+                    .padding(.bottom, HUDStyle.bottomInset + 8)
+                    .frame(width: size.width, height: size.height, alignment: .bottomTrailing)
+            }
+        }
+        .ignoresSafeArea()
+        .contentShape(Rectangle())
+        .onTapGesture {}
+    }
+
+    /// One painted button: an invisible hit area the size of the painting (a little bigger for the small
+    /// links), the focus stroke when it is the cursor's row, and under START GAME the job it continues.
+    private func artButton(_ b: TitleArt.Button, row: MenuRow, index i: Int, rect: CGRect, skew: CGFloat) -> some View {
+        let hot = i == controller.menuIndex
+        let shape = SlantedBox(skew: skew)
+        return ZStack {
+            shape.fill(accent.opacity(hot ? 0.14 : 0.001))
+            if hot {
+                shape.stroke(accent, style: StrokeStyle(lineWidth: b.id == "continue" ? 2.5 : 1.5, lineJoin: .round))
+                    .shadow(color: accent.opacity(0.95), radius: 10)
+                    .shadow(color: accent.opacity(0.6), radius: 22)
+                    .modifier(TempoPulse())
+            }
+        }
+        .frame(width: rect.width, height: rect.height)
+        .contentShape(shape)                                  // before `.position`, which wraps the view in the full frame
+        .onTapGesture { controller.tapRow(i) }
+        .position(x: rect.midX, y: rect.midY)
+        .overlay(alignment: .top) {
+            if b.id == "continue", !row.detail.isEmpty {
+                Text((controller.missions.hasProgress ? "CONTINUE  //  " : "") + row.detail)
+                    .font(HUDStyle.label(HUDStyle.labelSize - 3)).tracking(1.5)
+                    .foregroundStyle(hot ? Color.white.opacity(0.8) : Color.white.opacity(0.5))
+                    .shadow(color: .black.opacity(0.9), radius: 3)
+                    .lineLimit(1)
+                    .position(x: rect.midX, y: rect.maxY + 7)
+            }
+        }
+        .animation(.easeOut(duration: 0.15), value: hot)
+    }
+
+    /// CONTINUE SAVE / MESSAGES on the art title: a small chip, lit when it has the cursor.
+    private func artChip(_ row: MenuRow, _ i: Int) -> some View {
+        let hot = i == controller.menuIndex
+        return HStack(spacing: 8) {
+            Rectangle().fill(hot ? accent : .white.opacity(0.3)).frame(width: 2, height: 14)
+            Text(row.label).font(HUDStyle.display(13)).tracking(hot ? 2.5 : 1.5).foregroundStyle(hot ? .white : .white.opacity(0.7))
+            if !row.detail.isEmpty {
+                Text(row.detail).font(HUDStyle.label(HUDStyle.labelSize - 1)).tracking(1).foregroundStyle(hot ? accent : .white.opacity(0.4)).lineLimit(1)
+            }
+        }
+        .padding(.vertical, 5).padding(.horizontal, 9)
+        .background(RoundedRectangle(cornerRadius: 4).fill(.black.opacity(hot ? 0.6 : 0.4)))
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(hot ? accent.opacity(0.9) : .white.opacity(0.12), lineWidth: 1))
+        .shadow(color: hot ? accent.opacity(0.6) : .clear, radius: 8)
+        .contentShape(Rectangle())
+        .onTapGesture { controller.tapRow(i) }
+        .animation(.easeOut(duration: 0.15), value: hot)
     }
 
     /// Callsign (in the livery), the earned title, the purse. A tap opens the rider screen.
@@ -809,4 +912,56 @@ final class ClipCoordinator {
         player.play()
     }
     func detach(_ layer: AVPlayerLayer) { layer.player?.pause(); layer.player = nil; looper = nil }
+}
+
+// MARK: - The key-art title's geometry
+
+/// Mark's title painting (`Resources/title_splash.png`, the source `splash_title_2026-10-31.png` at the repo
+/// root, 1672 x 941): where its buttons are, as fractions of the image, so the overlays land on the paint at
+/// any screen size. `SPEEDER_TITLE_ART=0` keeps the old wordmark title (reference captures).
+enum TitleArt {
+    static let aspect: CGFloat = 1672.0 / 941.0
+    static let enabled = ProcessInfo.processInfo.environment["SPEEDER_TITLE_ART"] != "0"
+
+    struct Button: Identifiable {
+        let id: String          // the menu row it drives
+        let rect: CGRect        // fractions of the image (x, y from the top-left)
+        let skew: CGFloat       // the slant of the painted box, as a fraction of the image width (top edge shifted right)
+    }
+    /// START GAME is the big slanted box; the three links sit under it between the painted dividers.
+    static let buttons = [
+        Button(id: "continue", rect: CGRect(x: 0.333, y: 0.730, width: 0.330, height: 0.082), skew: 0.021),
+        Button(id: "riders",   rect: CGRect(x: 0.293, y: 0.838, width: 0.118, height: 0.062), skew: 0),
+        Button(id: "freeplay", rect: CGRect(x: 0.426, y: 0.838, width: 0.144, height: 0.062), skew: 0),
+        Button(id: "settings", rect: CGRect(x: 0.587, y: 0.838, width: 0.125, height: 0.062), skew: 0),
+    ]
+    static let painted = Set(buttons.map { $0.id })
+
+    /// The letterboxed rectangle the image fills inside `size` (centred; bands on the long sides).
+    static func fitRect(in size: CGSize) -> CGRect {
+        guard size.width > 0, size.height > 0 else { return .zero }
+        if size.width / size.height > aspect {
+            let w = size.height * aspect
+            return CGRect(x: (size.width - w) / 2, y: 0, width: w, height: size.height)
+        } else {
+            let h = size.width / aspect
+            return CGRect(x: 0, y: (size.height - h) / 2, width: size.width, height: h)
+        }
+    }
+    static func map(_ r: CGRect, into fit: CGRect) -> CGRect {
+        CGRect(x: fit.minX + r.minX * fit.width, y: fit.minY + r.minY * fit.height, width: r.width * fit.width, height: r.height * fit.height)
+    }
+}
+
+/// A parallelogram: the painted START GAME box (`skew` points of slant, the top edge to the right of the
+/// bottom one); `skew` 0 is a plain rectangle for the links. Stroked with round joins so the corners read soft.
+struct SlantedBox: Shape {
+    var skew: CGFloat
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.addLines([CGPoint(x: r.minX + skew, y: r.minY), CGPoint(x: r.maxX, y: r.minY),
+                    CGPoint(x: r.maxX - skew, y: r.maxY), CGPoint(x: r.minX, y: r.maxY)])
+        p.closeSubpath()
+        return p
+    }
 }

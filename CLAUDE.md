@@ -169,6 +169,11 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   actor export). `AvatarActor` strips cameras / lights from the file (an exported Preview_Camera otherwise becomes the
   scene camera), tolerates a file with no clip, and poses a rigged file with the riders' idle + head look-at via
   `RiderRig`. `SPEEDER_AVATAR=<name>` picks another `<name>.usdz`.
+- 31 Oct 2026 (same branch, `docs/polish-log.md` "The key-art title"): the title screen is Mark's painting
+  (`splash_title_2026-10-31.png` at the repo root is the source; `Resources/title_splash.png` the bundle copy),
+  letterboxed with its painted START GAME / RIDERS / FREE PLAY / SETTINGS live: `TitleArt` in `Views/FrontEndView.swift`
+  holds the buttons as fractions of the image, `artTitle` overlays touch areas and the focus stroke; left / right also
+  walk the title's rows. `SPEEDER_TITLE_ART=0` keeps the old wordmark title.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md` (step 3, objectives and clues; written 18 Oct 2026).
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

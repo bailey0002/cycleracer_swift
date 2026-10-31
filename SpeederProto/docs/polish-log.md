@@ -829,3 +829,29 @@ that figure is the briefing contact, the one standing by the parked board while 
   pitch toward it. A file with no skin keeps the old path (up-axis guess, feet at 0, first clip if any).
 - `GameController`: the per-frame briefing block now also calls `update`, with the camera as the look target; the
   figure still hides once `missions.phase == .running`.
+
+## The key-art title (31 Oct 2026)
+
+Same branch (`claude/marlow-contact`). Mark's key art (`splash_title_2026-10-31.png`, 1672 x 941, kept at the repo
+root like the other source paintings; `Resources/title_splash.png` is the bundle copy) is the title screen, with the
+buttons he painted doing the work. The wordmark in the art reads "KERB:GALATIC"; the art is his, left as made.
+
+- `Views/FrontEndView.swift` `artTitle`: the image letterboxed (`TitleArt.fitRect`, the 16:9 painting centred; a
+  phone wider than 16:9 shows the same art blurred and dimmed in the side bands) so the painted buttons stay where
+  the paint is at every aspect. Cover-scaling was rejected: at 19.5:9 it would crop 9 % off the top and bottom and
+  push the link row under the home indicator.
+- `TitleArt.buttons`: START GAME (a slanted box, `SlantedBox` with the paint's skew), RIDERS, FREE PLAY and SETTINGS
+  as fractions of the image, measured from the painting; each overlay is a touch area (the links padded a little
+  beyond the lettering, bounded by the painted dividers) and, on the cursor's row, a cyan stroke with a double
+  glow and the tempo pulse. Under START GAME a small caption names the job it starts (`CONTINUE // RELAY 03 ...`
+  once there is progress). Rows the art has no button for (CONTINUE SAVE, MESSAGES) are chips bottom-left over the
+  legend; the callsign / credits line sits bottom-right at 70 %.
+- `FrontEnd.swift` `frontEndInput`: on the title, left / right walk the rows like up / down (the links sit in a row).
+  The row list and its ids are unchanged, so the first-run flow (riders -> story -> callsign), the save slot and
+  `SPEEDER_SCREEN=` all behave as before. `SPEEDER_TITLE_ART=0` draws the old wordmark title.
+- Gotcha: `.contentShape` / `.onTapGesture` must go on the sized view *before* `.position(...)`, which wraps the view
+  in a frame the size of its parent; applied after, the hit area sat at the top-left corner and the first tap test
+  did nothing.
+- Proof (`Captures/polish/p21/`): `title-art.png` (the title on the 16e simulator, START GAME focused),
+  `title-art-tap-riders.png` (a tap on the painted RIDERS opened the roster; SETTINGS checked the same way). The
+  stick / pad focus movement and the phone's look are not judged yet.

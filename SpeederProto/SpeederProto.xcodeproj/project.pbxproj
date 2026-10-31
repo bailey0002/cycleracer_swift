@@ -173,6 +173,7 @@
 		8FFDC94911BA0A5C3A75CA69 /* sfx_vortex.wav in Resources */ = {isa = PBXBuildFile; fileRef = 459CA2CFB0E8ED96B0C304F9 /* sfx_vortex.wav */; };
 		91E7D2FCD69A80425889BA8A /* neon-facade-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 56F27E8CBF98746D32A4CC2F /* neon-facade-02.png */; };
 		92ACF980243E10B7509D5594 /* SpeederApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D1146D252113EB8417E5731 /* SpeederApp.swift */; };
+		9366F5FA6B83963F1C9E34C2 /* title_splash.png in Resources */ = {isa = PBXBuildFile; fileRef = 74EB8BE41E7CEA83D11FB942 /* title_splash.png */; };
 		9590C5B7564F9939CCDE8AD6 /* ChakraPetch-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F267A64D2D80F02D2873E578 /* ChakraPetch-Regular.ttf */; };
 		98C93C4146DB8E027C690A7A /* ArtLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E254A40E482744855A866AF5 /* ArtLibrary.swift */; };
 		99CA4E5588A1E8B63E18EB07 /* Guidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21939E6B21E2D647B73450EC /* Guidance.swift */; };
@@ -222,6 +223,7 @@
 		C4889FD8DB7F29A04EE364A8 /* vo_power_up.wav in Resources */ = {isa = PBXBuildFile; fileRef = FCD58AD5EC0C408FEBB37FA7 /* vo_power_up.wav */; };
 		C74AE7E7E2CC3A9C3A504ABF /* music_toolatetoolate.m4a in Resources */ = {isa = PBXBuildFile; fileRef = F78469BF83CF45E3F7B3A898 /* music_toolatetoolate.m4a */; };
 		C76A061DDDE52E69116C1696 /* Rider_dude2.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 37AA218738D620AFE8A9AD11 /* Rider_dude2.usdz */; };
+		C972C418EE7CB6F7E9491A64 /* title_splash.png in Resources */ = {isa = PBXBuildFile; fileRef = 74EB8BE41E7CEA83D11FB942 /* title_splash.png */; };
 		CA35324DE2FFFBF698C0B09C /* sfx_caption.wav in Resources */ = {isa = PBXBuildFile; fileRef = C915C997E763C88A348863BE /* sfx_caption.wav */; };
 		CD01F1F11C34161205DB8379 /* sfx_ring.wav in Resources */ = {isa = PBXBuildFile; fileRef = 0ED407FC767B57F570CFC7D4 /* sfx_ring.wav */; };
 		CDF68AAF754B4149E69C2429 /* sfx_tick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1DA047080DAC3E48A9C6612C /* sfx_tick.wav */; };
@@ -346,6 +348,7 @@
 		72882052C02160C92D4332AF /* grid-screen-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "grid-screen-01.png"; sourceTree = "<group>"; };
 		733BB8F68F1AFA8B3CBE3094 /* LightCycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightCycle.swift; sourceTree = "<group>"; };
 		73FF3D4266B061E907BC8A82 /* vo_winner.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_winner.wav; sourceTree = "<group>"; };
+		74EB8BE41E7CEA83D11FB942 /* title_splash.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = title_splash.png; sourceTree = "<group>"; };
 		761E24274CEDB6E4B002900F /* neon-skyline.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "neon-skyline.png"; sourceTree = "<group>"; };
 		78054BE8AF296515CF142BD3 /* ChakraPetch-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-Bold.ttf"; sourceTree = "<group>"; };
 		803B8B368E2D6E01BDD5BF41 /* vo_hurry_up.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_hurry_up.wav; sourceTree = "<group>"; };
@@ -634,6 +637,7 @@
 				DE46DBA0D6DC93E154C375E2 /* story_2.jpg */,
 				E86D56308A5079A2AB4ACC26 /* story_3.jpg */,
 				4692E36D43C542266B26E80F /* story_4.jpg */,
+				74EB8BE41E7CEA83D11FB942 /* title_splash.png */,
 				37F174391265459B72F8E01D /* Art */,
 				1C23CF57024F1BD42B44774E /* Audio */,
 				F2A95B3B28943106ACA53512 /* Fonts */,
@@ -859,6 +863,7 @@
 				472C0735C4D70DF7B9F64EA7 /* story_2.jpg in Resources */,
 				8A6A51D6C9392E5BB5DBFEE4 /* story_3.jpg in Resources */,
 				0075E6BB8E004E8FEADBA518 /* story_4.jpg in Resources */,
+				C972C418EE7CB6F7E9491A64 /* title_splash.png in Resources */,
 				67B4B9B399489E5350CC9575 /* vo_choose_your_character.wav in Resources */,
 				43D7AA2AE36A43BF72C4F805 /* vo_combo.wav in Resources */,
 				F46FD7625A15818915BD1A01 /* vo_combo_breaker.wav in Resources */,
@@ -950,6 +955,7 @@
 				6E6AF363F83824C9A80282B8 /* story_2.jpg in Resources */,
 				B29C27AEA5231468237F3607 /* story_3.jpg in Resources */,
 				5EE503A326A74DEC7B9BF27A /* story_4.jpg in Resources */,
+				9366F5FA6B83963F1C9E34C2 /* title_splash.png in Resources */,
 				3C44532136594CAAA65EBDC9 /* vo_choose_your_character.wav in Resources */,
 				B9558CD53F09B3685B1F72A2 /* vo_combo.wav in Resources */,
 				FEAB40567664DDD104A257A2 /* vo_combo_breaker.wav in Resources */,

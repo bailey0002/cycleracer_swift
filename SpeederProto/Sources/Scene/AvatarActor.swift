@@ -18,7 +18,7 @@ final class AvatarActor {
     private(set) var rig: RiderRig?
     private var idleTime: Float = 0
 
-    static let defaultName = ProcessInfo.processInfo.environment["SPEEDER_AVATAR"] ?? "Marlow"
+    nonisolated static let defaultName = ProcessInfo.processInfo.environment["SPEEDER_AVATAR"] ?? "Marlow"
 
     static func load(named name: String = AvatarActor.defaultName) async throws -> AvatarActor {
         guard let url = Bundle.main.url(forResource: name, withExtension: "usdz") else {
