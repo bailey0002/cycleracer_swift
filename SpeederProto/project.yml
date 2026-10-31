@@ -48,6 +48,9 @@ targets:
     info:
       path: Info-iOS.plist
       properties:
+        CFBundleURLTypes:                        # Aether's Hub opens the game (2026-10-31)
+          - CFBundleURLName: com.greystratum.kerbgalactic
+            CFBundleURLSchemes: [gqkerbgalactic]
         CFBundleDisplayName: "Kerb: Galactic"
         UILaunchScreen:
           UIColorName: LaunchBackground
