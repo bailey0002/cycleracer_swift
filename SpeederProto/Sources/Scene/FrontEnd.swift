@@ -5,7 +5,7 @@ import simd
 /// underneath (`.title`, the front end over the parked job world, or `.game`, a pause over the run).
 enum Screen: Equatable {
     case loading      // the splash while the first world builds
-    case title        // wordmark, rider, CONTINUE / FREE PLAY / SETTINGS
+    case title        // Mark's key art with its painted buttons live (START GAME / RIDERS / FREE PLAY / SETTINGS; `TitleArt`)
     case worlds       // free play: pick a world
     case settings     // the player's settings
     case rider        // callsign and livery (the first run asks here before the first briefing)
@@ -490,7 +490,12 @@ extension GameController {
                 menuIndex = ((menuIndex + (fireDir == 1 ? -1 : 1)) % n + n) % n
                 sound.play(.tick, volume: 0.4, pitch: 1.3)
             case 3, 4:
-                if rows.indices.contains(menuIndex) { adjust(rows[menuIndex].id, by: fireDir == 3 ? -1 : 1) }
+                if screen == .title && TitleArt.enabled {
+                    // the key art lays RIDERS / FREE PLAY / SETTINGS in a row: left / right walk the list too
+                    let n = rows.count
+                    menuIndex = ((menuIndex + (fireDir == 3 ? -1 : 1)) % n + n) % n
+                    sound.play(.tick, volume: 0.4, pitch: 1.3)
+                } else if rows.indices.contains(menuIndex) { adjust(rows[menuIndex].id, by: fireDir == 3 ? -1 : 1) }
             default: break
             }
             if select, rows.indices.contains(menuIndex) { activate(rows[menuIndex].id) }

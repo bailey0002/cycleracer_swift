@@ -810,3 +810,48 @@ had an alpha channel, which the App Store rejects; `render-brand.swift` gained `
 opaque). `testflight/ship.sh ... --build-only` archived it with release Xcode 26.6: build 202610182141, 178 MB,
 signing registered the new id. Not uploaded: the App Store Connect record and the upload's API key are Mark's
 (README "TestFlight"). `simshot.sh` and the README's phone command use the new id.
+
+## Marlow as the contact (31 Oct 2026)
+
+Branch `claude/marlow-contact` off `claude/aether-url-scheme`. Mark asked for "the same update in Galactic" after
+KERB Skate got Marlow's Character Creator 5 figure as its park actor, standing beside the rider at the spawn: here
+that figure is the briefing contact, the one standing by the parked board while a job is briefed, in every world.
+
+- `Resources/Marlow.usdz` (19.6 MB, 1.68 m, 44 Mixamo-named bones, 28 materials, no animation clip) is a copy of
+  `kerb_skate_game/KerbSkate/Assets/actors/actor_marlow.usdz` (source FBX `CC5 Assets for Swift/marlow/`, converter
+  `Tools/convert_cc.py <fbx> <usdz> 6000 0.5` under Blender 5.0.1). `xcodegen generate` registered it.
+- `Scene/AvatarActor.swift`: loads `Marlow` by default (`SPEEDER_AVATAR=<name>` for another file; `Avatar` is the
+  Avaturn test figure, left in the bundle). Drops any camera or light entity inside the file first: KERB learned the
+  same day that the export's `Preview_Camera` otherwise becomes the scene camera. A rigged file goes through
+  `RiderRig` (its stance wrapper faces +X with the feet at y 0; the holder turns it −90° about Y to +Z, the facing
+  `face()` assumes); `update(dt:lookAt:)` runs the riders' idle from KERB's `ActorCast.update` every frame: breathing
+  on Spine1, a 7.5 s weight shift on the hips and spine, and the head + neck turning to the camera inside 9 m with a
+  pitch toward it. A file with no skin keeps the old path (up-axis guess, feet at 0, first clip if any).
+- `GameController`: the per-frame briefing block now also calls `update`, with the camera as the look target; the
+  figure still hides once `missions.phase == .running`.
+
+## The key-art title (31 Oct 2026)
+
+Same branch (`claude/marlow-contact`). Mark's key art (`splash_title_2026-10-31.png`, 1672 x 941, kept at the repo
+root like the other source paintings; `Resources/title_splash.png` is the bundle copy) is the title screen, with the
+buttons he painted doing the work. The wordmark in the art reads "KERB:GALATIC"; the art is his, left as made.
+
+- `Views/FrontEndView.swift` `artTitle`: the image letterboxed (`TitleArt.fitRect`, the 16:9 painting centred; a
+  phone wider than 16:9 shows the same art blurred and dimmed in the side bands) so the painted buttons stay where
+  the paint is at every aspect. Cover-scaling was rejected: at 19.5:9 it would crop 9 % off the top and bottom and
+  push the link row under the home indicator.
+- `TitleArt.buttons`: START GAME (a slanted box, `SlantedBox` with the paint's skew), RIDERS, FREE PLAY and SETTINGS
+  as fractions of the image, measured from the painting; each overlay is a touch area (the links padded a little
+  beyond the lettering, bounded by the painted dividers) and, on the cursor's row, a cyan stroke with a double
+  glow and the tempo pulse. Under START GAME a small caption names the job it starts (`CONTINUE // RELAY 03 ...`
+  once there is progress). Rows the art has no button for (CONTINUE SAVE, MESSAGES) are chips bottom-left over the
+  legend; the callsign / credits line sits bottom-right at 70 %.
+- `FrontEnd.swift` `frontEndInput`: on the title, left / right walk the rows like up / down (the links sit in a row).
+  The row list and its ids are unchanged, so the first-run flow (riders -> story -> callsign), the save slot and
+  `SPEEDER_SCREEN=` all behave as before. `SPEEDER_TITLE_ART=0` draws the old wordmark title.
+- Gotcha: `.contentShape` / `.onTapGesture` must go on the sized view *before* `.position(...)`, which wraps the view
+  in a frame the size of its parent; applied after, the hit area sat at the top-left corner and the first tap test
+  did nothing.
+- Proof (`Captures/polish/p21/`): `title-art.png` (the title on the 16e simulator, START GAME focused),
+  `title-art-tap-riders.png` (a tap on the painted RIDERS opened the roster; SETTINGS checked the same way). The
+  stick / pad focus movement and the phone's look are not judged yet.
