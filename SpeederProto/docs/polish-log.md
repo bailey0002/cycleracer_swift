@@ -810,3 +810,22 @@ had an alpha channel, which the App Store rejects; `render-brand.swift` gained `
 opaque). `testflight/ship.sh ... --build-only` archived it with release Xcode 26.6: build 202610182141, 178 MB,
 signing registered the new id. Not uploaded: the App Store Connect record and the upload's API key are Mark's
 (README "TestFlight"). `simshot.sh` and the README's phone command use the new id.
+
+## Marlow as the contact (31 Oct 2026)
+
+Branch `claude/marlow-contact` off `claude/aether-url-scheme`. Mark asked for "the same update in Galactic" after
+KERB Skate got Marlow's Character Creator 5 figure as its park actor, standing beside the rider at the spawn: here
+that figure is the briefing contact, the one standing by the parked board while a job is briefed, in every world.
+
+- `Resources/Marlow.usdz` (19.6 MB, 1.68 m, 44 Mixamo-named bones, 28 materials, no animation clip) is a copy of
+  `kerb_skate_game/KerbSkate/Assets/actors/actor_marlow.usdz` (source FBX `CC5 Assets for Swift/marlow/`, converter
+  `Tools/convert_cc.py <fbx> <usdz> 6000 0.5` under Blender 5.0.1). `xcodegen generate` registered it.
+- `Scene/AvatarActor.swift`: loads `Marlow` by default (`SPEEDER_AVATAR=<name>` for another file; `Avatar` is the
+  Avaturn test figure, left in the bundle). Drops any camera or light entity inside the file first: KERB learned the
+  same day that the export's `Preview_Camera` otherwise becomes the scene camera. A rigged file goes through
+  `RiderRig` (its stance wrapper faces +X with the feet at y 0; the holder turns it −90° about Y to +Z, the facing
+  `face()` assumes); `update(dt:lookAt:)` runs the riders' idle from KERB's `ActorCast.update` every frame: breathing
+  on Spine1, a 7.5 s weight shift on the hips and spine, and the head + neck turning to the camera inside 9 m with a
+  pitch toward it. A file with no skin keeps the old path (up-axis guess, feet at 0, first clip if any).
+- `GameController`: the per-frame briefing block now also calls `update`, with the camera as the look target; the
+  figure still hides once `missions.phase == .running`.

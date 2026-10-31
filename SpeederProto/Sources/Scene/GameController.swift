@@ -744,7 +744,10 @@ final class GameController: ObservableObject {
                 if missions.phase == .failed { sound.musicCut() }
             }
             contactAvatar?.root.isEnabled = missions.phase != .running
-            if missions.phase != .running { contactAvatar?.face(cameraRig.position) }
+            if missions.phase != .running, let a = contactAvatar {
+                a.face(cameraRig.position)
+                a.update(dt: dt, lookAt: cameraRig.position)        // the riders' idle + head look-at (Marlow, 2026-10-31)
+            }
             if demoMode && Int(time * 4) % 4 == 0 && statsAccumulator > 0.2, let a = contactAvatar { print("avatar \(a.debugBounds())") }
         }
         if !missionActive { sound.setMusic(intensity: input.boosting ? 2 : 1, lead: input.boosting, gated: true) }

@@ -28,8 +28,9 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
 - Direction (11 Sep 2026): a **mission runner**, Tron-clean tone, single player; see
   `SpeederProto/docs/game-direction.md`. `Sources/Missions/` has the catalogue and runner with
   delivery, search (beacon rings), escape (pursuer + boost meter) and duel (The Grid) kinds, HUD
-  cards, persistent credits, and the briefing avatar (`Scene/AvatarActor.swift`, Avaturn test
-  character; Character Creator 5 exports go through the same Blender step).
+  cards, persistent credits, and the briefing avatar (`Scene/AvatarActor.swift`; since 31 Oct 2026 Marlow's
+  CC5 body, `Resources/Marlow.usdz`, with the riders' idle through `RiderRig`; `SPEEDER_AVATAR=Avatar` is the old
+  Avaturn test character).
 - Polish pass done 11 Sep 2026 (`SpeederProto/docs/polish-log.md`): eased conduit clamp and fork
   divergence, portal frames at section mouths, enclosure fog, one camera rig with a boost kick,
   same-frame action acks (`ActionAck` -> HUD pips and stamps), curtain over rebuilds, HUD style
@@ -163,6 +164,11 @@ Everything except the vehicle is generated procedurally at launch. Status as of 
   (Mark's call, matching `com.greystratum.kerbskate`), version 0.1.0, encryption flag, opaque icon. Archive with
   `testflight/ship.sh SpeederProto.xcodeproj SpeederProto-iOS cycleracer_swift`; the upload needs Mark's App Store
   Connect API key and the App Store Connect record (README "TestFlight"). Device installs now use the new bundle id.
+- 31 Oct 2026 (branch `claude/marlow-contact`, off `claude/aether-url-scheme`; `docs/polish-log.md` "Marlow as the
+  contact"): the briefing contact is Marlow's Character Creator 5 body (`Resources/Marlow.usdz`, KERB Skate's park
+  actor export). `AvatarActor` strips cameras / lights from the file (an exported Preview_Camera otherwise becomes the
+  scene camera), tolerates a file with no clip, and poses a rigged file with the riders' idle + head look-at via
+  `RiderRig`. `SPEEDER_AVATAR=<name>` picks another `<name>.usdz`.
 - Next thread: `SpeederProto/docs/NEXT-THREAD-PROMPT.md` (step 3, objectives and clues; written 18 Oct 2026).
 - GitHub remote: https://github.com/bailey0002/cycleracer_swift (origin, branch master).
 

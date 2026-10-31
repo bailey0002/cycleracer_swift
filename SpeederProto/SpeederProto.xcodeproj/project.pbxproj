@@ -10,6 +10,7 @@
 		000657015690EF8B4E760040 /* vo_final_round.wav in Resources */ = {isa = PBXBuildFile; fileRef = B7BE5C46FB27910F82D5F86C /* vo_final_round.wav */; };
 		0075E6BB8E004E8FEADBA518 /* story_4.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4692E36D43C542266B26E80F /* story_4.jpg */; };
 		0086F2EE7150F3FBA01E131E /* music_firstplace.m4a in Resources */ = {isa = PBXBuildFile; fileRef = AC52AECFF158D9BC6F58F4C3 /* music_firstplace.m4a */; };
+		00B753EBC9F935E3F1CEAF6D /* Marlow.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 6707A24FB52AA09EEBD5D416 /* Marlow.usdz */; };
 		02D3D56823114D66FCF57FEF /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA03C8CBB3AECCC551185AD4 /* Platform.swift */; };
 		030D9FA4B60592711B8A7E08 /* music_toolate.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 69831278549751BF45A9F238 /* music_toolate.m4a */; };
 		03F9F675C701448B2DA7D610 /* ArenaTerrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9752F803A76314C6B3DB79D5 /* ArenaTerrain.swift */; };
@@ -143,6 +144,7 @@
 		7C00D7F0EC7C60B699B364CA /* vo_time.wav in Resources */ = {isa = PBXBuildFile; fileRef = 54F7780C50C8ACEC88C7A374 /* vo_time.wav */; };
 		7D04549FC84DC4A8E884666A /* Speeder.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 85AEFB6F2AA0670E6A1ACAA8 /* Speeder.usdz */; };
 		7D2A0B4A31438909B85F40F2 /* Board.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 2932D1CC89919872F6E2EB71 /* Board.usdz */; };
+		7E2372BEB5E1E93726C63E4B /* Marlow.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 6707A24FB52AA09EEBD5D416 /* Marlow.usdz */; };
 		7EEA35851ED97409573D8DA4 /* vo_game_over.wav in Resources */ = {isa = PBXBuildFile; fileRef = BA83957C2D037442AF800C86 /* vo_game_over.wav */; };
 		7EF56485EB3238394A0032FA /* vo_mission_completed.wav in Resources */ = {isa = PBXBuildFile; fileRef = 6A48E75F23B96C1CEE346881 /* vo_mission_completed.wav */; };
 		7FAF3FD7272D6397F2DE2B1B /* LICENSE-kenney-scifi.txt in Resources */ = {isa = PBXBuildFile; fileRef = 694AEFD902D6B70165AC202A /* LICENSE-kenney-scifi.txt */; };
@@ -334,6 +336,7 @@
 		6356C0C280992885D38E89DF /* ChakraPetch-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ChakraPetch-SemiBold.ttf"; sourceTree = "<group>"; };
 		64EC264A7A4A9123592EF82A /* vo_wrong.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_wrong.wav; sourceTree = "<group>"; };
 		65BC6E99698AE6DC5426F78B /* FrontEnd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontEnd.swift; sourceTree = "<group>"; };
+		6707A24FB52AA09EEBD5D416 /* Marlow.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Marlow.usdz; sourceTree = "<group>"; };
 		694AEFD902D6B70165AC202A /* LICENSE-kenney-scifi.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-kenney-scifi.txt"; sourceTree = "<group>"; };
 		69831278549751BF45A9F238 /* music_toolate.m4a */ = {isa = PBXFileReference; path = music_toolate.m4a; sourceTree = "<group>"; };
 		6A48E75F23B96C1CEE346881 /* vo_mission_completed.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = vo_mission_completed.wav; sourceTree = "<group>"; };
@@ -613,6 +616,7 @@
 				581F3F2FFB2CAAC00E963959 /* Assets.xcassets */,
 				B36422554C4AD2CC76BF3BBE /* Avatar.usdz */,
 				2932D1CC89919872F6E2EB71 /* Board.usdz */,
+				6707A24FB52AA09EEBD5D416 /* Marlow.usdz */,
 				13DAC14D5AEAB876E628938F /* narrative.json */,
 				9053514CE8B1F571D4E90C4A /* rider_cal.jpg */,
 				E873C21482E6F4167AF7B221 /* Rider_cal.usdz */,
@@ -802,6 +806,7 @@
 				9590C5B7564F9939CCDE8AD6 /* ChakraPetch-Regular.ttf in Resources */,
 				581BC241B3E41E982571CD05 /* ChakraPetch-SemiBold.ttf in Resources */,
 				21D4C1613ADD6523B9E745F7 /* LICENSE-kenney-scifi.txt in Resources */,
+				7E2372BEB5E1E93726C63E4B /* Marlow.usdz in Resources */,
 				F8D064177C2090AA84FD26C1 /* OFL.txt in Resources */,
 				D934D60078CC456F3426F163 /* Rider_cal.usdz in Resources */,
 				3A986515EB226197CD23580F /* Rider_dude1.usdz in Resources */,
@@ -892,6 +897,7 @@
 				6759E74F0B7767A6EB880B97 /* ChakraPetch-Regular.ttf in Resources */,
 				149D5634B3552BA7882E2561 /* ChakraPetch-SemiBold.ttf in Resources */,
 				7FAF3FD7272D6397F2DE2B1B /* LICENSE-kenney-scifi.txt in Resources */,
+				00B753EBC9F935E3F1CEAF6D /* Marlow.usdz in Resources */,
 				3818D15AD6E5273BD7AB5084 /* OFL.txt in Resources */,
 				DA0CE63A53ECB09C8FF42300 /* Rider_cal.usdz in Resources */,
 				9ABE1C9549DF94F07F1FB124 /* Rider_dude1.usdz in Resources */,

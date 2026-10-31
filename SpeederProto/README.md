@@ -186,8 +186,14 @@ play for now (duels come later). The contact badge is a placeholder for the avat
 
 ### Avatars
 
-`Scene/AvatarActor.swift` loads a character USDZ, puts its feet at y = 0, faces a point and loops
-the first animation clip. The first test asset is `Resources/Avatar.usdz`, converted from
+`Scene/AvatarActor.swift` loads a character USDZ, drops any camera or light the exporter left in it, puts its
+feet at y = 0 and faces a point. Since 31 Oct 2026 the contact is **Marlow** (`Resources/Marlow.usdz`, 19.6 MB,
+1.68 m, 44-bone Mixamo-named rig, no clip): the same Character Creator 5 export KERB Skate uses as its park actor
+(`../kerb_skate_game/KerbSkate/Assets/actors/actor_marlow.usdz`, from `CC5 Assets for Swift/marlow/` through
+`Tools/convert_cc.py … 6000 0.5`). A file with a skinned rig is posed through `RiderRig` every frame with the riders'
+idle (breathing, weight shift, head look-at toward the camera, ported from KERB's `ActorCast.update`); a file without
+one loops its first clip if it has any. `SPEEDER_AVATAR=<name>` loads another `<name>.usdz`. The earlier test asset
+is `Resources/Avatar.usdz`, converted from
 `../kerb_skate_game/avatar.glb` (an Avaturn export: 54-bone Mixamo-named rig, one clip, 28
 textures) with the same Blender USD export as the speeder (`export_animation`,
 `export_armatures`, `export_textures_mode='NEW'`; a stray icosphere was dropped). It comes in
